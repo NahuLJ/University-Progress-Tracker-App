@@ -1,5 +1,8 @@
 # Especificación de Autenticación JWT
 
+
+> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+
 ## Visión General
 
 El sistema utiliza **JSON Web Tokens (JWT)** como mecanismo de autenticación stateless. Un token se emite tras un login o registro exitoso y debe incluirse en todas las peticiones a rutas protegidas mediante el header `Authorization: Bearer <token>`.

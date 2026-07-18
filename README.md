@@ -4,13 +4,13 @@ Sistema de seguimiento de carreras universitarias: gestión de planes de estudio
 
 ## Estado
 
-Proyecto en fase de diseño. La documentación arquitectónica completa está en [`docs/`](docs/).
+Backend implementado en `backend/`. Documentación en [`docs/`](docs/).
 
 ## Stack
 
 | Capa | Tecnologías |
 |---|---|
-| Backend | NestJS, TypeScript, TypeORM, MySQL, Express, Swagger |
+| Backend | NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger |
 | Frontend | React 18, Vite 5, Tailwind CSS 3, TypeScript, React Router 6, Axios, React Query 5, zustand 4, React Hook Form + Zod |
 
 ## Documentación
@@ -29,7 +29,7 @@ Proyecto en fase de diseño. La documentación arquitectónica completa está en
 
 - Node.js 20 LTS
 - npm 10+
-- MySQL 8+
+- MariaDB 11.5+ (MySQL-compatible)
 
 ## Inicio rápido
 

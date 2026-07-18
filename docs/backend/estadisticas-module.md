@@ -1,5 +1,8 @@
 # Módulo Estadísticas — Especificación Técnica
 
+
+> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+
 ## Endpoints de la API
 
 ### GET /api/estadisticas/resumen?usuarioCarreraId=:id

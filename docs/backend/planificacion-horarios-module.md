@@ -1,5 +1,8 @@
 # Módulo Planificación de Horarios — Especificación Técnica
 
+
+> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+
 ## Endpoints de la API
 
 ### GET /api/planificacion/periodos?usuarioCarreraId=:id

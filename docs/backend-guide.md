@@ -1,5 +1,8 @@
 # Backend Guide — Sistema de Seguimiento de Carreras Universitarias
 
+
+> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+
 ## Stack Tecnológico
 
 | Tecnología | Versión | Propósito |
@@ -10,7 +13,7 @@
 | Express | 4.x | Motor HTTP subyacente de NestJS |
 | TypeScript | 5.x | Tipado estático |
 | TypeORM | 0.3.x | ORM para MySQL |
-| MySQL | 8.x | Base de datos relacional |
+| MariaDB | 11.5 | Base de datos relacional (MySQL-compatible) |
 | class-validator | 0.14.x | Validación declarativa de DTOs |
 | class-transformer | 0.5.x | Transformación de objetos en DTOs |
 | @nestjs/swagger | 7.x | Documentación OpenAPI / Swagger automática |
@@ -464,7 +467,7 @@ async obtenerResumen(usuarioCarreraId: number) {
 DB_HOST=localhost
 DB_PORT=3306
 DB_USERNAME=root
-DB_PASSWORD=secret
+DB_PASSWORD=root
 DB_DATABASE=seguimiento_universitario
 JWT_SECRET=super-secret-key
 JWT_EXPIRES_IN=7d
@@ -487,3 +490,25 @@ npm install @nestjs/jwt @nestjs/passport passport passport-jwt
 # Dependencias de desarrollo
 npm install -D @types/multer
 ```
+
+### 7. Scripts de Inicialización
+
+Definidos en `package.json`:
+
+```bash
+npm run db:init      # Crea la BD via MariaDB CLI (init-db.ts)
+npm run db:seed      # Ejecuta seeds via NestFactory + DataSource class token
+npm run db:setup     # db:init + db:seed en secuencia
+```
+
+- `scripts/init-db.ts` usa el CLI de MariaDB (`C:\Program Files\MariaDB 11.5\bin\mysql.exe`) para crear la BD, no mysql2.
+- `scripts/seed.ts` usa `app.get(DataSource)` (token clase, no el string `'DataSource'`).
+
+### 8. Pitfalls Conocidos (TypeORM + MariaDB / MySQL)
+
+| Problema | Síntoma | Solución |
+|---|---|---|
+| `string \| null` sin `type` explícito | `DataTypeNotSupportedError: Data type "Object"` | Agregar `@Column({ type: 'varchar', length: N, nullable: true })` — TypeORM no infiere varchar de `string \| null`. |
+| `execSync({ shell: true })` en TS strict | `Type 'boolean' is not assignable to type 'string'` | Usar `{ shell: 'cmd.exe' }` en vez de `{ shell: true }`. |
+| `app.get('DataSource')` | `Nest could not find DataSource element` | Usar `app.get(DataSource)` importando la clase `DataSource` de `typeorm`. |
+| mysql2 no soporta `auth_gssapi_client` | `Server requests authentication using unknown plugin` | Usar MariaDB en vez de MySQL 9, o configurar `authPlugins` en mysql2. |

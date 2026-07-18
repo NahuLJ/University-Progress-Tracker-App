@@ -2,11 +2,11 @@
 
 ## Estado del proyecto
 
-Proyecto en fase de diseño. Las carpetas `Backend/` y `Frontend/` están vacías. No hay `package.json`, lockfiles, ni config de herramientas. Todo el plan arquitectónico está en `docs/`.
+Backend implementado en `backend/`. Frontend todavía no iniciado. Ver `docs/backend-guide.md` para estado actual.
 
 ## Stack definido en la documentación
 
-- **Backend:** NestJS, TypeScript, TypeORM, MySQL, Express, Swagger, class-validator
+- **Backend:** NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger, class-validator
 - **Frontend:** React 18, Vite 5, Tailwind CSS 3, TypeScript, React Router DOM 6, Axios, React Query 5, zustand 4, React Hook Form + Zod
 - **Package manager:** npm (ambos)
 - **Node:** 20 LTS

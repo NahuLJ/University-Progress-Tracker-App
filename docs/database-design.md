@@ -1,5 +1,8 @@
 # Diseño de Base de Datos — Sistema de Seguimiento de Carreras Universitarias
 
+
+> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+
 ## Diagrama Entidad-Relación (ERD)
 
 ```mermaid
