@@ -9,10 +9,10 @@ interface AlertProps {
 
 export function Alert({ children, variant = 'error', className, onClose }: AlertProps) {
     const variants = {
-        error: 'bg-red-50 border-red-200 text-red-800',
-        success: 'bg-green-50 border-green-200 text-green-800',
-        warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-        info: 'bg-blue-50 border-blue-200 text-blue-800',
+        error: 'bg-neon-red/10 border-neon-red/40 text-neon-red',
+        success: 'bg-neon-green/10 border-neon-green/40 text-neon-green',
+        warning: 'bg-neon-yellow/10 border-neon-yellow/40 text-neon-yellow',
+        info: 'bg-neon-cyan/10 border-neon-cyan/40 text-neon-cyan',
     };
 
     const icons = {

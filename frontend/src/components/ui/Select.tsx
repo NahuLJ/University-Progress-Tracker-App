@@ -13,7 +13,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         return (
             <div className="space-y-1">
                 {label && (
-                    <label htmlFor={selectId} className="block text-sm font-medium text-gray-700">
+                    <label htmlFor={selectId} className="block text-sm font-medium text-slate-300">
                         {label}
                     </label>
                 )}
@@ -21,20 +21,21 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                     ref={ref}
                     id={selectId}
                     className={cn(
-                        'w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                        error && 'border-red-300 focus:ring-red-500',
-                        !error && 'border-gray-300',
+                        'w-full px-3 py-2 bg-base-800/80 border rounded-lg shadow-inner text-slate-100 transition-colors',
+                        'focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60',
+                        error && 'border-neon-red/70 focus:ring-neon-red',
+                        !error && 'border-base-500',
                         className
                     )}
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? `${selectId}-error` : undefined}
                     {...props}
                 >
-                    {placeholder && <option value="">{placeholder}</option>}
+                    {placeholder && <option value="" className="bg-base-800">placeholder</option>}
                     {children}
                 </select>
                 {error && (
-                    <p id={`${selectId}-error`} className="text-sm text-red-600" role="alert">
+                    <p id={`${selectId}-error`} className="text-sm text-neon-red" role="alert">
                         {error}
                     </p>
                 )}

@@ -1,6 +1,7 @@
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { ProgressBar } from '../ui/ProgressBar';
+import { Icon } from '../ui/Icon';
 
 interface PromedioCardProps {
     promedio: number | null;
@@ -9,11 +10,11 @@ interface PromedioCardProps {
 
 export function PromedioCard({ promedio, materiasConNota }: PromedioCardProps) {
     const color = promedio
-        ? promedio >= 8.5 ? 'bg-blue-100 text-blue-800'
-          : promedio >= 7 ? 'bg-green-100 text-green-800'
-          : promedio >= 6 ? 'bg-yellow-100 text-yellow-800'
-          : 'bg-orange-100 text-orange-800'
-        : 'bg-gray-100 text-gray-500';
+        ? promedio >= 8.5 ? 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30'
+          : promedio >= 7 ? 'bg-neon-green/15 text-neon-green border border-neon-green/30'
+          : promedio >= 6 ? 'bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30'
+          : 'bg-neon-orange/15 text-neon-orange border border-neon-orange/30'
+        : 'bg-slate-700/40 text-slate-400 border border-slate-600/50';
 
     const etiqueta = promedio
         ? promedio >= 8.5 ? 'Excelente'
@@ -25,11 +26,13 @@ export function PromedioCard({ promedio, materiasConNota }: PromedioCardProps) {
     return (
         <Card>
             <div className="flex items-center">
-                <div className="p-2 rounded-lg text-2xl">📊</div>
+                <div className="p-2 rounded-lg bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan">
+                    <Icon name="chart" className="w-6 h-6" />
+                </div>
                 <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Promedio General</h3>
-                    <p className="text-2xl font-bold text-gray-900">{promedio?.toFixed(2) || '—'}</p>
-                    <p className="text-xs text-gray-500">de {materiasConNota} materias</p>
+                    <h3 className="text-sm font-medium text-slate-400">Promedio General</h3>
+                    <p className="text-2xl font-bold text-white">{promedio?.toFixed(2) || '—'}</p>
+                    <p className="text-xs text-slate-400">de {materiasConNota} materias</p>
                     <Badge variant="default" className={color} size="sm">{etiqueta}</Badge>
                 </div>
             </div>
@@ -45,15 +48,15 @@ export function TiempoRestanteCard({ cuatrimestres }: TiempoRestanteCardProps) {
     return (
         <Card>
             <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                    <span className="text-2xl">⏳</span>
+                <div className="p-2 bg-neon-green/15 rounded-lg text-neon-green shadow-neon-green">
+                    <Icon name="clock" className="w-6 h-6" />
                 </div>
                 <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Tiempo Estimado</h3>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <h3 className="text-sm font-medium text-slate-400">Tiempo Estimado</h3>
+                    <p className="text-2xl font-bold text-white">
                         {cuatrimestres !== null ? cuatrimestres : '—'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-400">
                         {cuatrimestres !== null
                             ? cuatrimestres >= 2
                                 ? `≈ ${Math.floor(cuatrimestres / 2)} años`
@@ -77,16 +80,16 @@ export function CreditosCard({ obtenidos, totales }: CreditosCardProps) {
     return (
         <Card>
             <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                    <span className="text-2xl">💼</span>
+                <div className="p-2 bg-neon-violet/15 rounded-lg text-neon-violet shadow-neon-violet">
+                    <Icon name="briefcase" className="w-6 h-6" />
                 </div>
                 <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Créditos</h3>
-                    <p className="text-2xl font-bold text-gray-900">{obtenidos}/{totales}</p>
+                    <h3 className="text-sm font-medium text-slate-400">Créditos</h3>
+                    <p className="text-2xl font-bold text-white">{obtenidos}/{totales}</p>
                     <div className="mt-1 w-32">
                         <ProgressBar value={porcentaje} color="purple" />
                     </div>
-                    <p className="text-xs text-gray-500">{porcentaje}% completados</p>
+                    <p className="text-xs text-slate-400">{porcentaje}% completados</p>
                 </div>
             </div>
         </Card>
@@ -101,16 +104,16 @@ export function ProgresoBarCard({ porcentaje }: ProgresoBarCardProps) {
     return (
         <Card>
             <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                    <span className="text-2xl">📈</span>
+                <div className="p-2 bg-neon-orange/15 rounded-lg text-neon-orange shadow-neon-orange">
+                    <Icon name="trending" className="w-6 h-6" />
                 </div>
                 <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Progreso General</h3>
-                    <p className="text-2xl font-bold text-gray-900">{porcentaje}%</p>
+                    <h3 className="text-sm font-medium text-slate-400">Progreso General</h3>
+                    <p className="text-2xl font-bold text-white">{porcentaje}%</p>
                     <div className="mt-1 w-32">
                         <ProgressBar value={porcentaje} color="orange" />
                     </div>
-                    <p className="text-xs text-gray-500">materias completadas</p>
+                    <p className="text-xs text-slate-400">materias completadas</p>
                 </div>
             </div>
         </Card>

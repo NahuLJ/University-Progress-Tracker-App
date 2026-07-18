@@ -13,24 +13,24 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(
         const [isOpen, setIsOpen] = useState(defaultOpen);
 
         return (
-            <div ref={ref} className={cn('border border-gray-200 rounded-lg overflow-hidden', className)}>
-                <button
-                    type="button"
-                    onClick={() => setIsOpen(!isOpen)}
+        <div ref={ref} className={cn('border border-base-600 rounded-lg overflow-hidden bg-base-800/50', className)}>
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className={cn(
+                    'w-full px-4 py-3 bg-base-700/70 border-b border-base-600',
+                    'flex items-center justify-between',
+                    'hover:bg-base-600 transition-colors',
+                    'focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-inset'
+                )}
+                aria-expanded={isOpen}
+            >
+                <span className="font-semibold text-white">{title}</span>
+                <svg
                     className={cn(
-                        'w-full px-4 py-3 bg-gray-50 border-b border-gray-200',
-                        'flex items-center justify-between',
-                        'hover:bg-gray-100 transition-colors',
-                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
+                        'w-5 h-5 text-neon-cyan transition-transform',
+                        isOpen && 'rotate-180'
                     )}
-                    aria-expanded={isOpen}
-                >
-                    <span className="font-semibold text-gray-900">{title}</span>
-                    <svg
-                        className={cn(
-                            'w-5 h-5 text-gray-500 transition-transform',
-                            isOpen && 'rotate-180'
-                        )}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

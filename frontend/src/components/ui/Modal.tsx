@@ -23,18 +23,18 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div className="flex min-h-full items-center justify-center p-4">
                 <div
-                    className="fixed inset-0 bg-black/50 transition-opacity"
+                    className="fixed inset-0 bg-base-900/80 backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                     aria-hidden="true"
                 />
-                <div className={cn('relative w-full bg-white rounded-xl shadow-xl', sizes[size], className)}>
-                    <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                        <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
+                <div className={cn('relative w-full card rounded-xl shadow-neon-cyan', sizes[size], className)}>
+                    <div className="flex items-center justify-between p-4 border-b border-base-600">
+                        <h2 id="modal-title" className="text-lg font-semibold text-white">
                             {title}
                         </h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-slate-400 hover:text-neon-cyan transition-colors"
                             aria-label="Cerrar modal"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

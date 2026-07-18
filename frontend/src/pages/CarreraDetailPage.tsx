@@ -47,7 +47,7 @@ export function CarreraDetailPage() {
     if (!planEstudios) {
         return (
             <EmptyState
-                icon="🔍"
+                iconName="search"
                 title="Carrera no encontrada"
                 description="La carrera que estás buscando no existe o no está disponible."
                 action={<Link to="/carreras" className="btn-primary">Ver otras carreras</Link>}
@@ -61,7 +61,7 @@ export function CarreraDetailPage() {
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <h1 className="text-2xl font-bold mb-2">{planEstudios.carrera.nombre}</h1>
-                        <p className="text-gray-600 mb-4">{planEstudios.carrera.descripcion}</p>
+                        <p className="text-slate-300 mb-4">{planEstudios.carrera.descripcion}</p>
                     </div>
                     <div className="text-right">
                         {inscripto ? (
@@ -69,7 +69,7 @@ export function CarreraDetailPage() {
                                 <Badge variant="success" className="mb-2 block w-fit">
                                     Inscripto
                                 </Badge>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-slate-400">
                                     Fecha: {new Date(usuarioCarrera.data?.find(c => c.carreraId === parseInt(id!))?.fechaInicio || '').toLocaleDateString('es-AR')}
                                 </p>
                             </div>
@@ -82,7 +82,7 @@ export function CarreraDetailPage() {
                 </div>
 
                 <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-slate-300">
                         {planEstudios.anios.length} años de estudios
                         • {planEstudios.anios.reduce((acc: number, anio: { cuatrimestres: any[] }) => acc + anio.cuatrimestres.reduce((acc2: number, cuat: { materias: any[] }) => acc2 + cuat.materias.length, 0), 0)} materias totales
                         • {planEstudios.carrera.creditosTotales} créditos totales
@@ -131,13 +131,13 @@ export function CarreraDetailPage() {
                                 {planEstudios.anios.flatMap(anio =>
                                     anio.cuatrimestres.flatMap(cuatrimestre =>
                                         cuatrimestre.materias.map(materia => (
-                                            <tr key={materia.materiaId} className="border-b hover:bg-gray-50">
-                                                <td className="py-3 px-4 font-mono text-sm">{materia.codigo}</td>
-                                                <td className="py-3 px-4">
-                                                        <button
-                                                            onClick={() => setMateriaSeleccionada(materia)}
-                                                            className="text-blue-600 hover:text-blue-800 font-medium text-left"
-                                                        >
+                                    <tr key={materia.materiaId} className="border-b border-base-600 hover:bg-base-700/50">
+                                        <td className="py-3 px-4 font-mono text-sm text-slate-300">{materia.codigo}</td>
+                                        <td className="py-3 px-4">
+                                                <button
+                                                    onClick={() => setMateriaSeleccionada(materia)}
+                                                    className="text-neon-cyan hover:text-cyan-300 font-medium text-left"
+                                                >
                                                         {materia.nombre}
                                                     </button>
                                                 </td>

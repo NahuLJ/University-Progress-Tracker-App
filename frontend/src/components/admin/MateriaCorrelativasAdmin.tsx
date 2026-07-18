@@ -66,7 +66,7 @@ export function MateriaCorrelativasAdmin() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Seleccionar materia</h3>
+                <h3 className="font-semibold text-white mb-3">Seleccionar materia</h3>
                 <Select
                     label="Materia"
                     value={materiaId}
@@ -82,7 +82,7 @@ export function MateriaCorrelativasAdmin() {
 
                 {materiaId > 0 && (
                     <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Correlativas actuales</h4>
+                        <h4 className="text-sm font-medium text-neon-cyan mb-2">Correlativas actuales</h4>
                         {detalle.isLoading && <LoadingSpinner />}
                         {detalle.isError && (
                             <QueryError
@@ -91,17 +91,17 @@ export function MateriaCorrelativasAdmin() {
                             />
                         )}
                         {detalle.data && correlativasExistentes.length === 0 && (
-                            <p className="text-sm text-gray-500">Esta materia no tiene correlativas.</p>
+                            <p className="text-sm text-slate-400">Esta materia no tiene correlativas.</p>
                         )}
                         <ul className="space-y-2">
                             {correlativasExistentes.map((c) => (
                                 <li
                                     key={c.correlativaId}
-                                    className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                                    className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2"
                                 >
-                                    <span className="text-sm text-gray-800">
+                                    <span className="text-sm text-slate-200">
                                         {c.materiaCorrelativa.nombre}{' '}
-                                        <span className="text-gray-400">
+                                        <span className="text-slate-400">
                                             ({c.materiaCorrelativa.codigo})
                                         </span>
                                     </span>
@@ -124,9 +124,9 @@ export function MateriaCorrelativasAdmin() {
             </Card>
 
             <Card className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Agregar correlativa</h3>
+                <h3 className="font-semibold text-white mb-3">Agregar correlativa</h3>
                 {materiaId === 0 ? (
-                    <p className="text-sm text-gray-500">Seleccioná una materia para gestionar sus correlativas.</p>
+                    <p className="text-sm text-slate-400">Seleccioná una materia para gestionar sus correlativas.</p>
                 ) : (
                     <div className="space-y-3">
                         <Select

@@ -45,7 +45,7 @@ export function ProgresoPage() {
 
     if (!usuarioCarreraId) {
         return <EmptyState
-            icon="📚"
+                iconName="books"
             title="No tenés carreras registradas"
             description="Inscribite a una carrera para registrar tu progreso académico."
             action={<Link to="/carreras" className="btn-primary">Ver carreras</Link>}
@@ -56,7 +56,7 @@ export function ProgresoPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Progreso Académico</h1>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-slate-400">
                     {carreraActiva?.carrera.nombre}
                     {carreraActiva?.activo ? ' (Activa)' : ''}
                 </span>

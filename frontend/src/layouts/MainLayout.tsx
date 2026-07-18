@@ -6,21 +6,21 @@ export function MainLayout() {
     const logout = useAuthStore((s) => s.logout);
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm border-b">
+        <div className="min-h-screen">
+            <header className="sticky top-0 z-40 bg-base-900/80 backdrop-blur-md border-b border-base-600">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center">
-                            <h1 className="text-xl font-bold text-gray-900">Seguimiento Universitario</h1>
+                            <span className="text-xl font-bold neon-text">Seguimiento Universitario</span>
                         </div>
-                        <nav className="flex items-center gap-4">
+                        <nav className="flex items-center gap-2">
                             <NavLink
                                 to="/dashboard"
                                 className={({ isActive }) =>
                                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                         isActive
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                     }`
                                 }
                             >
@@ -31,8 +31,8 @@ export function MainLayout() {
                                 className={({ isActive }) =>
                                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                         isActive
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                     }`
                                 }
                             >
@@ -43,8 +43,8 @@ export function MainLayout() {
                                 className={({ isActive }) =>
                                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                         isActive
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                     }`
                                 }
                             >
@@ -55,8 +55,8 @@ export function MainLayout() {
                                 className={({ isActive }) =>
                                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                         isActive
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                     }`
                                 }
                             >
@@ -67,8 +67,8 @@ export function MainLayout() {
                                 className={({ isActive }) =>
                                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                         isActive
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                     }`
                                 }
                             >

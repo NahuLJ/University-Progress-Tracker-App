@@ -18,8 +18,8 @@ export function AdminPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Administración académica</h1>
-                    <p className="text-sm text-gray-500">
+                    <h1 className="text-2xl font-bold text-white">Administración académica</h1>
+                    <p className="text-sm text-slate-400">
                         Gestioná el catálogo de carreras, materias y correlativas.
                     </p>
                 </div>
@@ -30,12 +30,12 @@ export function AdminPage() {
             {tab === 'carreras' && (
                 <Card className="p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-900">Carreras</h2>
+                        <h2 className="text-lg font-semibold text-white">Carreras</h2>
                         <Button onClick={() => setCarreraModalOpen(true)}>Nueva carrera</Button>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-300">
                         Creá una carrera y luego agregale materias desde la pestaña{' '}
-                        <span className="font-medium">Plan de estudios</span>.
+                        <span className="font-medium text-white">Plan de estudios</span>.
                     </p>
                 </Card>
             )}
@@ -43,10 +43,10 @@ export function AdminPage() {
             {tab === 'materias' && (
                 <Card className="p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-900">Materias</h2>
+                        <h2 className="text-lg font-semibold text-white">Materias</h2>
                         <Button onClick={() => setMateriaModalOpen(true)}>Nueva materia</Button>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-300">
                         Las materias creadas aquí forman el catálogo global y se usan al armar los planes de
                         estudio.
                     </p>

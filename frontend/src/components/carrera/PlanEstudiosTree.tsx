@@ -1,5 +1,5 @@
 import { Accordion } from '../ui/Accordion';
-import { Badge } from '../ui/Badge';
+import { StatusBadge } from '../ui/StatusBadge';
 import type { PlanEstudios } from '../../types/carrera.types';
 
 interface MateriaRowProps {
@@ -9,34 +9,25 @@ interface MateriaRowProps {
 
 function MateriaRow({ materia, onClick }: MateriaRowProps) {
     const estado = materia.estadoUsuario?.nombre || 'Pendiente';
-    const badgeConfig = {
-        Completada: { variant: 'success' as const, emoji: '🟢', label: 'CP' },
-        'En Proceso': { variant: 'warning' as const, emoji: '🟡', label: 'EP' },
-        Pendiente: { variant: 'danger' as const, emoji: '🔴', label: 'PTE' },
-    };
-    const config = badgeConfig[estado as keyof typeof badgeConfig] || badgeConfig.Pendiente;
 
     return (
         <button
             onClick={onClick}
-            className="w-full text-left p-3 hover:bg-gray-50 rounded-lg flex items-center justify-between gap-4 transition-colors"
+            className="w-full text-left p-3 hover:bg-base-700/50 rounded-lg flex items-center justify-between gap-4 transition-colors"
         >
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="font-mono text-gray-500">[{materia.orden}]</span>
-                    <span className="font-medium truncate">{materia.nombre}</span>
+                    <span className="font-mono text-slate-400">[{materia.orden}]</span>
+                    <span className="font-medium truncate text-slate-100">{materia.nombre}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
                     <span className="font-mono">{materia.codigo}</span>
                     <span>•</span>
                     <span>{materia.creditos} créd.</span>
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <Badge variant={config.variant} className="gap-1">
-                    <span>{config.emoji}</span>
-                    <span>{config.label}</span>
-                </Badge>
+                <StatusBadge estado={estado} />
             </div>
         </button>
     );

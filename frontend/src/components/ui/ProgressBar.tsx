@@ -11,17 +11,17 @@ interface ProgressBarProps {
 export function ProgressBar({ value, max = 100, className, showLabel = false, color = 'blue' }: ProgressBarProps) {
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
     const colors = {
-        blue: 'bg-blue-500',
-        green: 'bg-green-500',
-        yellow: 'bg-yellow-500',
-        red: 'bg-red-500',
-        purple: 'bg-purple-500',
-        orange: 'bg-orange-500',
+        blue: 'bg-neon-cyan shadow-neon-cyan',
+        green: 'bg-neon-green shadow-neon-green',
+        yellow: 'bg-neon-yellow shadow-neon-yellow',
+        red: 'bg-neon-red shadow-neon-red',
+        purple: 'bg-neon-violet shadow-neon-violet',
+        orange: 'bg-neon-orange',
     };
 
     return (
         <div className={cn('w-full', className)}>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-base-600 rounded-full overflow-hidden">
                 <div
                     className={cn('h-full transition-all duration-300 rounded-full', colors[color])}
                     style={{ width: `${percentage}%` }}
@@ -32,7 +32,7 @@ export function ProgressBar({ value, max = 100, className, showLabel = false, co
                 />
             </div>
             {showLabel && (
-                <p className="text-xs text-gray-500 mt-1 text-right">{Math.round(percentage)}%</p>
+                <p className="text-xs text-slate-400 mt-1 text-right">{Math.round(percentage)}%</p>
             )}
         </div>
     );

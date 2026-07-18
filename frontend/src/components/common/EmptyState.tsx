@@ -1,17 +1,21 @@
+import { Icon, type IconName } from '../ui/Icon';
+
 interface EmptyStateProps {
-    icon: string;
+    iconName: IconName;
     title: string;
     description: string;
     action?: React.ReactNode;
     className?: string;
 }
 
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({ iconName, title, description, action, className }: EmptyStateProps) {
     return (
         <div className={`text-center py-12 ${className}`}>
-            <div className="text-6xl mb-4">{icon}</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-            <p className="text-gray-600 mb-6">{description}</p>
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-neon-cyan/10 text-neon-cyan shadow-neon-cyan">
+                <Icon name={iconName} className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">{title}</h2>
+            <p className="text-slate-400 mb-6">{description}</p>
             {action && <div>{action}</div>}
         </div>
     );

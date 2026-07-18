@@ -77,7 +77,7 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess }: InscribirC
                 />
 
                 {inscribirCarrera.isError && (
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-neon-red">
                         No se pudo completar la inscripción. Intentá nuevamente.
                     </p>
                 )}

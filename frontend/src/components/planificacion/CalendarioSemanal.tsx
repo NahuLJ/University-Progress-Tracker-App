@@ -51,16 +51,16 @@ export function CalendarioSemanal() {
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-[auto_repeat(6,1fr)] gap-1">
-                <div className="font-semibold p-2 text-sm bg-gray-50">Horario</div>
+                <div className="font-semibold p-2 text-sm bg-base-700/60 text-slate-200">Horario</div>
                 {DIAS.map((dia) => (
-                    <div key={dia.id} className="font-semibold p-2 text-sm text-center bg-gray-50">
+                    <div key={dia.id} className="font-semibold p-2 text-sm text-center bg-base-700/60 text-slate-200">
                         {dia.corto}
                     </div>
                 ))}
 
                 {BLOQUES.map((bloque) => (
                     <React.Fragment key={bloque.id}>
-                        <div className="p-2 text-sm text-gray-500 font-medium">
+                        <div className="p-2 text-sm text-slate-400 font-medium">
                             {bloque.label}
                         </div>
                         {DIAS.map((dia) => (

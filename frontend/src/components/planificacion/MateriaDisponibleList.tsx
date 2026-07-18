@@ -9,7 +9,7 @@ export function MateriaDisponibleList({ materias }: MateriaDisponibleListProps) 
         return (
             <Card>
                 <h3 className="font-semibold mb-3">Materias disponibles</h3>
-                <p className="text-gray-500 text-sm">No hay materias pendientes para planificar</p>
+                <p className="text-slate-400 text-sm">No hay materias pendientes para planificar</p>
             </Card>
         );
     }
@@ -21,15 +21,15 @@ export function MateriaDisponibleList({ materias }: MateriaDisponibleListProps) 
                 {materias.map((materia) => (
                     <div
                         key={materia.materiaId}
-                        className="p-3 border border-gray-200 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-50 transition-colors"
+                        className="p-3 border border-base-600 rounded-lg cursor-grab active:cursor-grabbing hover:bg-base-700/50 transition-colors"
                         draggable
                         onDragStart={(e) => {
                             e.dataTransfer.setData('materiaId', materia.materiaId.toString());
                             e.dataTransfer.effectAllowed = 'move';
                         }}
                     >
-                        <div className="font-medium text-sm">{materia.nombre}</div>
-                        <div className="text-xs text-gray-500">{materia.codigo} • {materia.creditos} créditos</div>
+                        <div className="font-medium text-sm text-slate-100">{materia.nombre}</div>
+                        <div className="text-xs text-slate-400">{materia.codigo} • {materia.creditos} créditos</div>
                     </div>
                 ))}
             </div>

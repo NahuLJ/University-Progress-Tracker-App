@@ -11,13 +11,13 @@ interface CardProps {
 export function Card({ children, className, title, subtitle, onClick }: CardProps) {
     return (
         <div
-            className={cn('bg-white rounded-xl shadow-sm border border-gray-100', className, onClick && 'cursor-pointer hover:bg-gray-50')}
+            className={cn('card', className, onClick && 'cursor-pointer hover:border-neon-cyan/60 hover:shadow-neon-cyan transition-all')}
             onClick={onClick}
         >
             {(title || subtitle) && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                    {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-                    {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+                <div className="px-6 py-4 border-b border-base-600">
+                    {title && <h3 className="text-lg font-semibold text-white">{title}</h3>}
+                    {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
                 </div>
             )}
             <div className="p-6">{children}</div>

@@ -22,8 +22,8 @@ export function FiltroEstado({ filtroEstado, setFiltroEstado }: FiltroEstadoProp
                     onClick={() => setFiltroEstado(e.value)}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         filtroEstado === e.value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-neon-cyan text-base-900'
+                            : 'bg-base-700/60 text-slate-300 hover:bg-base-600'
                     }`}
                 >
                     {e.label}
@@ -51,7 +51,7 @@ export function FiltroBusqueda({ busqueda, setBusqueda }: FiltroBusquedaProps) {
                 setValor(e.target.value);
                 debouncedSetBusqueda(setBusqueda, e.target.value);
             }}
-            className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-64 px-3 py-2 bg-base-800/80 border border-base-500 rounded-lg text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60"
         />
     );
 }

@@ -12,10 +12,10 @@ export function RegisterForm() {
     const passwordValue = watch('password') || '';
     const fortaleza = calcularFortaleza(passwordValue);
     const nivelFortaleza =
-        fortaleza >= 80 ? { label: 'Fuerte', color: 'bg-green-500', text: 'text-green-600' }
-        : fortaleza >= 60 ? { label: 'Buena', color: 'bg-blue-500', text: 'text-blue-600' }
-        : fortaleza >= 40 ? { label: 'Media', color: 'bg-yellow-500', text: 'text-yellow-600' }
-        : { label: 'Débil', color: 'bg-red-500', text: 'text-red-600' };
+        fortaleza >= 80 ? { label: 'Fuerte', color: 'bg-neon-green shadow-neon-green', text: 'text-neon-green' }
+        : fortaleza >= 60 ? { label: 'Buena', color: 'bg-neon-cyan shadow-neon-cyan', text: 'text-neon-cyan' }
+        : fortaleza >= 40 ? { label: 'Media', color: 'bg-neon-yellow', text: 'text-neon-yellow' }
+        : { label: 'Débil', color: 'bg-neon-red', text: 'text-neon-red' };
 
     return (
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
@@ -47,7 +47,7 @@ export function RegisterForm() {
 
             {passwordValue && (
                 <div className="space-y-1">
-                    <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 w-full bg-base-600 rounded-full overflow-hidden">
                         <div
                             className={`h-full transition-all ${nivelFortaleza.color}`}
                             style={{ width: `${fortaleza}%` }}
@@ -70,9 +70,9 @@ export function RegisterForm() {
                 Crear Cuenta
             </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-slate-400">
                 ¿Ya tenés cuenta?{' '}
-                <a href="/login" className="text-blue-600 hover:underline">Iniciá sesión</a>
+                <a href="/login" className="text-neon-cyan hover:underline">Iniciá sesión</a>
             </p>
         </form>
     );

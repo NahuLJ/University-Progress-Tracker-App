@@ -76,33 +76,33 @@ export function PlanEstudiosAdmin() {
             {carreraId > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-3">Materias en el plan</h3>
+                        <h3 className="font-semibold text-white mb-3">Materias en el plan</h3>
                         {plan.isLoading && <LoadingSpinner />}
                         {plan.isError && (
                             <QueryError error={plan.error} onRetry={() => plan.refetch()} />
                         )}
                         {plan.data && materiasEnPlan.length === 0 && (
-                            <p className="text-sm text-gray-500">Esta carrera aún no tiene materias en su plan.</p>
+                            <p className="text-sm text-slate-400">Esta carrera aún no tiene materias en su plan.</p>
                         )}
                         {plan.data && plan.data.anios.length > 0 && (
-                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                            <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin">
                                 {plan.data.anios.map((anioData) => (
                                     <div key={anioData.anio}>
-                                        <h4 className="text-sm font-medium text-gray-700">
+                                        <h4 className="text-sm font-medium text-neon-cyan">
                                             Año {anioData.anio}
                                         </h4>
                                         {anioData.cuatrimestres.map((cuat) => (
                                             <div key={cuat.cuatrimestre} className="ml-3 mt-1">
-                                                <p className="text-xs text-gray-500">
+                                                <p className="text-xs text-slate-400">
                                                     Cuatrimestre {cuat.cuatrimestre}
                                                 </p>
-                                                <ul className="list-disc list-inside text-sm text-gray-800">
+                                                <ul className="list-disc list-inside text-sm text-slate-200">
                                                     {cuat.materias.map((m) => (
                                                         <li key={m.carreraMateriaId}>
                                                             {m.nombre}{' '}
-                                                            <span className="text-gray-400">({m.codigo})</span>
+                                                            <span className="text-slate-400">({m.codigo})</span>
                                                             {m.correlativas.length > 0 && (
-                                                                <span className="text-gray-400">
+                                                                <span className="text-slate-400">
                                                                     {' '}
                                                                     · {m.correlativas.length} corr.
                                                                 </span>
@@ -119,7 +119,7 @@ export function PlanEstudiosAdmin() {
                     </Card>
 
                     <Card className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-3">Agregar materia al plan</h3>
+                        <h3 className="font-semibold text-white mb-3">Agregar materia al plan</h3>
                         <div className="space-y-3">
                             <Select
                                 label="Materia"

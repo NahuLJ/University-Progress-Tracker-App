@@ -45,7 +45,7 @@ export function PlanificacionPage() {
 
     if (!usuarioCarreraId) {
         return <EmptyState
-            icon="📅"
+            iconName="calendar"
             title="No tenés carreras registradas"
             description="Inscribite a una carrera para planificar tus horarios."
             action={<Link to="/carreras" className="btn-primary">Ver carreras</Link>}
@@ -54,7 +54,7 @@ export function PlanificacionPage() {
 
     if (!periodos || periodos.length === 0) {
         return <EmptyState
-            icon="📅"
+            iconName="calendar"
             title="No hay planificaciones"
             description="Creá una planificación para comenzar a organizar tus horarios de clase."
             action={<Button onClick={() => setMostrarNuevoPeriodo(true)}>Crear planificación</Button>}
@@ -110,9 +110,9 @@ export function PlanificacionPage() {
                             </div>
 
                             {store.dirty && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                    <p className="text-sm text-yellow-800">
-                                        ✅ Tienes cambios sin guardar
+                                <div className="bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3">
+                                    <p className="text-sm text-neon-yellow">
+                                        ✅ Tenés cambios sin guardar
                                     </p>
                                 </div>
                             )}

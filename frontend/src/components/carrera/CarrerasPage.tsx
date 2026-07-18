@@ -92,7 +92,7 @@ export function CarrerasPage() {
     if (carreras.length === 0) {
         return (
             <EmptyState
-                icon="🏫"
+                iconName="school"
                 title="No hay carreras disponibles"
                 description="Aún no se han cargado carreras en el catálogo."
             />
@@ -103,7 +103,7 @@ export function CarrerasPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Carreras</h1>
-                <span className="text-sm text-gray-500">{carreras.length} disponibles</span>
+                <span className="text-sm text-slate-400">{carreras.length} disponibles</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

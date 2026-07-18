@@ -37,7 +37,7 @@ export function DashboardPage() {
 
     if (carreras?.length === 0) {
         return <EmptyState
-            icon="📚"
+                iconName="books"
             title="No tenés carreras registradas"
             description="Inscribite a una carrera para comenzar a seguir tu progreso."
             action={<Link to="/carreras" className="btn-primary">Ver carreras</Link>}

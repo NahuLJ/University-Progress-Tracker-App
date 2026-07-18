@@ -4,72 +4,115 @@
 
 @layer base {
     * {
-        @apply border-gray-200;
+        @apply border-base-600;
+    }
+    html {
+        color-scheme: dark;
     }
     body {
-        @apply bg-gray-50 text-gray-900 antialiased;
+        @apply bg-base-900 text-slate-200 antialiased;
+        background-image: theme('backgroundImage.radial-glow'),
+            theme('backgroundImage.grid-neon');
+        background-size: 100% 100%, theme('backgroundSize.grid'), theme('backgroundSize.grid');
+        background-attachment: fixed;
+        min-height: 100vh;
+    }
+    h1, h2, h3, h4 {
+        @apply text-white;
+    }
+    ::selection {
+        background: rgba(34, 211, 238, 0.3);
+        color: #fff;
     }
 }
 
 @layer components {
     .btn-primary {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-base-900 rounded-lg
+            bg-neon-cyan transition-all shadow-neon-cyan
+            hover:bg-cyan-300 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]
+            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
+            disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-secondary {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-neon-violet rounded-lg
+            bg-neon-violet/10 border border-neon-violet/40 transition-all
+            hover:bg-neon-violet/20 hover:shadow-neon-violet
+            focus:outline-none focus:ring-2 focus:ring-neon-violet focus:ring-offset-2 focus:ring-offset-base-900
+            disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-outline {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-neon-cyan rounded-lg
+            border-2 border-neon-cyan/60 transition-all
+            hover:bg-neon-cyan/10 hover:shadow-neon-cyan
+            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
+            disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-ghost {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-300 rounded-lg
+            transition-colors hover:bg-white/5 hover:text-white
+            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
+            disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-danger {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg
+            bg-neon-red/80 border border-neon-red/60 transition-all
+            hover:bg-neon-red hover:shadow-[0_0_10px_rgba(248,113,113,0.7)]
+            focus:outline-none focus:ring-2 focus:ring-neon-red focus:ring-offset-2 focus:ring-offset-base-900
+            disabled:opacity-50 disabled:cursor-not-allowed;
     }
 
     .input {
-        @apply w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed;
+        @apply w-full px-3 py-2 bg-base-800/80 border border-base-500 rounded-lg text-slate-100 placeholder:text-slate-500
+            shadow-inner transition-colors
+            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60
+            disabled:bg-base-700 disabled:text-slate-500 disabled:cursor-not-allowed;
     }
     .input-error {
-        @apply border-red-300 focus:ring-red-500;
+        @apply border-neon-red/70 focus:ring-neon-red focus:border-neon-red/60;
     }
 
     .card {
-        @apply bg-white rounded-xl shadow-sm border border-gray-100;
+        @apply bg-base-800/70 rounded-xl border border-base-600 backdrop-blur-sm shadow-neon-soft;
     }
     .card-header {
-        @apply px-6 py-4 border-b border-gray-100;
+        @apply px-6 py-4 border-b border-base-600;
     }
     .card-body {
         @apply p-6;
     }
 
     .badge-success {
-        @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800;
+        @apply inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-neon-green/15 text-neon-green border border-neon-green/30;
     }
     .badge-warning {
-        @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800;
+        @apply inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30;
     }
     .badge-danger {
-        @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800;
+        @apply inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-neon-red/15 text-neon-red border border-neon-red/30;
     }
     .badge-info {
-        @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800;
+        @apply inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30;
     }
     .badge-gray {
-        @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800;
+        @apply inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-700/40 text-slate-300 border border-slate-600/50;
     }
 
     .select {
-        @apply w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+        @apply w-full px-3 py-2 bg-base-800/80 border border-base-500 rounded-lg text-slate-100
+            shadow-inner transition-colors
+            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60;
+    }
+
+    .neon-text {
+        @apply text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan via-neon-violet to-neon-pink;
     }
 }
 
 @layer utilities {
     .scrollbar-thin {
         scrollbar-width: thin;
-        scrollbar-color: theme('colors.gray.300') transparent;
+        scrollbar-color: theme('colors.base.500') transparent;
     }
     .scrollbar-thin::-webkit-scrollbar {
         width: 6px;
@@ -79,7 +122,10 @@
         background: transparent;
     }
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: theme('colors.gray.300');
+        background-color: theme('colors.base.500');
         border-radius: 3px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: theme('colors.neon.cyan');
     }
 }

@@ -32,9 +32,9 @@ export function CarreraCard({
     };
 
     return (
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-neon-cyan transition-shadow">
             <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">{carrera.nombre}</h3>
+                <h3 className="text-lg font-semibold text-white">{carrera.nombre}</h3>
                 {inscripto && (
                     <Badge variant="success" className="text-xs">
                         Inscripto
@@ -42,9 +42,9 @@ export function CarreraCard({
                 )}
             </div>
 
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">{carrera.descripcion}</p>
+            <p className="text-sm text-slate-300 mb-4 line-clamp-2">{carrera.descripcion}</p>
 
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-slate-300">
                 <div className="flex justify-between">
                     <span>Duración:</span>
                     <span className="font-medium">{carrera.duracionEstimadaCuatrimestres} cuatrimestres</span>
@@ -70,7 +70,7 @@ export function CarreraCard({
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-700"
+                            className="text-neon-red hover:text-red-400"
                             loading={desinscribiendo}
                             onClick={onDesinscribir}
                         >

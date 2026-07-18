@@ -12,7 +12,7 @@ export function ProgresoGrid({ progresos, onSave, isSaving }: ProgresoGridProps)
         return (
             <Card>
                 <div className="text-center py-12">
-                    <p className="text-gray-500">No hay materias para mostrar</p>
+                    <p className="text-slate-400">No hay materias para mostrar</p>
                 </div>
             </Card>
         );
@@ -20,7 +20,7 @@ export function ProgresoGrid({ progresos, onSave, isSaving }: ProgresoGridProps)
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-12 gap-2 p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-600">
+            <div className="grid grid-cols-12 gap-2 p-3 bg-base-700/60 rounded-lg text-sm font-medium text-slate-300">
                 <div className="col-span-3">Materia</div>
                 <div className="col-span-2">Código</div>
                 <div className="col-span-1 text-center">Créditos</div>

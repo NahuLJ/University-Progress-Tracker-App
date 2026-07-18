@@ -41,7 +41,7 @@ export function BloqueHorarioCelda({ bloqueId, dia, onDrop }: BloqueHorarioCelda
     return (
         <div
             className={`min-h-[60px] p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-                isDraggingOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                isDraggingOver ? 'border-neon-cyan bg-neon-cyan/10' : 'border-base-500 hover:border-neon-cyan/60'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -55,7 +55,7 @@ export function BloqueHorarioCelda({ bloqueId, dia, onDrop }: BloqueHorarioCelda
                 />
             ))}
             {materiasEnCelda.length === 0 && (
-                <div className="h-full flex items-center justify-center text-gray-400 text-xs">
+                <div className="h-full flex items-center justify-center text-slate-500 text-xs">
                     Vacío
                 </div>
             )}

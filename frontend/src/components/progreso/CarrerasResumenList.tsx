@@ -21,31 +21,29 @@ export function CarrerasResumenList({
             {carreras.map((c) => {
                 const activa = c.usuarioCarreraId === usuarioCarreraIdActivo;
                 return (
-                    <Card
-                        key={c.usuarioCarreraId}
-                        className={onSeleccionar ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}
-                        onClick={onSeleccionar ? () => onSeleccionar(c.usuarioCarreraId) : undefined}
-                    >
-                        <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-gray-900 truncate">{c.carrera.nombre}</h3>
+                        <Card
+                            key={c.usuarioCarreraId}
+                            className={onSeleccionar ? 'cursor-pointer hover:shadow-neon-cyan transition-shadow' : ''}
+                            onClick={onSeleccionar ? () => onSeleccionar(c.usuarioCarreraId) : undefined}
+                        >
+                            <h3 className="font-semibold text-white truncate">{c.carrera.nombre}</h3>
                             {c.activo && <Badge variant="success">Activa</Badge>}
-                        </div>
 
                         <div className="mt-3">
-                            <div className="flex justify-between text-sm text-gray-600 mb-1">
+                            <div className="flex justify-between text-sm text-slate-300 mb-1">
                                 <span>Progreso</span>
                                 <span>{c.progresoPorcentaje}%</span>
                             </div>
                             <ProgressBar value={c.progresoPorcentaje} color={activa ? 'green' : 'blue'} />
                         </div>
 
-                        <div className="mt-3 flex justify-between text-sm text-gray-600">
+                        <div className="mt-3 flex justify-between text-sm text-slate-300">
                             <span>
                                 {c.materiasCompletadas}/{c.materiasTotales} materias
                             </span>
                             <span>
                                 Promedio:{' '}
-                                <span className="font-medium text-gray-900">
+                                <span className="font-medium text-white">
                                     {c.promedioGeneral !== null ? c.promedioGeneral.toFixed(2) : '—'}
                                 </span>
                             </span>
