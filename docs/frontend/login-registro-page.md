@@ -1,64 +1,60 @@
-# Página Login / Registro — Especificación Técnica
+# Página Login / Registro — Especificación Técnica (implementada)
 
-## Estructura de Componentes
+> **Estado de implementación:** ✅ Completa. `LoginForm` y `RegisterForm` usan RHF + Zod y `useMutation`
+> sobre `auth.service` (`login`/`register`). En `onSuccess` llaman a `setAuth(token, usuario)` y navegan a
+> `/dashboard`. El registro incluye barra de fortaleza inline. Sin datos mockeados; el backend valida
+> email duplicado y credenciales.
+
+## Estructura de Componentes (real)
 
 ```
 pages/
-└── LoginPage.tsx
-└── RegisterPage.tsx
+├── LoginPage.tsx              # layout centrado + <LoginForm />
+└── RegisterPage.tsx           # layout centrado + <RegisterForm />
 
 components/auth/
-├── LoginForm.tsx
-├── RegisterForm.tsx
-└── AuthCard.tsx          # Wrapper visual con logo y título
+├── LoginForm.tsx              # email + password, RHF + Zod
+└── RegisterForm.tsx           # nombre + email + password + confirmar, RHF + Zod + barra de fortaleza inline
 
 components/ui/
-├── Input.tsx
-├── Button.tsx
-├── Alert.tsx             # Mensajes de error/success
-├── PasswordInput.tsx     # Input con toggle de visibilidad
-└── PasswordStrengthBar.tsx  # Barra de fortaleza de contraseña
+├── Input.tsx                  # label, error, helper
+├── Button.tsx                 # variant primary/outline/ghost, loading
+└── Alert.tsx                  # variant success/error/warning/info
+
+hooks/
+└── useAuthForm.ts             # useLoginForm() + useRegisterForm()
+
+services/
+└── auth.service.ts            # login(), register(), obtenerPerfil()
+
+store/auth.store.ts            # zustand + persist: token, usuario, setAuth, logout, isAuthenticated
 ```
+
+> Nota: no existe `AuthCard.tsx` ni `PasswordStrengthBar.tsx`. El layout lo resuelven las páginas
+> directamente y la barra de fortaleza en el registro es un bloque inline dentro de `RegisterForm`.
 
 ### Árbol de Composición
 
 ```
-AuthLayout
-└── AuthCard
-    ├── [Logo de la aplicación]
-    ├── Título ( "Iniciar Sesión" | "Crear Cuenta" )
-    │
-    ├── LoginForm                    (ruta: /login)
-    │   ├── Input (email)
-    │   ├── PasswordInput
-    │   ├── Button ("Ingresar")
-    │   └── Link → /registro
-    │
-    └── RegisterForm                 (ruta: /registro)
-        ├── Input (nombre completo)
+AuthLayout (centrado)
+└── LoginPage / RegisterPage
+    ├── Título "Seguimiento Universitario" + subtítulo
+    └── LoginForm | RegisterForm
         ├── Input (email)
-        ├── PasswordInput (contraseña)
-        ├── PasswordInput (confirmar contraseña)
-        ├── Button ("Crear Cuenta")
-        └── Link → /login
+        ├── Input (password)  [type=password]
+        ├── [Registro] barra de fortaleza inline (longitud >= 8 → "Buena", sino "Débil")
+        ├── [Registro] Input (confirmar password)
+        ├── Button (submit, loading mientras muta)
+        └── Link a /registro | /login
 ```
 
 ---
 
 ## Manejo del Estado Local
 
-### Hook Personalizado: `useAuthForm`
+### Hook Personalizado: `useAuthForm` (`hooks/useAuthForm.ts`)
 
 ```typescript
-// hooks/useAuthForm.ts
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/auth.service';
-import { useAuthStore } from '../store/auth.store';
-
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(1, 'La contraseña es obligatoria'),
@@ -75,64 +71,20 @@ const registerSchema = z.object({
         .regex(/\d/, 'Debe contener un número')
         .regex(/[!@#$%^&*]/, 'Debe contener un carácter especial'),
     confirmarPassword: z.string(),
-}).refine((data) => data.password === data.confirmarPassword, {
+}).refine((data) => data.password === data.confrarPassword, {
     message: 'Las contraseñas no coinciden',
     path: ['confirmarPassword'],
 });
-
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
-
-export function useLoginForm() {
-    const navigate = useNavigate();
-    const setAuth = useAuthStore((s) => s.setAuth);
-
-    const form = useForm<LoginData>({
-        resolver: zodResolver(loginSchema),
-        defaultValues: { email: '', password: '' },
-    });
-
-    const mutation = useMutation({
-        mutationFn: (data: LoginData) => authService.login(data),
-        onSuccess: (response) => {
-            setAuth(response.token, response.usuario);
-            navigate('/dashboard', { replace: true });
-        },
-        onError: (error: any) => {
-            form.setError('root', {
-                message: error.response?.data?.message || 'Error al iniciar sesión',
-            });
-        },
-    });
-
-    return { form, mutation };
-}
-
-export function useRegisterForm() {
-    const navigate = useNavigate();
-    const setAuth = useAuthStore((s) => s.setAuth);
-
-    const form = useForm<RegisterData>({
-        resolver: zodResolver(registerSchema),
-        defaultValues: { nombre: '', email: '', password: '', confirmarPassword: '' },
-    });
-
-    const mutation = useMutation({
-        mutationFn: (data: RegisterData) => authService.register(data),
-        onSuccess: (response) => {
-            setAuth(response.token, response.usuario);
-            navigate('/dashboard', { replace: true });
-        },
-        onError: (error: any) => {
-            form.setError('root', {
-                message: error.response?.data?.message || 'Error al registrarse',
-            });
-        },
-    });
-
-    return { form, mutation };
-}
 ```
+
+Ambos hooks usan `useMutation` sobre `authService.login/register`. En `onSuccess` llaman a
+`setAuth(response.token, response.usuario)` (del `auth.store`) y navegan a `/dashboard`.
+En `onError` setean `form.setError('root', ...)` con el mensaje del backend o un fallback.
+
+### Estado de Sesión (zustand, `store/auth.store.ts`)
+
+`auth.store` persiste `token` y `usuario` en `localStorage` (clave `auth-storage`). `isAuthenticated()`
+decodifica el JWT y valida `exp`. `logout()` limpia el estado y redirige a `/login`.
 
 ---
 
@@ -141,39 +93,17 @@ export function useRegisterForm() {
 ### LoginForm
 
 ```typescript
-// components/auth/LoginForm.tsx
 export function LoginForm() {
     const { form, mutation } = useLoginForm();
     const { register, handleSubmit, formState: { errors } } = form;
-
     return (
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            {errors.root && (
-                <Alert variant="error">{errors.root.message}</Alert>
-            )}
-
-            <Input
-                label="Email"
-                type="email"
-                placeholder="tu@email.com"
-                error={errors.email?.message}
-                {...register('email')}
-            />
-
-            <PasswordInput
-                label="Contraseña"
-                placeholder="••••••••"
-                error={errors.password?.message}
-                {...register('password')}
-            />
-
-            <Button type="submit" loading={mutation.isPending} className="w-full">
-                Iniciar Sesión
-            </Button>
-
+            {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
+            <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+            <Input label="Contraseña" type="password" error={errors.password?.message} {...register('password')} />
+            <Button type="submit" loading={mutation.isPending} className="w-full">Iniciar Sesión</Button>
             <p className="text-center text-sm text-gray-500">
-                ¿No tenés cuenta?{' '}
-                <Link to="/registro" className="text-blue-600 hover:underline">Registrate</Link>
+                ¿No tenés cuenta? <a href="/registro" className="text-blue-600 hover:underline">Registrate</a>
             </p>
         </form>
     );
@@ -182,112 +112,9 @@ export function LoginForm() {
 
 ### RegisterForm
 
-```typescript
-// components/auth/RegisterForm.tsx
-export function RegisterForm() {
-    const { form, mutation } = useRegisterForm();
-    const { register, handleSubmit, watch, formState: { errors } } = form;
-
-    const passwordValue = watch('password');
-    const passwordStrength = calcularFortaleza(passwordValue);
-
-    return (
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            {errors.root && (
-                <Alert variant="error">{errors.root.message}</Alert>
-            )}
-
-            <Input label="Nombre completo" placeholder="Juan Pérez"
-                error={errors.nombre?.message} {...register('nombre')} />
-
-            <Input label="Email" type="email" placeholder="tu@email.com"
-                error={errors.email?.message} {...register('email')} />
-
-            <PasswordInput label="Contraseña" placeholder="••••••••"
-                error={errors.password?.message} {...register('password')} />
-
-            {/* Indicador visual de fortaleza de contraseña */}
-            {passwordValue && (
-                <PasswordStrengthBar value={passwordStrength} />
-            )}
-
-            <PasswordInput label="Confirmar contraseña" placeholder="••••••••"
-                error={errors.confirmarPassword?.message} {...register('confirmarPassword')} />
-
-            <Button type="submit" loading={mutation.isPending} className="w-full">
-                Crear Cuenta
-            </Button>
-
-            <p className="text-center text-sm text-gray-500">
-                ¿Ya tenés cuenta?{' '}
-                <Link to="/login" className="text-blue-600 hover:underline">Iniciá sesión</Link>
-            </p>
-        </form>
-    );
-}
-```
-
----
-
-### PasswordStrengthBar
-
-```typescript
-// components/ui/PasswordStrengthBar.tsx
-interface PasswordStrengthBarProps {
-    value: number; // 0–100
-}
-
-const COLORES = [
-    'bg-red-500',    // 0-20: Muy débil
-    'bg-orange-500', // 21-40: Débil
-    'bg-yellow-500', // 41-60: Regular
-    'bg-lime-500',   // 61-80: Fuerte
-    'bg-green-500',  // 81-100: Muy fuerte
-];
-
-const ETIQUETAS = [
-    'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte',
-];
-
-export function PasswordStrengthBar({ value }: PasswordStrengthBarProps) {
-    const idx = Math.min(Math.floor(value / 25), 4);
-    return (
-        <div className="space-y-1">
-            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                <div
-                    className={`h-full transition-all ${COLORES[idx]}`}
-                    style={{ width: `${value}%` }}
-                />
-            </div>
-            <p className="text-xs text-gray-500">Fortaleza: {ETIQUETAS[idx]} ({value}%)</p>
-        </div>
-    );
-}
-```
-
-### calcularFortaleza — Utilidad
-
-```typescript
-// utils/fortaleza.ts
-export function calcularFortaleza(password: string): number {
-    let puntaje = 0;
-
-    // Longitud
-    if (password.length >= 8) puntaje += 20;
-    if (password.length >= 12) puntaje += 10;
-
-    // Tipos de caracteres
-    if (/[A-Z]/.test(password)) puntaje += 20;
-    if (/[a-z]/.test(password)) puntaje += 15;
-    if (/[0-9]/.test(password)) puntaje += 20;
-    if (/[!@#$%^&*]/.test(password)) puntaje += 25;
-
-    // Penalizar si es muy corta
-    if (password.length < 6) puntaje = Math.min(puntaje, 30);
-
-    return Math.min(puntaje, 100);
-}
-```
+Renderiza nombre, email, password y confirmación. Muestra una barra de fortaleza **inline**:
+ancho 50%/100% y color rojo/verde según `password.length >= 8`, con etiqueta "Débil"/"Buena".
+(No usa `utils/fortaleza.ts`; es una versión simplificada respecto a la especificación original.)
 
 ---
 
@@ -295,33 +122,18 @@ export function calcularFortaleza(password: string): number {
 
 | Campo | Regla | Feedback visual |
 |---|---|---|
-| nombre | Requerido, 2-150 caracteres | Borde rojo + texto "Mínimo 2 caracteres" |
+| nombre | Requerido, 2–150 caracteres | Borde rojo + texto |
 | email | Formato email válido | Borde rojo + "Email inválido" |
-| password | Mín 8 chars, 1 mayúscula, 1 minúscula, 1 número, 1 especial | Barra de fortaleza dinámica + lista de requisitos con checkmarks |
-| confirmarPassword | Debe ser igual a password | Borde rojo + "Las contraseñas no coinciden" |
-| Error de servidor | Email duplicado o credenciales inválidas | Alert rojo sobre el formulario |
-| Estado loading | Mientras se envía la petición | Botón deshabilitado con spinner |
+| password | Mín 8 chars, 1 mayúscula, 1 minúscula, 1 número, 1 especial | Validación Zod en `onSubmit` |
+| confirmarPassword | Debe coincidir con password | Error en `confirmarPassword` |
+| Error de servidor | Email duplicado / credenciales inválidas | `Alert` rojo sobre el formulario (`errors.root`) |
+| Estado loading | Mientras se envía | Botón deshabilitado con spinner |
 
-### Barra de Fortaleza de Contraseña
-
-```
-Fortaleza: [████████░░] 80% (Fuerte)
-Criterios:
-✅ Mínimo 8 caracteres
-✅ Contiene mayúscula
-✅ Contiene minúscula
-✅ Contiene número
-❌ Contiene carácter especial
-```
-
----
-
-## Redirecciones Post-Autenticación
+### Redirecciones Post-Autenticación
 
 | Evento | Acción |
 |---|---|
-| Login exitoso | `navigate('/dashboard', { replace: true })` |
-| Registro exitoso | `navigate('/dashboard', { replace: true })` |
-| Token expirado en sesión activa | `navigate('/login', { state: { from: rutaActual } })` |
-| Usuario autenticado visita `/login` | Redirección automática a `/dashboard` (en `AuthLayout`) |
-| Logout manual | `navigate('/login', { replace: true })` y limpieza de store |
+| Login/Registro exitoso | `navigate('/dashboard', { replace: true })` |
+| Token expirado en sesión activa | `isAuthenticated()` devuelve false → `PrivateRoute` redirige a `/login` |
+| Usuario autenticado visita `/login` | `PrivateRoute`/`AuthLayout` lo envían a `/dashboard` |
+| Logout manual | `auth.store.logout()` → limpia estado y `window.location.href = '/login'` |

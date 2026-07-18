@@ -5,6 +5,7 @@ import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { ResumenResponseDto } from './dto/resumen-carrera.dto';
+import { CarreraResumenDto } from './dto/carrera-resumen.dto';
 import { DistribucionEstadosDto } from './dto/estadisticas-response.dto';
 
 @Injectable()
@@ -32,10 +33,12 @@ export class EstadisticasService {
     });
     const totalMaterias = planEstudios.length;
     const creditosTotales = planEstudios.reduce(
-      (sum, cm) => sum + cm.materia.creditos,
+      (sum, cm) => sum + (cm.materia?.creditos ?? 0),
       0,
     );
-    const idsMateriasPlan = planEstudios.map((cm) => cm.materia.materiaId);
+    const idsMateriasPlan = planEstudios
+      .map((cm) => cm.materia?.materiaId)
+      .filter((id): id is number => id !== undefined);
 
     const progresos = await this.progresoRepo.find({
       where: {
@@ -70,9 +73,9 @@ export class EstadisticasService {
 
     const creditosObtenidos = completadas.reduce((sum, p) => {
       const cm = planEstudios.find(
-        (e) => e.materia.materiaId === p.materia.materiaId,
+        (e) => e.materia?.materiaId === p.materia?.materiaId,
       );
-      return sum + (cm ? cm.materia.creditos : 0);
+      return sum + (cm?.materia?.creditos ?? 0);
     }, 0);
 
     const cuatrimestresRestantes = await this.calcularCuatrimestresRestantes(
@@ -110,11 +113,12 @@ export class EstadisticasService {
     if (plan.length === 0) return 0;
 
     const materiasCompletadasIds = progresos
-      .filter((p) => p.estado.nombre === 'Completada')
-      .map((p) => p.materia.materiaId);
+      .filter((p) => p.estado?.nombre === 'Completada')
+      .map((p) => p.materia?.materiaId)
+      .filter((id): id is number => id !== undefined);
 
     const materiasPendientes = plan.filter(
-      (cm) => !materiasCompletadasIds.includes(cm.materia.materiaId),
+      (cm) => !materiasCompletadasIds.includes(cm.materia?.materiaId),
     );
 
     if (materiasPendientes.length === 0) return 0;
@@ -129,6 +133,31 @@ export class EstadisticasService {
     );
 
     return Math.ceil(materiasPendientes.length / maxMateriasPorCuatrimestre);
+  }
+
+  async obtenerCarrerasResumen(usuarioId: number): Promise<CarreraResumenDto[]> {
+    const inscripciones = await this.usuarioCarreraRepo.find({
+      where: { usuario: { usuarioId } },
+      relations: { carrera: true },
+    });
+
+    return Promise.all(
+      inscripciones.map(async (inscripcion) => {
+        const resumen = await this.obtenerResumen(inscripcion.usuarioCarreraId);
+        return {
+          usuarioCarreraId: inscripcion.usuarioCarreraId,
+          carrera: {
+            carreraId: inscripcion.carrera.carreraId,
+            nombre: inscripcion.carrera.nombre,
+          },
+          activo: inscripcion.activo,
+          materiasCompletadas: resumen.materiasCompletadas,
+          materiasTotales: resumen.totalMaterias,
+          progresoPorcentaje: resumen.progresoPorcentaje,
+          promedioGeneral: resumen.promedioGeneral,
+        };
+      }),
+    );
   }
 
   async obtenerDistribucionEstados(

@@ -1,130 +1,99 @@
-# Página Plan de Estudios — Especificación Técnica
+# Página Plan de Estudios — Especificación Técnica (implementada)
 
-## Estructura de Componentes
+> **Estado de implementación:** ✅ Completa. `CarrerasPage` delega a `components/carrera/CarrerasPage`,
+> que **siempre lista TODAS las carreras disponibles** (catálogo) y, combinando con las inscripciones del
+> usuario, muestra en cada `CarreraCard` el botón **Inscribirse** (si no está inscripto) o **Desinscribirse**
+> (si lo está) vía `useInscribirCarrera`/`useDesinscribirCarrera`. `CarreraDetailPage` muestra el plan vía
+> `usePlanEstudios` (vista árbol/tabla) y abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
+> una materia. Sin datos mockeados. La gestión de catálogo (crear carreras/materias/correlativas) vive en `/admin`.
+
+## Estructura de Componentes (real)
 
 ```
 pages/
-├── CarrerasPage.tsx
-└── CarreraDetailPage.tsx
+├── CarrerasPage.tsx            # delega a components/carrera/CarrerasPage
+└── CarreraDetailPage.tsx       # plan de estudios de una carrera (árbol/tabla)
 
 components/carrera/
-├── CarreraCard.tsx               # Tarjeta con datos de la carrera + acceso al plan
-├── CarreraList.tsx               # Lista de carreras del usuario
-├── PlanEstudiosTree.tsx          # Árbol jerárquico: Año → Cuatrimestre → Materias
-├── PlanEstudiosTable.tsx         # Tabla plana con todas las materias (alternativa)
-├── MateriaDetailModal.tsx        # Modal con info detallada + correlativas
-├── CorrelativasList.tsx          # Lista de correlativas de una materia
-├── MateriaBadge.tsx              # Badge con estado de la materia para el usuario
-└── InscribirCarreraModal.tsx     # Modal para inscribirse a una nueva carrera
+├── CarrerasPage.tsx            # lista TODAS las carreras; cada card con botón Inscribirse/Desinscribirse
+├── PlanEstudiosTree.tsx        # árbol Año → Cuatrimestre → Materia (usa Accordion)
+├── MateriaDetailModal.tsx      # detalle de materia + CorrelativasList
+├── CorrelativasList.tsx        # correlativas y "es correlativa de"
+└── InscribirCarreraModal.tsx   # formulario de inscripción (carreras disponibles reales)
 
 components/ui/
-├── Card.tsx
-├── Modal.tsx
-├── Badge.tsx
-├── Tabs.tsx                      # Vista árbol / tabla
-├── Accordion.tsx                 # Años expandibles
-└── LoadingSpinner.tsx
+├── Card.tsx · Modal.tsx · Badge.tsx · Accordion.tsx · Button.tsx · Input.tsx · Select.tsx · Skeleton.tsx
+
+hooks/
+├── useCarreras.ts              # useCarreras() + useInscribirCarrera()
+└── usePlanEstudios.ts          # useQuery del plan de una carrera
+
+services/carreras.service.ts    # obtenerCarrerasDelUsuario, obtenerCarrerasDisponibles,
+                                # obtenerPlanEstudios, inscribirCarrera, desinscribirCarrera
 ```
+
+> **Estado:** `InscribirCarreraModal` obtiene las carreras disponibles con
+> `carrerasService.obtenerCarrerasDisponibles()` (filtra las ya inscriptas) e invoca `useInscribirCarrera`
+> para crear la inscripción. El botón "Desinscribirse" en `CarrerasPage` usa `useDesinscribirCarrera`
+> (con `confirm()` de confirmación). `MateriaDetailModal` (info + correlativas) ya está cableado: al
+> hacer click en una materia en la vista árbol (`PlanEstudiosTree.onMateriaClick`) o en la tabla se abre
+> el modal en `CarreraDetailPage`.
 
 ### Árbol de Composición
 
 ```
-Ruta: /carreras
-└── CarrerasPage
-    ├── Header "Mis carreras"
-    ├── CarreraList
-    │   ├── CarreraCard (por cada carrera activa del usuario)
-    │   └── Botón "+ Inscribirse a nueva carrera" → abre InscribirCarreraModal
-    └── InscribirCarreraModal
-        ├── Select de carreras disponibles
-        ├── DatePicker (fecha de inicio)
-        └── Botón "Confirmar inscripción"
+Ruta /carreras
+└── CarrerasPage (componente)
+    ├── Header "Carreras" + conteo de disponibles
+    ├── Grid de Card por CADA carrera del catálogo
+    │   ├── nombre, descripción, duración, créditos, fecha de inicio (si inscripto)
+    │   ├── Badge "Inscripto" cuando aplica
+    │   ├── "Ver plan de estudios" → /carreras/:carreraId
+    │   ├── "Inscribirse" (si no inscripto) · "Desinscribirse" (si inscripto, usa useDesinscribirCarrera)
+    └── (InscribirCarreraModal queda disponible pero la inscripción se hace desde la card)
 
-Ruta: /carreras/:id
+Ruta /carreras/:id
 └── CarreraDetailPage
-    ├── Header con nombre de la carrera
-    ├── Tabs
-    │   ├── "Plan de estudios" (default)
-    │   └── "Vista tabla"
-    │
-    ├── PlanEstudiosTree (default)
-    │   ├── Accordion "1° Año"
-    │   │   ├── Acordeón "1° Cuatrimestre"
-    │   │   │   ├── MateriaRow (nombre, orden, código, créditos, badge estado)
-    │   │   │   │   └── onClick → abre MateriaDetailModal
-    │   │   │   └── MateriaRow (...)
-    │   │   └── Acordeón "2° Cuatrimestre"
-    │   │       └── MateriaRow (...)
-    │   ├── Accordion "2° Año"
-    │   │   └── ...
-    │   └── ...
-    │
-    └── MateriaDetailModal
-        ├── Nombre, código, créditos, carga horaria
-        ├── Descripción
-        ├── CorrelativasList
-        │   ├── "Para cursar esta materia necesitás aprobar:"
-        │   └── Lista de materias correlativas con link a cada una
-        └── Badge de estado del usuario en esta materia
+    ├── Header: nombre + descripción + badge Inscripto + botón Inscribirse
+    ├── Toggle Vista árbol / Vista tabla
+    ├── PlanEstudiosTree (árbol de Accordions) O tabla plana (año/cuatrimestre/orden/créditos)
+    └── InscribirCarreraModal
 ```
 
 ---
 
 ## Manejo del Estado Local
 
-### Hook Personalizado: `useCarreras`
+### `useCarreras` (`hooks/useCarreras.ts`)
 
 ```typescript
-// hooks/useCarreras.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { carrerasService } from '../services/carreras.service';
-import { useAuthStore } from '../store/auth.store';
-
 export function useCarreras() {
     const usuario = useAuthStore((s) => s.usuario);
-
     return useQuery({
         queryKey: ['carreras', usuario?.id],
         queryFn: () => carrerasService.obtenerCarrerasDelUsuario(usuario!.id),
         enabled: !!usuario,
     });
 }
+
+export function useInscribirCarrera() {
+    const queryClient = useQueryClient();
+    const usuario = useAuthStore((s) => s.usuario);
+    return useMutation({
+        mutationFn: (data: InscribirCarreraDto) => carrerasService.inscribirCarrera(usuario!.id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['carreras', usuario!.id] }),
+    });
+}
 ```
 
-### Hook Personalizado: `usePlanEstudios`
+### `usePlanEstudios` (`hooks/usePlanEstudios.ts`)
 
 ```typescript
-// hooks/usePlanEstudios.ts
-import { useQuery } from '@tanstack/react-query';
-import { carrerasService } from '../services/carreras.service';
-
 export function usePlanEstudios(carreraId: number | undefined) {
     return useQuery({
         queryKey: ['plan-estudios', carreraId],
         queryFn: () => carrerasService.obtenerPlanEstudios(carreraId!),
         enabled: !!carreraId,
-    });
-}
-```
-
-### Hook Personalizado: `useInscribirCarrera`
-
-```typescript
-// hooks/useInscribirCarrera.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { carrerasService } from '../services/carreras.service';
-import { useAuthStore } from '../store/auth.store';
-
-export function useInscribirCarrera() {
-    const queryClient = useQueryClient();
-    const usuario = useAuthStore((s) => s.usuario);
-
-    return useMutation({
-        mutationFn: (data: { carreraId: number; fechaInicio: string }) =>
-            carrerasService.inscribirCarrera(usuario!.id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['carreras', usuario!.id] });
-        },
     });
 }
 ```
@@ -135,90 +104,41 @@ export function useInscribirCarrera() {
 
 ### PlanEstudiosTree — Árbol de Materias
 
-```
-┌──────────────────────────────────────────────────┐
-│  1° Año                                           │
-│  ┌──────────────────────────────────────────────┐ │
-│  │  ▼ 1° Cuatrimestre                           │ │
-│  │                                              │ │
-│  │  [1] Álgebra           MAT101  8 créd. 🟢 CP │ │
-│  │  [2] Programación I    PROG1  8 créd. 🟡 EP  │ │
-│  │  [3] Inglés Técnico    ING101 4 créd. 🔴 PTE │ │
-│  │                                              │ │
-│  │  ▼ 2° Cuatrimestre                           │ │
-│  │                                              │ │
-│  │  [4] Cálculo I         MAT201  8 créd. 🟢 CP │ │
-│  │  [5] Programación II   PROG2  8 créd. 🟢 CP │ │
-│  │  ...                                         │ │
-│  └──────────────────────────────────────────────┘ │
-│                                                    │
-│  2° Año                                            │
-│  ┌──────────────────────────────────────────────┐ │
-│  │  ▼ 1° Cuatrimestre                           │ │
-│  │  ...                                         │ │
-│  └──────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────┘
-
-Leyenda:
-🟢 CP = Completada    🟡 EP = En Proceso    🔴 PTE = Pendiente
-```
+Usa `Accordion` anidados: `AnioAccordion` (1° Año, 2° Año, …) → `CuatrimestreAccordion`
+(1° Cuatrimestre, …) → `MateriaRow`. Cada materia muestra orden, nombre, código y créditos, y un
+`Badge` de estado del usuario (`estadoUsuario.nombre`): 🟢 Completada (CP), 🟡 En Proceso (EP),
+🔴 Pendiente (PTE). Click en una materia abre `MateriaDetailModal`.
 
 ### MateriaDetailModal — Detalle de Materia
 
-```
-┌──────────────────────────────────────────┐
-│  ×  Álgebra Lineal                        │
-│  ──────────────────────────────────────── │
-│                                           │
-│  Código:     MAT102                       │
-│  Créditos:   8                            │
-│  Carga:      96 horas                     │
-│  Estado:     🟢 Completada (Nota: 8)      │
-│                                           │
-│  Descripción:                             │
-│  Espacios vectoriales, transformaciones    │
-│  lineales, autovalores y autovectores.    │
-│                                           │
-│  Correlativas:                            │
-│  ✅ Álgebra (MAT101) — Completada         │
-│                                           │
-│  Es correlativa de:                       │
-│  → Cálculo II (MAT202)                   │
-│  → Estadística (MAT301)                  │
-└──────────────────────────────────────────┘
-```
+Muestra código, créditos, carga horaria, badge de estado (con nota/tipo si aplica), descripción y
+`CorrelativasList`. `CorrelativasList` renderiza dos secciones: "Correlativas (para cursar esta materia)"
+y "Es correlativa de", cada una con badge de estado de la materia relacionada.
 
 ### InscribirCarreraModal
 
-```
-┌──────────────────────────────────────────┐
-│  ×  Inscribirse a una carrera             │
-│                                           │
-│  Carrera:  [▼ Ingeniería en Sistemas  ]  │
-│                                           │
-│  Fecha de inicio:  [01/03/2026      ]    │
-│                                           │
-│  [Cancelar]  [Confirmar inscripción]      │
-└──────────────────────────────────────────┘
-```
+Formulario RHF + Zod (`carreraId`, `fechaInicio`). El `Select` de carrera se llena con las carreras
+disponibles reales vía `carrerasService.obtenerCarrerasDisponibles()` (filtra las ya inscriptas). El
+`onSubmit` invoca `useInscribirCarrera` (POST `/usuarios/:id/carreras`), invalida la query de carreras y
+cierra el modal.
 
 ### Interacciones
 
 | Acción | Comportamiento |
 |---|---|
-| Click en materia | Abre `MateriaDetailModal` con info completa y correlativas |
-| Click en correlativa dentro del modal | Navega a la materia correlativa (cierra modal actual y abre el de la otra materia) |
-| Hover sobre badge de estado | Tooltip con `"Completada - Nota: 8"`, `"En Proceso"` o `"Pendiente"` |
-| Click "Inscribirse" | Abre modal con selector de carrera y fecha |
-| Confirmar inscripción | POST a API → invalidar query de carreras → refetch → mostrar nueva carrera en la lista |
-| Cambio de pestaña (árbol/tabla) | Switch visual sin perder el estado de scroll |
+| Click en materia | Abre `MateriaDetailModal` con info + correlativas |
+| Click "Inscribirse" en una card | Inscribe al usuario vía `useInscribirCarrera` (sin modal) |
+| Confirmar inscripción | POST + invalidar query de carreras + refetch + cierra modal |
+| Cambio árbol/tabla | Switch visual (la tabla es un `<table>` plano generado en la página) |
 
 ### Estados
 
 | Estado | Comportamiento |
 |---|---|
-| Cargando plan de estudios | `Skeleton` con estructura de acordeones simulados |
-| Error al cargar plan | `Alert` con "No se pudo cargar el plan de estudios" + botón "Reintentar" |
-| Plan vacío (sin materias) | `EmptyState` "Esta carrera aún no tiene materias asignadas en el plan de estudios" |
-| Carrera sin inscripción activa | Botón "Inscribirse" destacado |
-| Usuario sin ninguna carrera | `EmptyState` con CTA a la pantalla de carreras disponibles |
+| Cargando | `Skeleton` con la estructura de tarjetas/acordeones |
+| Carrera sin materias | `EmptyState` / mensaje en la vista |
+| Usuario sin carreras | `EmptyState` con CTA a inscripción |
+
+> **Gestión de catálogo (admin):** crear carreras, crear materias en el catálogo global y
+> asignar correlativas se especifica en `docs/backend/admin-carreras-materias-module.md`.
+> La UI de administración ya está implementada en `/admin` (tabs Carreras / Materias / Plan / Correlativas).

@@ -1,21 +1,27 @@
 # Frontend Guide — Sistema de Seguimiento de Carreras Universitarias
 
+> Documentación actualizada para reflejar el código implementado en `frontend/`.
+> Las versiones y la estructura de archivos coinciden con lo que existe hoy en el repositorio.
+
 ## Stack Tecnológico
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
 | Node.js | 20 LTS | Entorno de ejecución |
 | npm | 10+ | Gestor de paquetes |
-| React | 18.x | Librería de interfaz de usuario |
-| Vite | 5.x | Bundler y dev server |
-| TypeScript | 5.x | Tipado estático |
-| Tailwind CSS | 3.x | Framework de estilos utilitario |
-| React Router DOM | 6.x | Enrutamiento SPA |
+| React | 19.x | Librería de interfaz de usuario |
+| Vite | 8.x | Bundler y dev server (`npm run dev` en el puerto 5173) |
+| TypeScript | 6.x (con `tsc -b`) | Tipado estático |
+| Tailwind CSS | 3.x | Framework de estilos utilitario (config en `tailwind.config.ts`) |
+| React Router DOM | 7.x | Enrutamiento SPA (`createBrowserRouter`) |
 | Axios | 1.x | Cliente HTTP para consumir la API |
 | React Hook Form | 7.x | Manejo de formularios |
-| Zod | 3.x | Esquemas de validación (wrap con @hookform/resolvers) |
+| Zod | 4.x | Esquemas de validación (wrap con `@hookform/resolvers`) |
 | @tanstack/react-query | 5.x | Caching y estado del servidor |
-| zustand | 4.x | Estado global liviano |
+| zustand | 5.x | Estado global liviano |
+
+**Linting:** se usa `oxlint` (`npm run lint`), no ESLint. Build: `npm run build` (`tsc -b && vite build`).
+No hay script `typecheck` dedicado; la verificación de tipos ocurre dentro de `build`.
 
 ---
 
@@ -23,19 +29,21 @@
 
 ### Principios Arquitectónicos
 
-- **Separación de capas**: páginas → hooks/services → API.
-- **Estado global mínimo**: zustand se usa solo para estado de UI compartido (sesión, planificación en edición). Los datos del servidor se manejan con React Query (caching automático, refetch, loading states).
-- **Componentes puros y reutilizables**: la carpeta `components/` contiene piezas atómicas sin dependencia directa de rutas.
-- **Tipado compartido**: los tipos de las entidades y DTOs se definen en `types/` y se consumen tanto en services como en componentes.
-- **Rutas lazy-loaded**: cada página se carga dinámicamente con `React.lazy()` para reducir el bundle inicial.
+- **Separación de capas**: páginas (`pages/`) → hooks (`hooks/`) + services (`services/`) → API.
+- **Estado global mínimo**: zustand se usa solo para sesión (`auth.store`) y para la planificación en edición (`planificacion.store`). Los datos del servidor se manejan con React Query (caching, refetch, loading states).
+- **Componentes puros y reutilizables**: la carpeta `components/` contiene piezas atómicas (`ui/`) y por dominio (`auth/`, `carrera/`, `progreso/`, `planificacion/`, `dashboard/`, `common/`).
+- **Tipado compartido**: los tipos de entidades y DTOs se definen en `types/` y se consumen en services y componentes.
+- **Rutas lazy-loaded**: cada página se carga con `React.lazy()` declaradas en `routes/lazy-pages.tsx` y consumidas por `routes/index.tsx` (separadas para respetar la regla `react/only-export-components` de oxlint).
+- **Contexto de auth**: `context/AuthProvider` (`AuthContext.tsx`) envuelve la app; el context vive en `context/auth-context.ts` y el hook en `context/useAuth.ts` (archivos separados por la regla `only-export-components`).
 
-### Estructura de Archivos
+### Estructura de Archivos (real)
 
 ```
 frontend/
 ├── index.html
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.app.json
 ├── tsconfig.node.json
 ├── vite.config.ts
 ├── tailwind.config.ts
@@ -43,29 +51,36 @@ frontend/
 ├── .env                          # VITE_API_URL=http://localhost:3000/api
 │
 └── src/
-    ├── main.tsx                  # Punto de entrada, renderiza <App />
-    ├── App.tsx                   # Layout raíz + <RouterProvider />
-    ├── vite-env.d.ts
+    ├── main.tsx                  # Punto de entrada, monta <App />
+    ├── App.tsx                   # QueryClientProvider + AuthProvider + RouterProvider
+    ├── index.css                 # @tailwind + componentes @layer (.btn-primary, .card, .badge-*, ...)
     │
     ├── routes/
-    │   ├── index.tsx             # Configuración de React Router (createBrowserRouter)
-    │   └── PrivateRoute.tsx      # Componente wrapper que redirige a /login si no hay sesión
+    │   ├── index.tsx             # createBrowserRouter (importa las páginas lazy)
+    │   ├── lazy-pages.tsx        # React.lazy() de cada página + SuspenseWrapper
+    │   └── PrivateRoute.tsx      # redirige a /login si no hay token
     │
     ├── layouts/
-    │   ├── AuthLayout.tsx        # Layout minimalista para login/registro
-    │   └── MainLayout.tsx        # Layout con sidebar, header y contenedor principal
+    │   ├── AuthLayout.tsx        # layout centrado para login/registro
+    │   └── MainLayout.tsx        # layout con sidebar/header y <Outlet />
     │
-    ├── pages/
+    ├── context/
+    │   ├── AuthContext.tsx       # AuthProvider (efecto de init de sesión)
+    │   ├── auth-context.ts       # createContext + AuthContextType
+    │   └── useAuth.ts            # hook useAuth()
+    │
+    ├── pages/                    # una página por ruta (delegación delgada a components/)
     │   ├── LoginPage.tsx
     │   ├── RegisterPage.tsx
     │   ├── DashboardPage.tsx
-    │   ├── CarrerasPage.tsx
-    │   ├── CarreraDetailPage.tsx # Plan de estudios de una carrera específica
-    │   ├── ProgresoPage.tsx      # Progreso académico (estados + notas)
-    │   └── PlanificacionPage.tsx # Planificación cuatrimestral con bloques horarios
+    │   ├── CarrerasPage.tsx      # delega a components/carrera/CarrerasPage
+    │   ├── CarreraDetailPage.tsx # plan de estudios de una carrera
+    │   ├── ProgresoPage.tsx
+    │   ├── PlanificacionPage.tsx
+    │   └── AdminPage.tsx          # tabs Carreras | Materias | Plan | Correlativas (uso admin)
     │
     ├── components/
-    │   ├── ui/                   # Componentes atómicos reutilizables
+    │   ├── ui/                   # atómicos (sin dependencia de rutas)
     │   │   ├── Button.tsx
     │   │   ├── Card.tsx
     │   │   ├── Modal.tsx
@@ -73,106 +88,90 @@ frontend/
     │   │   ├── Select.tsx
     │   │   ├── Input.tsx
     │   │   ├── Alert.tsx
-    │   │   ├── PasswordInput.tsx
     │   │   ├── ProgressBar.tsx
     │   │   ├── Skeleton.tsx
-    │   │   ├── StatCard.tsx
-    │   │   ├── Tabs.tsx
     │   │   ├── Accordion.tsx
-    │   │   ├── ScrollArea.tsx
-    │   │   └── ConfirmDialog.tsx
+    │   │   └── PasswordInput.tsx # input con toggle de visibilidad (definido, ver nota abajo)
     │   │
     │   ├── auth/
     │   │   ├── LoginForm.tsx
-    │   │   ├── RegisterForm.tsx
-    │   │   └── AuthCard.tsx
+    │   │   └── RegisterForm.tsx
     │   │
     │   ├── dashboard/
-    │   │   ├── PromedioCard.tsx
-    │   │   ├── TiempoRestanteCard.tsx
-    │   │   ├── MateriasPorEstadoChart.tsx
-    │   │   ├── CreditosCard.tsx
-    │   │   ├── ProgresoBar.tsx
-    │   │   ├── CarrerasResumenList.tsx
-    │   │   ├── EvolucionPromedioChart.tsx
-    │   │   └── EstadisticasSkeleton.tsx
+    │   │   ├── StatCards.tsx       # PromedioCard, TiempoRestanteCard, CreditosCard, ProgresoBarCard
+    │   │   ├── Charts.tsx          # MateriasPorEstadoChart, EvolucionPromedioChart, EstadisticasSkeleton
+    │   │   └── CarrerasResumenList.tsx
     │   │
     │   ├── carrera/
-    │   │   ├── CarreraCard.tsx
-    │   │   ├── CarreraList.tsx
-    │   │   ├── PlanEstudiosTable.tsx      # Tabla de materias con año/cuatrimestre/orden
-    │   │   ├── PlanEstudiosTree.tsx       # Árbol año→cuatrimestre
-    │   │   ├── MateriaDetailModal.tsx     # Modal con info de materia + correlativas
-    │   │   ├── MateriaBadge.tsx           # Badge de estado
-    │   │   ├── CorrelativasList.tsx       # Lista de correlativas de una materia
-    │   │   └── InscribirCarreraModal.tsx  # Modal para inscribirse a una carrera
+    │   │   ├── CarrerasPage.tsx      # lista TODAS las carreras; botón Inscribirse/Desinscribirse por card
+    │   │   ├── CarreraCard.tsx       # (definido, ver nota)
+    │   │   ├── PlanEstudiosTree.tsx  # árbol Año → Cuatrimestre → Materia (usa Accordion)
+    │   │   ├── MateriaDetailModal.tsx
+    │   │   ├── CorrelativasList.tsx
+    │   │   └── InscribirCarreraModal.tsx
     │   │
     │   ├── progreso/
-    │   │   ├── MateriaProgresoRow.tsx     # Fila individual para cambiar estado/nota/tipo
-    │   │   ├── FiltroEstado.tsx
-    │   │   ├── FiltroBusqueda.tsx         # Búsqueda por nombre
-    │   │   ├── ProgresoGrid.tsx           # Grid de todas las materias del usuario
-    │   │   ├── ProgresoStatsBar.tsx       # Barra resumen de estados
-    │   │   ├── CompletarMateriaModal.tsx  # Modal para ingresar nota + tipo
-    │   │   ├── ConfirmarCambioModal.tsx   # Confirmación antes de guardar
-    │   │   └── ProgresoBulkActions.tsx    # Acciones masivas
+    │   │   ├── ProgresoGrid.tsx
+    │   │   ├── MateriaProgresoRow.tsx
+    │   │   ├── Filtros.tsx           # FiltroEstado + FiltroBusqueda (con debounce)
+    │   │   ├── CompletarMateriaModal.tsx
+    │   │   └── index.tsx             # barrel export
     │   │
     │   ├── planificacion/
-    │   │   ├── PeriodoSelector.tsx        # Select de año + instancia (Verano, 1C, 2C)
-    │   │   ├── CalendarioSemanal.tsx      # Grilla Lunes–Sábado con bloques de 08-22
-    │   │   ├── BloqueHorarioCelda.tsx     # Celda individual de 2h en la grilla
-    │   │   ├── MateriaPlanificadaChip.tsx # Chip de materia arrastrable dentro de un bloque
-    │   │   ├── MateriaDisponibleList.tsx  # Lista de materias pendientes para arrastrar
-    │   │   ├── MateriaDisponibleItem.tsx  # Ítem individual en lista (draggable)
-    │   │   ├── NuevoPeriodoModal.tsx      # Modal para crear nuevo período
-    │   │   ├── PlanificacionTabs.tsx      # Tabs para cambiar entre variantes
-    │   │   ├── VistaSemanalHeader.tsx     # Encabezado con días de la semana
-    │   │   ├── VistaHorariosHeader.tsx    # Encabezado con bloques horarios
-    │   │   ├── LeyendaHorarios.tsx        # Leyenda de colores por materia
-    │   │   └── MateriasDesbloqueablesList.tsx  # Materias que se desbloquearían
+    │   │   ├── CalendarioSemanal.tsx     # grilla 7 bloques × 6 días
+    │   │   ├── BloqueHorarioCelda.tsx    # celda drop zone (HTML5 drag & drop)
+    │   │   ├── MateriaPlanificadaChip.tsx
+    │   │   ├── MateriaDisponibleList.tsx
+    │   │   ├── NuevoPeriodoModal.tsx
+    │   │   ├── PlanificacionTabs.tsx
+    │   │   ├── PeriodoSelector.tsx      # (definido, no usado en PlanificacionPage)
+    │   │   └── Extras.tsx               # LeyendaHorarios, VistaSemanalHeader, VistaHorariosHeader, MateriasDesbloqueablesList
     │   │
     │   └── common/
     │       ├── LoadingSpinner.tsx
-    │       ├── ErrorMessage.tsx
     │       └── EmptyState.tsx
     │
     ├── hooks/
-    │   ├── useAuth.ts                    # Hook que consume el store de autenticación
-    │   ├── useCarreras.ts                # useQuery para lista de carreras del usuario
-    │   ├── usePlanEstudios.ts            # useQuery para materias de una carrera
-    │   ├── useProgreso.ts                # useQuery + useMutation para estados/notas
-    │   ├── useActualizarProgreso.ts      # useMutation para actualizar estado/nota
-    │   ├── useDashboard.ts               # useQuery para estadísticas y carreras activas
-    │   ├── usePlanificacion.ts           # useQuery + useMutation para períodos y horarios
-    │   ├── useAuthForm.ts                # Hooks useLoginForm + useRegisterForm
-    │   └── useInscribirCarrera.ts        # useMutation para inscribirse a una carrera
+    │   ├── useAuthForm.ts        # useLoginForm + useRegisterForm (RHF + Zod + mutation)
+    │   ├── useCarreras.ts        # useCarreras() + useInscribirCarrera()
+    │   ├── usePlanEstudios.ts    # useQuery del plan de una carrera
+    │   ├── useProgreso.ts        # useQuery + useMutation + filtros (estado/búsqueda)
+    │   ├── useDashboard.ts       # carreras + resumen/distribucion/evolucion
+    │   ├── usePlanificacion.ts   # períodos, materias del período, desbloqueables, guardar
+    │   ├── useAdminCarreras.ts   # crearCarrera + agregarMateriaAlPlan (mutations)
+    │   └── useAdminMaterias.ts   # listar/crear materias, asignar/quitar correlativas
     │
     ├── services/
-    │   ├── api.ts                        # Instancia de Axios (base URL, interceptor JWT)
-    │   ├── auth.service.ts               # login(), register()
-    │   ├── carreras.service.ts           # obtenerCarrerasDelUsuario(), obtenerPlanEstudios(), inscribirCarrera()
-    │   ├── materias.service.ts           # listarMaterias(), obtenerMateria()
-    │   ├── progreso.service.ts           # obtenerProgreso(), actualizarProgreso()
-    │   ├── estadisticas.service.ts       # obtenerResumen(), obtenerDistribucionEstados(), obtenerEvolucion()
-    │   └── planificacion.service.ts      # listarPeriodos(), crearPeriodo(), obtenerMateriasDelPeriodo(), planificarMateria(), obtenerMateriasDesbloqueables()
+    │   ├── api.ts                # instancia Axios + interceptor JWT
+    │   ├── auth.service.ts       # login, register, obtenerPerfil
+    │   ├── carreras.service.ts   # carreras del usuario, disponibles, plan, inscribir, desinscribir
+    │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan
+    │   │                        #   + materiasAdminService: listar, obtenerMateria, crear,
+    │   │                        #     asignarCorrelativa, eliminarCorrelativa
+    │   ├── materias.service.ts   # (eliminado) → reemplazado por materiasAdminService en carreras.service.ts
+    │   ├── progreso.service.ts   # obtener, actualizar, inicializar progreso
+    │   ├── estadisticas.service.ts # resumen, distribución, evolución, carreras-resumen
+    │   └── planificacion.service.ts # períodos, bloques, materias, desbloqueables
     │
     ├── store/
-    │   ├── auth.store.ts                 # zustand: token, usuario actual, login/logout
-    │   └── planificacion.store.ts        # zustand: período activo en edición, materias seleccionadas
+    │   ├── auth.store.ts         # zustand + persist: token, usuario, setAuth, logout, isAuthenticated
+    │   └── planificacion.store.ts# zustand + devtools: período activo, celdas, materias, dirty
     │
     ├── types/
+    │   ├── api.types.ts
     │   ├── auth.types.ts
     │   ├── carrera.types.ts
     │   ├── materia.types.ts
     │   ├── progreso.types.ts
     │   ├── estadisticas.types.ts
-    │   ├── planificacion.types.ts
-    │   └── api.types.ts                  # Genéricos ApiResponse<T>, PaginatedResponse<T>
+    │   └── planificacion.types.ts
     │
     └── utils/
-        ├── constants.ts                  # BLOQUES_HORARIOS, DIAS_SEMANA, ESTADOS
-        ├── formato.ts                    # formatearFecha, formatearPromedio, etc.
-        └── cn.ts                         # Utilidad clsx + tailwind-merge para clases condicionales
+        ├── cn.ts                # clsx + tailwind-merge
+        ├── constants.ts         # BLOQUES_HORARIOS, DIAS_SEMANA, ESTADOS
+        ├── formato.ts
+        ├── fortaleza.ts         # calcularFortaleza (definido, ver nota)
+        └── debounce.ts          # useDebounce hook
 ```
 
 ---
@@ -181,382 +180,122 @@ frontend/
 
 ### 1. Manejo del Estado Global
 
-Se usan dos herramientas complementarias: **zustand** para estado de UI compartido y **React Query** para datos del servidor.
+#### zustand — Sesión de Usuario (`store/auth.store.ts`)
 
-#### zustand — Sesión de Usuario
+`auth.store` usa el middleware `persist` (clave `auth-storage`) guardando solo `token` y `usuario`.
+Incluye un helper `isAuthenticated()` que decodifica el payload JWT y comprueba `exp`.
 
 ```typescript
-// store/auth.store.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
 interface AuthState {
     token: string | null;
     usuario: { id: number; nombre: string; email: string } | null;
-    setAuth: (token: string, usuario: { id: number; nombre: string; email: string }) => void;
+    setAuth: (token: string, usuario: Usuario) => void;
     logout: () => void;
+    isAuthenticated: () => boolean;
 }
-
-export const useAuthStore = create<AuthState>()(
-    persist(
-        (set) => ({
-            token: null,
-            usuario: null,
-            setAuth: (token, usuario) => set({ token, usuario }),
-            logout: () => set({ token: null, usuario: null }),
-        }),
-        { name: 'auth-storage' }
-    )
-);
 ```
 
-#### zustand — Planificación en Edición
+`context/AuthContext.tsx` envuelve la app con `AuthProvider`; el hook `useAuth()` (en `context/useAuth.ts`) lee el context definido en `context/auth-context.ts`.
 
-```typescript
-// store/planificacion.store.ts
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+#### zustand — Planificación en Edición (`store/planificacion.store.ts`)
 
-interface MateriaEnCelda {
-    planificacionId: number;
-    materiaId: number;
-    nombre: string;
-    codigo: string;
-    creditos: number;
-}
-
-interface PlanificacionState {
-    periodoActivo: {
-        periodoId: number | null;
-        anio: number;
-        instancia: string;
-        nombre: string | null;
-    } | null;
-    celdas: Record<string, MateriaEnCelda[]>; // "BLOQUE_ID-DIA" → materias[]
-    materiasDisponibles: MateriaEnCelda[];
-    dirty: boolean;
-    setPeriodoActivo: (periodo: PlanificacionState['periodoActivo']) => void;
-    setCeldas: (celdas: Record<string, MateriaEnCelda[]>) => void;
-    asignarMateria: (bloqueId: number, dia: string, materiaId: number) => void;
-    quitarMateria: (bloqueId: number, dia: string, planificacionId: number) => void;
-    setMateriasDisponibles: (materias: MateriaEnCelda[]) => void;
-    marcarGuardado: () => void;
-}
-
-export const usePlanificacionStore = create<PlanificacionState>()(
-    devtools(
-        (set, get) => ({
-            periodoActivo: null,
-            celdas: {},
-            materiasDisponibles: [],
-            dirty: false,
-            setPeriodoActivo: (periodo) => set({ periodoActivo: periodo }),
-            setCeldas: (celdas) => set({ celdas, dirty: false }),
-            asignarMateria: (bloqueId, dia, materiaId) => {
-                const key = `${bloqueId}-${dia}`;
-                const materia = get().materiasDisponibles.find((m) => m.materiaId === materiaId);
-                if (!materia) return;
-                const celdas = { ...get().celdas };
-                if (!celdas[key]) celdas[key] = [];
-                celdas[key] = [...celdas[key], { ...materia, planificacionId: 0 }];
-                const disponibles = get().materiasDisponibles.filter((m) => m.materiaId !== materiaId);
-                set({ celdas, materiasDisponibles: disponibles, dirty: true });
-            },
-            quitarMateria: (bloqueId, dia, planificacionId) => {
-                const key = `${bloqueId}-${dia}`;
-                const celdas = { ...get().celdas };
-                const materiaRemovida = celdas[key]?.find((m) => m.planificacionId === planificacionId);
-                celdas[key] = celdas[key]?.filter((m) => m.planificacionId !== planificacionId) ?? [];
-                if (celdas[key].length === 0) delete celdas[key];
-                const disponibles = materiaRemovida
-                    ? [...get().materiasDisponibles, materiaRemovida]
-                    : get().materiasDisponibles;
-                set({ celdas, materiasDisponibles: disponibles, dirty: true });
-            },
-            setMateriasDisponibles: (materias) => set({ materiasDisponibles: materias }),
-            marcarGuardado: () => set({ dirty: false }),
-        }),
-        { name: 'planificacion-store' },
-    ),
-);
-```
+Usa el middleware `devtools`. Mantiene el período activo, un mapa de celdas (`"BLOQUE_ID-DIA" → MateriaEnCelda[]`),
+la lista de materias disponibles y el flag `dirty` (cambios sin guardar). Ver detalle en
+`docs/frontend/planificador-horarios-page.md`.
 
 #### React Query — Datos del Servidor
 
-```typescript
-// hooks/useProgreso.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { progresoService } from '../services/progreso.service';
-
-export function useProgreso(usuarioCarreraId: number) {
-    return useQuery({
-        queryKey: ['progreso', usuarioCarreraId],
-        queryFn: () => progresoService.obtenerProgreso(usuarioCarreraId),
-    });
-}
-
-export function useActualizarProgreso() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: any }) =>
-            progresoService.actualizarProgreso(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['progreso'] });
-            queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-        },
-    });
-}
-```
+Cada dominio tiene su propio hook (`useCarreras`, `useProgreso`, `useDashboard`, `usePlanificacion`, ...).
+El `QueryClient` se configura en `App.tsx` con `staleTime: 5 min` y `retry: 1`. Las mutaciones invalidan
+las query keys correspondientes (`['progreso', usuarioCarreraId]`, `['estadisticas']`, `['carreras', usuarioId]`, etc.).
 
 ### 2. Consumo de la API con Axios
 
-Una sola instancia de Axios con interceptores inyecta el token JWT automáticamente y maneja errores globales.
+`services/api.ts` crea una instancia Axios con `baseURL = import.meta.env.VITE_API_URL`.
+Un interceptor de request inyecta `Authorization: Bearer <token>` desde `auth.store`.
+El interceptor de response, ante un `401`, limpia el store y redirige a `/login`.
 
-```typescript
-// services/api.ts
-import axios from 'axios';
-import { useAuthStore } from '../store/auth.store';
+### 3. Formularios (React Hook Form + Zod)
 
-const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
-    headers: { 'Content-Type': 'application/json' },
-});
+Se usa RHF + Zod en: `useAuthForm` (login/registro), `MateriaProgresoRow` (estado/nota/tipo),
+`InscribirCarreraModal`, `NuevoPeriodoModal`. El schema de progreso valida que al estar
+"Completada" existan `nota` (4–10) y `tipoAprobacion` (Final/Promocion).
 
-api.interceptors.request.use((config) => {
-    const token = useAuthStore.getState().token;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
+### 4. Calendario de Bloques Horarios
 
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            useAuthStore.getState().logout();
-            window.location.href = '/login';
-        }
-        return Promise.reject(error);
-    }
-);
-
-export default api;
-```
-
-### 3. Componentes Reutilizables — Calendario de Bloques Horarios
-
-El componente `CalendarioSemanal` renderiza una grilla de 7 bloques (08-10, 10-12, …, 20-22) × 6 días (Lunes–Sábado). Cada celda soporta drag & drop para asignar materias.
-
-```typescript
-// components/planificacion/CalendarioSemanal.tsx
-import React from 'react';
-import { usePlanificacionStore } from '../../store/planificacion.store';
-import { BloqueHorarioCelda } from './BloqueHorarioCelda';
-
-const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const BLOQUES = [
-    { id: 1, inicio: '08:00', fin: '10:00' },
-    { id: 2, inicio: '10:00', fin: '12:00' },
-    { id: 3, inicio: '12:00', fin: '14:00' },
-    { id: 4, inicio: '14:00', fin: '16:00' },
-    { id: 5, inicio: '16:00', fin: '18:00' },
-    { id: 6, inicio: '18:00', fin: '20:00' },
-    { id: 7, inicio: '20:00', fin: '22:00' },
-];
-
-export function CalendarioSemanal() {
-    const asignarMateria = usePlanificacionStore((s) => s.asignarMateria);
-
-    const handleDrop = (bloqueId: number, dia: string, materiaId: number) => {
-        asignarMateria(bloqueId, dia, materiaId);
-    };
-
-    return (
-        <div className="grid grid-cols-[auto_repeat(6,1fr)] gap-1">
-            <div className="font-semibold p-2">Horario</div>
-            {DIAS.map((dia) => (
-                <div key={dia} className="font-semibold p-2 text-center">{dia}</div>
-            ))}
-            {BLOQUES.map((bloque) => (
-                <React.Fragment key={bloque.id}>
-                    <div className="p-2 text-sm text-gray-500">
-                        {bloque.inicio} – {bloque.fin}
-                    </div>
-                    {DIAS.map((dia) => (
-                        <BloqueHorarioCelda
-                            key={`${dia}-${bloque.id}`}
-                            bloqueId={bloque.id}
-                            dia={dia}
-                            onDrop={(materiaId) => handleDrop(bloque.id, dia, materiaId)}
-                        />
-                    ))}
-                </React.Fragment>
-            ))}
-        </div>
-    );
-}
-```
-
-### 4. Estrategia para el Manejo de Formularios
-
-Se usa **React Hook Form** + **Zod** para formularios tipados con validación declarativa.
-
-```typescript
-// components/progreso/MateriaProgresoRow.tsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
-const progresoSchema = z.object({
-    estado: z.enum(['Pendiente', 'En Proceso', 'Completada']),
-    nota: z.number().int().min(4).max(10).optional(),
-    tipoAprobacion: z.enum(['Final', 'Promocion']).optional(),
-}).refine(
-    (data) => data.estado !== 'Completada' || (data.nota !== undefined && data.tipoAprobacion !== undefined),
-    { message: 'Nota y tipo de aprobación son obligatorios al completar la materia' }
-);
-
-type ProgresoFormData = z.infer<typeof progresoSchema>;
-
-export function MateriaProgresoRow({ materia, progreso, onSave }: Props) {
-    const { register, handleSubmit, watch, formState: { errors } } = useForm<ProgresoFormData>({
-        resolver: zodResolver(progresoSchema),
-        defaultValues: {
-            estado: progreso?.estado ?? 'Pendiente',
-            nota: progreso?.nota,
-            tipoAprobacion: progreso?.tipoAprobacion,
-        },
-    });
-
-    const estadoActual = watch('estado');
-
-    return (
-        <form onSubmit={handleSubmit(onSave)} className="flex items-center gap-4 p-2">
-            <span className="w-48 font-medium">{materia.nombre}</span>
-
-            <select {...register('estado')} className="border rounded p-1">
-                <option value="Pendiente">Pendiente</option>
-                <option value="En Proceso">En Proceso</option>
-                <option value="Completada">Completada</option>
-            </select>
-
-            {estadoActual === 'Completada' && (
-                <>
-                    <input type="number" {...register('nota', { valueAsNumber: true })}
-                        placeholder="Nota (4-10)" className="border rounded p-1 w-20" />
-                    <select {...register('tipoAprobacion')} className="border rounded p-1">
-                        <option value="">Tipo</option>
-                        <option value="Final">Final</option>
-                        <option value="Promocion">Promoción</option>
-                    </select>
-                </>
-            )}
-
-            <Button type="submit">Guardar</Button>
-            {errors.nota && <span className="text-red-500 text-sm">{errors.nota.message}</span>}
-        </form>
-    );
-}
-```
+`CalendarioSemanal` renderiza una grilla CSS `grid-cols-[auto_repeat(6,1fr)]` con 7 bloques
+(08-10 … 20-22) × 6 días (Lunes–Sábado). El drag & drop usa la API nativa HTML5
+(`draggable` + `dataTransfer.setData('materiaId', ...)`); las celdas son drop zones que llaman
+`asignarMateria` del store. Ver detalle en `docs/frontend/planificador-horarios-page.md`.
 
 ---
 
 ## Rutas de la Aplicación
 
-Todas las rutas se definen centralizadamente en `routes/index.tsx` usando `createBrowserRouter` de React Router DOM v6.
+Definidas en `routes/index.tsx` con `createBrowserRouter` (React Router 7).
 
 | Ruta | Página | Descripción | Acceso |
 |---|---|---|---|
-| `/login` | `LoginPage` | Formulario de inicio de sesión (email + password). Redirige a `/dashboard` si ya hay sesión activa. | Público |
-| `/registro` | `RegisterPage` | Formulario de registro de nuevo usuario. | Público |
-| `/dashboard` | `DashboardPage` | Pantalla principal con tarjetas de **promedio general**, **tiempo estimado para recibirse** y **distribución de materias por estado**. Muestra las carreras activas del usuario. | Privado |
-| `/carreras` | `CarrerasPage` | Lista de carreras en las que el usuario está inscripto. Opción para inscribirse a una nueva carrera. | Privado |
-| `/carreras/:id` | `CarreraDetailPage` | **Plan de estudios** de una carrera específica. Tabla con año, cuatrimestre, orden y nombre de cada materia. Al hacer clic en una materia se muestra un modal con sus **correlativas** y detalles. | Privado |
-| `/progreso` | `ProgresoPage` | **Progreso académico**. Grilla con todas las materias del plan de estudios del usuario. Por cada materia se puede cambiar el estado (Pendiente/En Proceso/Completada). Al seleccionar "Completada" se habilitan los campos de **nota** y **tipo de aprobación** (Final / Promoción). | Privado |
-| `/progreso?carrera=:id` | `ProgresoPage` | Variante de la misma pantalla filtrada por una carrera específica. | Privado |
-| `/planificacion` | `PlanificacionPage` | **Planificación cuatrimestral**. Selector de año e instancia (Verano, 1.er Cuatrimestre, 2.º Cuatrimestre). Grilla interactiva de **Lunes a Sábado** con bloques fijos de **08:00 a 22:00** en segmentos de 2 horas. Las materias pendientes se arrastran desde una lista lateral a las celdas de la grilla. Soporte para múltiples planificaciones por período con nombre distintivo. | Privado |
+| `/login` | `LoginPage` | Email + password. Redirige a `/dashboard` si ya hay sesión. | Público |
+| `/registro` | `RegisterPage` | Registro de usuario (RHF + Zod). | Público |
+| `/dashboard` | `DashboardPage` | Tarjetas de resumen + gráficos + carreras. | Privado |
+| `/carreras` | `CarrerasPage` | Catálogo de todas las carreras; Inscribirse/Desinscribirse por card. | Privado |
+| `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (vista árbol/tabla) + detalle de materia. | Privado |
+| `/progreso` | `ProgresoPage` | Progreso académico con edición de estado/nota/tipo. | Privado |
+| `/planificacion` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
+| `/admin` | `AdminPage` | Administración: crear carreras, materias y correlativas. | Privado |
 
-### Configuración del Router
+> Nota: `/admin` no aplica aún guard de rol (backend aún sin `RolesGuard`); cualquier usuario autenticado puede acceder.
 
-```typescript
-// routes/index.tsx
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import { MainLayout } from '../layouts/MainLayout';
-import { AuthLayout } from '../layouts/AuthLayout';
-import { PrivateRoute } from './PrivateRoute';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
-
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/RegisterPage'));
-const DashboardPage = lazy(() => import('../pages/DashboardPage'));
-const CarrerasPage = lazy(() => import('../pages/CarrerasPage'));
-const CarreraDetailPage = lazy(() => import('../pages/CarreraDetailPage'));
-const ProgresoPage = lazy(() => import('../pages/ProgresoPage'));
-const PlanificacionPage = lazy(() => import('../pages/PlanificacionPage'));
-
-const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
-    <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
-);
-
-export const router = createBrowserRouter([
-    {
-        element: <AuthLayout />,
-        children: [
-            { path: '/login', element: <SuspenseWrapper><LoginPage /></SuspenseWrapper> },
-            { path: '/registro', element: <SuspenseWrapper><RegisterPage /></SuspenseWrapper> },
-        ],
-    },
-    {
-        element: <PrivateRoute><MainLayout /></PrivateRoute>,
-        children: [
-            { index: true, element: <Navigate to="/dashboard" replace /> },
-            { path: '/dashboard', element: <SuspenseWrapper><DashboardPage /></SuspenseWrapper> },
-            { path: '/carreras', element: <SuspenseWrapper><CarrerasPage /></SuspenseWrapper> },
-            { path: '/carreras/:id', element: <SuspenseWrapper><CarreraDetailPage /></SuspenseWrapper> },
-            { path: '/progreso', element: <SuspenseWrapper><ProgresoPage /></SuspenseWrapper> },
-            { path: '/planificacion', element: <SuspenseWrapper><PlanificacionPage /></SuspenseWrapper> },
-        ],
-    },
-    { path: '*', element: <Navigate to="/dashboard" replace /> },
-]);
-```
-
-### Componente PrivateRoute
-
-```typescript
-// routes/PrivateRoute.tsx
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/auth.store';
-
-export function PrivateRoute({ children }: { children: React.ReactNode }) {
-    const token = useAuthStore((state) => state.token);
-    const location = useLocation();
-
-    if (!token) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-
-    return <>{children}</>;
-}
-```
+`PrivateRoute` lee `token` del `auth.store` y redirige a `/login` si no existe.
 
 ---
 
-## Comandos de Inicialización
+## Componentes documentados pero NO implementados (brecha conocida)
+
+Para mantener la documentación honesta respecto al código actual, estos componentes aparecen en
+las especificaciones originales pero **no existen** en `src/`:
+
+- `components/auth/AuthCard.tsx` → el layout de auth lo hace directamente `LoginPage`/`RegisterPage`.
+- `components/ui/PasswordStrengthBar.tsx` → `RegisterForm` muestra una barra de fortaleza inline simple (no usa `utils/fortaleza.ts`).
+- `components/ui/StatCard.tsx` (genérico) → existen `StatCards.tsx` con las 4 tarjetas nombradas.
+- `components/ui/Tabs.tsx`, `ScrollArea.tsx`, `ConfirmDialog.tsx` → no existen; se usan `Button`/`Modal`/HTML nativo.
+- `components/carrera/CarreraList.tsx`, `PlanEstudiosTable.tsx`, `MateriaBadge.tsx` → no existen; el árbol usa `Accordion` + `Badge`.
+- `components/progreso/ProgresoStatsBar.tsx`, `ConfirmarCambioModal.tsx`, `ProgresoBulkActions.tsx` → no existen.
+- `components/planificacion/MateriaDisponibleItem.tsx`, `VistaSemanalHeader.tsx`, `VistaHorariosHeader.tsx` → `VistaSemanalHeader`/`VistaHorariosHeader` fueron eliminados (código muerto); el header está embebido en `CalendarioSemanal` y `Extras.tsx` solo tiene `LeyendaHorarios` + `MateriasDesbloqueablesList`.
+
+### Notas de implementación actual
+
+- **Todas las páginas consumen datos reales** vía React Query sobre los servicios Axios (base URL
+  `http://localhost:3000/api`). No hay datos mockeados en el frontend.
+- **Carrera activa:** `ProgresoPage`, `PlanificacionPage` y `DashboardPage` resuelven la carrera activa
+  con `useCarreraActiva()` (del `auth.store`/inscripciones), no un id fijo. `ProgresoPage` además permite
+  cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
+- **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useDashboard`.
+- **Inscripción/desinscripción:** `CarrerasPage` lista SIEMPRE todas las carreras del catálogo y combina con
+las inscripciones del usuario; cada `CarreraCard` muestra "Inscribirse" (`useInscribirCarrera`) o
+"Desinscribirse" (`useDesinscribirCarrera`, con `confirm()`) según corresponda. `InscribirCarreraModal`
+sigue disponible.
+- **Progreso:** grilla editable en línea (`MateriaProgresoRow` + RHF/Zod), `CompletarMateriaModal` y
+  `Filtros` (debounce) ya integrados en `ProgresoPage`.
+- **Admin:** módulo `/admin` (tabs Carreras/Materias/Plan/Correlativas) implementado y verificado E2E.
+  El backend aún no aplica `RolesGuard`, por lo que cualquier usuario autenticado puede accederlo.
+- **Código muerto eliminado:** `PeriodoSelector`, `VistaSemanalHeader`, `VistaHorariosHeader`,
+  `components/ui/PasswordStrengthBar.tsx`, `services/materias.service.ts`. `utils/fortaleza.ts` existe
+  pero no se usa (la barra de fortaleza del registro es inline en `RegisterForm`).
+
+---
+
+## Comandos
 
 ```bash
-# Crear el proyecto con Vite
-npm create vite@latest frontend -- --template react-ts
-
-# Dependencias principales
-npm install react-router-dom axios @tanstack/react-query zustand
-npm install react-hook-form @hookform/resolvers zod
-
-# Tailwind CSS
-npm install -D tailwindcss @tailwindcss/vite
-# Configurar tailwind.config.ts y postcss.config.js
-
-# Utilidades (opcional)
-npm install -D clsx tailwind-merge
+cd frontend
+npm install
+npm run dev        # dev server en http://localhost:5173
+npm run build      # tsc -b && vite build
+npm run lint       # oxlint
+npm run preview    # sirve el build de producción
 ```
+
+El backend debe estar corriendo en `http://localhost:3000` (ver `backend/README.md`) y `VITE_API_URL`
+apuntando a `http://localhost:3000/api`.

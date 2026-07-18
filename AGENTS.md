@@ -2,12 +2,13 @@
 
 ## Estado del proyecto
 
-Backend implementado en `backend/`. Frontend todavía no iniciado. Ver `docs/backend-guide.md` para estado actual.
+Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 19 + Vite 8, `npm run lint` con oxlint sin warnings y `npm run build` OK). Ver `docs/backend-guide.md` y `docs/frontend-implementation-step-by-step.md` para el estado actual.
 
 ## Stack definido en la documentación
 
 - **Backend:** NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger, class-validator
-- **Frontend:** React 18, Vite 5, Tailwind CSS 3, TypeScript, React Router DOM 6, Axios, React Query 5, zustand 4, React Hook Form + Zod
+- **Frontend (real):** React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, oxlint (no ESLint).
+- **Módulo admin implementado:** página `/admin` (tabs Carreras/Materias/Plan/Correlativas) para gestión del catálogo académico. Backend sin `RolesGuard` aún (cualquier usuario autenticado puede usarla). Ver `docs/backend/admin-carreras-materias-module.md`.
 - **Package manager:** npm (ambos)
 - **Node:** 20 LTS
 
@@ -51,4 +52,5 @@ Backend implementado en `backend/`. Frontend todavía no iniciado. Ver `docs/bac
 | `docs/frontend/plan-estudios-page.md` | Árbol Año→Cuatrimestre, modal correlativas |
 | `docs/frontend/progreso-academico-page.md` | Grilla inline, modal nota obligatoria |
 | `docs/frontend/planificador-horarios-page.md` | Calendario drag & drop, store zustand |
+| `docs/frontend/admin-page.md` | Módulo admin: carreras, materias, plan, correlativas |
 | `docs/security/jwt-auth-specification.md` | Payload JWT, Passport strategy, Axios interceptor, PrivateRoute |

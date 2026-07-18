@@ -340,7 +340,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
             logout(); // Token expirado, cerrar sesión
         }
         setVerificando(false);
-    }, []);
+    }, [token, isAuthenticated, logout]);
 
     if (verificando) {
         return <LoadingSpinner />; // Mostrar spinner mientras se verifica

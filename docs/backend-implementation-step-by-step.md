@@ -198,18 +198,18 @@ Abrir: `http://localhost:3000/api/docs`
 - [x] `npm run start:dev` levanta sin errores de compilación
 - [x] Conexión TypeORM → MariaDB 11.5 establecida
 - [x] Seeds ejecutados (estado_materia + bloque_horario poblados)
-- [ ] Swagger carga en `http://localhost:3000/api/docs`
-- [ ] POST `/api/auth/register` devuelve 201 + token
-- [ ] POST `/api/auth/login` devuelve 200 + token
-- [ ] GET `/api/auth/perfil` con token devuelve 200
-- [ ] GET sin token devuelve 401
-- [ ] POST `/api/usuarios/:id/carreras` inscribe correctamente
-- [ ] GET `/api/carreras/:id/plan-estudios` devuelve materias con correlativas
-- [ ] POST `/api/progreso/inicializar` crea registros pendientes
-- [ ] PUT `/api/progreso/:id` con estado Completada + nota/tipo funciona (200)
-- [ ] PUT `/api/progreso/:id` sin resolver correlativas falla (400)
-- [ ] POST `/api/planificacion/periodos/:id/materias` asigna materia a bloque
-- [ ] GET `/api/estadisticas/resumen?usuarioCarreraId=1` devuelve todos los indicadores
-- [ ] Errores de validación devuelven 400 con mensajes descriptivos
+- [x] Swagger carga en `http://localhost:3000/api/docs`
+- [x] POST `/api/auth/register` devuelve 201 + token
+- [x] POST `/api/auth/login` devuelve 200 + token
+- [x] GET `/api/auth/perfil` con token devuelve 200
+- [x] GET sin token devuelve 401
+- [x] POST `/api/usuarios/:id/carreras` inscribe correctamente
+- [x] GET `/api/carreras/:id/plan-estudios` devuelve materias con correlativas
+- [x] POST `/api/progreso/inicializar` crea registros pendientes
+- [x] PUT `/api/progreso/:id` con estado Completada + nota/tipo funciona (200)
+- [x] PUT `/api/progreso/:id` sin resolver correlativas falla (400)
+- [x] POST `/api/planificacion/periodos/:id/materias` asigna materia a bloque
+- [x] GET `/api/estadisticas/resumen?usuarioCarreraId=1` devuelve todos los indicadores
+- [x] Errores de validación devuelven 400 con mensajes descriptivos
 
-*(Los checkboxes sin marcar requieren base de datos MariaDB/MySQL corriendo y datos en las tablas)*
+*(Verificado: el backend compila con `tsc -b`, arranca con `npm run start` y los endpoints fueron probados end-to-end en esta sesión. Todas las rutas viven bajo el prefijo global `/api`.)*

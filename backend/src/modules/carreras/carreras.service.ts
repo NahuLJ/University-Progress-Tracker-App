@@ -35,17 +35,107 @@ export class CarrerasService {
     return carrera;
   }
 
-  async obtenerPlanEstudios(carreraId: number): Promise<CarreraMateria[]> {
+  async obtenerPlanEstudios(carreraId: number): Promise<{
+    carrera: Carrera;
+    materias: {
+      materiaId: number;
+      carreraMateriaId: number;
+      nombre: string;
+      codigo: string;
+      descripcion: string | null;
+      cargaHoraria: number;
+      creditos: number;
+      anio: number;
+      cuatrimestre: number;
+      orden: number;
+      correlativas: {
+        correlativaId: number;
+        materiaId: number;
+        materiaCorrelativaId: number;
+        materiaCorrelativa: { materiaId: number; nombre: string; codigo: string };
+      }[];
+    }[];
+    anios: {
+      anio: number;
+      cuatrimestres: {
+        cuatrimestre: number;
+        materias: {
+          materiaId: number;
+          carreraMateriaId: number;
+          nombre: string;
+          codigo: string;
+          descripcion: string | null;
+          cargaHoraria: number;
+          creditos: number;
+          anio: number;
+          cuatrimestre: number;
+          orden: number;
+          correlativas: {
+            correlativaId: number;
+            materiaId: number;
+            materiaCorrelativaId: number;
+            materiaCorrelativa: { materiaId: number; nombre: string; codigo: string };
+          }[];
+        }[];
+      }[];
+    }[];
+  }> {
     const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
-    return this.carreraMateriaRepo.find({
+    const entries = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId } },
       relations: {
         materia: { correlativasRequeridas: { materiaCorrelativa: true } },
       },
       order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
     });
+
+    const materias = entries.map((e) => ({
+      materiaId: e.materia.materiaId,
+      carreraMateriaId: e.carreraMateriaId,
+      nombre: e.materia.nombre,
+      codigo: e.materia.codigo,
+      descripcion: e.materia.descripcion,
+      cargaHoraria: e.materia.cargaHoraria,
+      creditos: e.materia.creditos,
+      anio: e.anio,
+      cuatrimestre: e.cuatrimestre,
+      orden: e.orden,
+      correlativas: (e.materia.correlativasRequeridas ?? []).map((c) => ({
+        correlativaId: c.correlativaId,
+        materiaId: e.materia.materiaId,
+        materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+        materiaCorrelativa: {
+          materiaId: c.materiaCorrelativa.materiaId,
+          nombre: c.materiaCorrelativa.nombre,
+          codigo: c.materiaCorrelativa.codigo,
+        },
+      })),
+    }));
+
+    const aniosMap = new Map<number, typeof materias>();
+    for (const m of materias) {
+      if (!aniosMap.has(m.anio)) aniosMap.set(m.anio, []);
+      aniosMap.get(m.anio)!.push(m);
+    }
+
+    const anios = [...aniosMap.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([anio, lista]) => {
+        const cuatrimestresMap = new Map<number, typeof materias>();
+        for (const m of lista) {
+          if (!cuatrimestresMap.has(m.cuatrimestre))
+            cuatrimestresMap.set(m.cuatrimestre, []);
+          cuatrimestresMap.get(m.cuatrimestre)!.push(m);
+        }
+        const cuatrimestres = [...cuatrimestresMap.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([cuatrimestre, mats]) => ({ cuatrimestre, materias: mats }));
+        return { anio, cuatrimestres };
+      });
+
+    return { carrera, materias, anios };
   }
 
   async crear(dto: CrearCarreraDto): Promise<Carrera> {

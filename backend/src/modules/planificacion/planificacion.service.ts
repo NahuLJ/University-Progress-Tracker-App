@@ -163,9 +163,7 @@ export class PlanificacionService {
     await this.materiaPlanificadaRepo.remove(planificacion);
   }
 
-  async obtenerMateriasDesbloqueables(
-    periodoId: number,
-  ): Promise<Materia[]> {
+  async obtenerMateriasDesbloqueables(periodoId: number): Promise<Materia[]> {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId },
       relations: { usuarioCarrera: { carrera: true } },
@@ -179,7 +177,9 @@ export class PlanificacionService {
       where: { periodo: { periodoId } },
       relations: { materia: true },
     });
-    const idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
+    const idsPlanificadas = new Set(
+      planificadas.map((mp) => mp.materia.materiaId),
+    );
 
     const progresos = await this.progresoRepo.find({
       where: { usuarioCarrera: { usuarioCarreraId } },

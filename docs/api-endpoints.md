@@ -165,6 +165,48 @@ interface PlanificarMateriaDto {
 
 ---
 
+## Administración (Catálogo) — `/carreras` y `/materias`
+
+> Solo admin. Los endpoints de escritura del backend usan `@ApiBearerAuth()` (pendiente de
+> agregar guard de roles `@Roles('admin')`). Ver `docs/backend/admin-carreras-materias-module.md`.
+
+| Método | Ruta | Auth | Body | Respuestas |
+|--------|------|------|------|------------|
+| `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Carrera creada · `400`: Validación |
+| `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Materia en plan · `400`: Ya existe · `404`: No encontrada |
+| `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Materia creada · `400`: Código duplicado |
+| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `{ materiaCorrelativaId }` | `201`: Asignada · `400`: Auto-ref / duplicada · `404`: No encontrada |
+| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | — | `200`: Eliminada · `404`: No encontrada |
+| `GET` | `/materias` | ❌ Público | — | `200`: Catálogo global |
+| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con correlativas |
+
+### DTOs
+
+```typescript
+interface CrearCarreraDto {
+  nombre: string;          // 3-200 chars
+  descripcion?: string;
+  duracionAnios: number;   // 1-10, 1 decimal
+}
+
+interface AgregarMateriaPlanDto {
+  materiaId: number;
+  anio: number;            // >= 1
+  cuatrimestre: number;    // >= 1
+  orden: number;           // >= 1
+}
+
+interface CrearMateriaDto {
+  nombre: string;          // <= 200
+  codigo: string;          // <= 20, único
+  descripcion?: string;
+  cargaHoraria: number;    // >= 1
+  creditos: number;        // >= 1
+}
+```
+
+---
+
 ## Estadísticas — `/estadisticas`
 
 | Método | Ruta | Auth | Query | Respuestas |
@@ -172,10 +214,14 @@ interface PlanificarMateriaDto {
 | `GET` | `/estadisticas/resumen` | ✅ Bearer | `usuarioCarreraId` | `200`: Resumen (promedio, créditos, cuatrimestres restantes) · `404`: Inscripción no encontrada |
 | `GET` | `/estadisticas/distribucion-estados` | ✅ Bearer | `usuarioCarreraId` | `200`: Conteo por estado |
 | `GET` | `/estadisticas/evolucion` | ✅ Bearer | `usuarioCarreraId` | `200`: Evolución histórica de promedios |
+| `GET` | `/estadisticas/carreras-resumen` | ✅ Bearer | `usuarioId` | `200`: CarreraResumen[] (progreso por carrera del usuario) |
 
 ---
 
 ## Resumen
+
+> Los endpoints de escritura de la sección "Administración (Catálogo)" ya están incluidos en las tablas
+> de `carreras/` y `materias/` (son las mismas rutas `POST`). El conteo de abajo suma rutas únicas.
 
 | Módulo | Endpoints |
 |--------|-----------|
@@ -185,7 +231,7 @@ interface PlanificarMateriaDto {
 | `materias/` | 5 |
 | `progreso/` | 4 |
 | `planificacion/` | 8 |
-| `estadisticas/` | 3 |
-| **Total** | **33** |
+| `estadisticas/` | 4 |
+| **Total únicos** | **34** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

@@ -43,7 +43,7 @@ backend/
 ├── .env.example
 │
 └── src/
-    ├── main.ts                          # Punto de entrada, bootstrap de NestJS + Swagger + ValidationPipe global
+    ├── main.ts                          # Bootstrap NestJS: setGlobalPrefix('api'), CORS, ValidationPipe global, HttpExceptionFilter, Swagger
     ├── app.module.ts                    # Módulo raíz que importa todos los módulos funcionales
     │
     ├── common/                          # Código compartido entre módulos

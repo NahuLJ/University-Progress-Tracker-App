@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Query, Body, ParseIntPipe } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -17,7 +17,9 @@ export class ProgresoController {
   @Get()
   @ApiOperation({ summary: 'Obtener progreso por carrera' })
   @ApiResponse({ status: 200, description: 'Lista de progreso' })
-  async obtenerPorCarrera(@Query('usuarioCarreraId') usuarioCarreraId: number) {
+  async obtenerPorCarrera(
+    @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
+  ) {
     return this.progresoService.obtenerPorCarrera(usuarioCarreraId);
   }
 

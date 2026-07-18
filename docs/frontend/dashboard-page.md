@@ -1,83 +1,61 @@
-# Página Dashboard — Especificación Técnica
+# Página Dashboard — Especificación Técnica (implementada)
 
-## Estructura de Componentes
+> **Estado de implementación:** ✅ Completa. `DashboardPage` cablea `StatCards`
+> (`PromedioCard`/`TiempoRestanteCard`/`CreditosCard`/`ProgresoBarCard`), `Charts`
+> (`MateriasPorEstadoChart`/`EvolucionPromedioChart`) y `CarrerasResumenList` con datos reales de
+> `useDashboard` (`resumen`, `distribucion`, `evolucion`). El selector multi-carrera cambia
+> `usuarioCarreraId` y React Query refetch automáticamente. Sin placeholders ni datos mockeados.
+
+## Estructura de Componentes (real)
 
 ```
 pages/
-└── DashboardPage.tsx
+└── DashboardPage.tsx              # orquesta el dashboard
 
 components/dashboard/
-├── PromedioCard.tsx              # Tarjeta con el promedio general
-├── TiempoRestanteCard.tsx        # Tarjeta con cuatrimestres restantes estimados
-├── CreditosCard.tsx              # Tarjeta con créditos obtenidos vs. totales
-├── MateriasPorEstadoChart.tsx    # Gráfico de donut/barra con distribución de estados
-├── ProgresoBar.tsx               # Barra de progreso general (porcentaje)
-├── CarrerasResumenList.tsx       # Lista de carreras activas con miniestadísticas
-├── EvolucionPromedioChart.tsx    # Gráfico de línea con evolución histórica
-└── EstadisticasSkeleton.tsx      # Esqueleto de carga mientras se obtienen datos
+├── StatCards.tsx                  # PromedioCard, TiempoRestanteCard, CreditosCard, ProgresoBarCard
+├── Charts.tsx                     # MateriasPorEstadoChart, EvolucionPromedioChart, EstadisticasSkeleton
+└── CarrerasResumenList.tsx        # lista de carreras activas con mini ProgressBar
 
 components/ui/
 ├── Card.tsx
 ├── Badge.tsx
 ├── ProgressBar.tsx
-├── Skeleton.tsx
-└── StatCard.tsx
+└── Skeleton.tsx
+
+hooks/
+└── useDashboard.ts                # carreras + resumen + distribución + evolución (React Query)
+
+services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados, obtenerEvolucion
 ```
 
-### Árbol de Composición
+> **Estado:** `DashboardPage` ya cablea `StatCards` (`PromedioCard`/`TiempoRestanteCard`/`CreditosCard`/
+> `ProgresoBarCard`), `Charts` (`MateriasPorEstadoChart`/`EvolucionPromedioChart`) y `CarrerasResumenList`
+> con los datos reales de `useDashboard` (`resumen`, `distribucion`, `evolucion`). El selector multi-carrera
+> cambia `usuarioCarreraId` y React Query refetch automáticamente.
+
+### Árbol de Composición (objetivo)
 
 ```
 MainLayout
 └── DashboardPage
-    ├── Header
-    │   ├── Título "Dashboard"
-    │   └── Selector de carrera activa (si tiene más de una)
-    │
-    ├── Grid de Tarjetas (4 columnas)
-    │   ├── PromedioCard
-    │   │   └── StatCard (promedio general, color verde si >= 7)
-    │   ├── TiempoRestanteCard
-    │   │   └── StatCard (cuatrimestres restantes + texto "cuatrimestres")
-    │   ├── CreditosCard
-    │   │   └── StatCard (créditos obtenidos / totales + mini ProgressBar)
-    │   └── ProgresoBar
-    │       └── ProgressBar (porcentaje global + etiqueta "% completado")
-    │
-    ├── Fila de Gráficos (2 columnas)
-    │   ├── MateriasPorEstadoChart (gráfico de donut)
-    │   │   └── Tooltip con conteo por estado
-    │   └── EvolucionPromedioChart (gráfico de línea)
-    │       └── Tooltip con valor en cada punto
-    │
+    ├── Header: título "Dashboard" + selector de carrera (si hay >1)
+    ├── Grid de 4 tarjetas: PromedioCard · TiempoRestanteCard · CreditosCard · ProgresoBarCard
+    ├── Fila de 2 gráficos: MateriasPorEstadoChart · EvolucionPromedioChart
     └── CarrerasResumenList
-        ├── CarreraCard (por cada carrera activa)
-        │   ├── Nombre de la carrera
-        │   ├── Badge con materias completadas / total
-        │   └── Mini ProgressBar
-        └── EmptyState (si no tiene carreras)
 ```
 
 ---
 
-## Manejo del Estado Local
-
-### Hook Personalizado: `useDashboard`
+## Manejo del Estado — `useDashboard`
 
 ```typescript
-// hooks/useDashboard.ts
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { estadisticasService } from '../services/estadisticas.service';
-import { useCarreras } from '../hooks/useCarreras';
-import { useAuthStore } from '../store/auth.store';
-
 export function useDashboard() {
     const usuario = useAuthStore((s) => s.usuario);
     const [usuarioCarreraId, setUsuarioCarreraId] = useState<number | null>(null);
 
-    const { data: carreras, isLoading: cargandoCarreras } = useCarreras(usuario?.id);
+    const { data: carreras } = useCarreras();
 
-    // Una vez cargadas las carreras, seleccionar la primera activa por defecto
     useEffect(() => {
         if (carreras && carreras.length > 0 && !usuarioCarreraId) {
             const activa = carreras.find((c) => c.activo);
@@ -85,179 +63,54 @@ export function useDashboard() {
         }
     }, [carreras]);
 
-    const { data: resumen, isLoading: cargandoResumen } = useQuery({
+    const { data: resumen } = useQuery({
         queryKey: ['estadisticas', 'resumen', usuarioCarreraId],
         queryFn: () => estadisticasService.obtenerResumen(usuarioCarreraId!),
         enabled: !!usuarioCarreraId,
     });
-
-    const { data: distribucion, isLoading: cargandoDistribucion } = useQuery({
-        queryKey: ['estadisticas', 'distribucion', usuarioCarreraId],
-        queryFn: () => estadisticasService.obtenerDistribucionEstados(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
-    });
-
-    const { data: evolucion, isLoading: cargandoEvolucion } = useQuery({
-        queryKey: ['estadisticas', 'evolucion', usuarioCarreraId],
-        queryFn: () => estadisticasService.obtenerEvolucion(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
-    });
-
-    return {
-        usuario,
-        carreras,
-        usuarioCarreraId,
-        setUsuarioCarreraId,
-        resumen,
-        distribucion,
-        evolucion,
-        isLoading: cargandoCarreras || cargandoResumen || cargandoDistribucion || cargandoEvolucion,
-    };
+    // distribucion → obtenerDistribucionEstados
+    // evolucion  → obtenerEvolucion
 }
 ```
 
-### Estado Global (zustand)
-
-El dashboard no requiere estado global propio. Los datos se obtienen vía React Query y se cachean automáticamente. El selector de carrera activa se mantiene como estado local en el hook.
+El selector de carrera se guarda en estado local; al cambiar, las queries se re-ejecutan por su `queryKey`.
 
 ---
 
-## Comportamiento UX/UI
+## Componentes de Tarjeta (`StatCards.tsx`)
 
-### DashboardPage
+Cada uno recibe props y usa `Card` + `Badge`/`ProgressBar`:
 
-```typescript
-// pages/DashboardPage.tsx
-export function DashboardPage() {
-    const {
-        carreras, usuarioCarreraId, setUsuarioCarreraId,
-        resumen, distribucion, evolucion, isLoading,
-    } = useDashboard();
+- **PromedioCard** `{ promedio, materiasConNota }` — badge de color según rango (≥8.5 Excelente, ≥7 Bueno, ≥6 Aceptable, sino Bajo). Muestra `promedio.toFixed(2)`.
+- **TiempoRestanteCard** `{ cuatrimestres }` — muestra cantidad y `≈ N años` si ≥2.
+- **CreditosCard** `{ obtenidos, totales }` — `ProgressBar` con `%` completado.
+- **ProgresoBarCard** `{ porcentaje }` — `ProgressBar` de progreso general.
 
-    if (isLoading) return <EstadisticasSkeleton />;
+Colores del promedio: `<6` naranja ("Bajo"), `6–6.99` amarillo ("Aceptable"), `7–8.49` verde ("Bueno"), `≥8.5` azul ("Excelente").
 
-    // Si el usuario no tiene carreras, mostrar onboarding
-    if (carreras?.length === 0) {
-        return <EmptyState
-            icon="📚"
-            title="No tenés carreras registradas"
-            description="Inscribite a una carrera para comenzar a seguir tu progreso."
-            action={<Link to="/carreras" className="btn-primary">Ver carreras</Link>}
-        />;
-    }
+---
 
-    return (
-        <div className="space-y-6">
-            {/* Header + selector de carrera */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
-                {carreras && carreras.length > 1 && (
-                    <select
-                        value={usuarioCarreraId ?? ''}
-                        onChange={(e) => setUsuarioCarreraId(Number(e.target.value))}
-                        className="border rounded-lg p-2"
-                    >
-                        {carreras.map((c) => (
-                            <option key={c.usuarioCarreraId} value={c.usuarioCarreraId}>
-                                {c.carrera.nombre}
-                            </option>
-                        ))}
-                    </select>
-                )}
-            </div>
+## Gráficos (`Charts.tsx`)
 
-            {/* Tarjetas de resumen */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <PromedioCard promedio={resumen?.promedioGeneral} />
-                <TiempoRestanteCard cuatrimestres={resumen?.cuatrimestresRestantes} />
-                <CreditosCard
-                    obtenidos={resumen?.creditosObtenidos}
-                    totales={resumen?.creditosTotales}
-                />
-                <ProgresoBar porcentaje={resumen?.progresoPorcentaje} />
-            </div>
+- **MateriasPorEstadoChart** `{ data: { estado, cantidad, porcentaje }[] }` — barras verticales por estado
+  (verde/amarillo/rojo) con altura proporcional a `cantidad/total` y leyenda de colores. Si no hay datos,
+  muestra "Sin datos de distribución".
+- **EvolucionPromedioChart** `{ data: { cuatrimestre, promedio }[] }` — barras por cuatrimestre con tooltip.
+  Si vacío, "Sin datos de evolución".
+- **EstadisticasSkeleton** — skeletons de 4 tarjetas + 2 gráficos para el estado de carga.
 
-            {/* Gráficos */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card title="Distribución de materias">
-                    <MateriasPorEstadoChart data={distribucion} />
-                </Card>
-                <Card title="Evolución del promedio">
-                    <EvolucionPromedioChart data={evolucion} />
-                </Card>
-            </div>
+---
 
-            {/* Resumen de carreras */}
-            <Card title="Mis carreras">
-                <CarrerasResumenList carreras={carreras} />
-            </Card>
-        </div>
-    );
-}
-```
+## Comportamiento UX/UI (estado actual del page)
 
-### PromedioCard
+`DashboardPage` hoy:
 
-```
-┌─────────────────────────────┐
-│  📊 Promedio General        │
-│                             │
-│      ┌─────┐                │
-│      │ 7.83│  ← grande      │
-│      └─────┘                │
-│    ˉˉˉˉˉˉˉˉˉˉˉ              │
-│   de 18 materias            │
-│                             │
-│  [●  Bueno (≥7)]            │
-└─────────────────────────────┘
-```
-
-Colores del promedio:
-- Rojo (`< 4`): no aplica porque el mínimo es 4
-- Naranja (`4-5.99`): "Bajo"
-- Amarillo (`6-6.99`): "Aceptable"
-- Verde (`7-8.49`): "Bueno"
-- Azul (`8.5-10`): "Excelente"
-
-### TiempoRestanteCard
-
-```
-┌─────────────────────────────┐
-│  ⏳ Tiempo Estimado         │
-│                             │
-│      ┌─────┐                │
-│      │  4  │  ← grande      │
-│      └─────┘                │
-│   cuatrimestres restantes   │
-│                             │
-│  ≈ 2 años                   │
-└─────────────────────────────┘
-```
-
-### MateriasPorEstadoChart (Donut)
-
-```
-        ┌──────────┐
-        │  ● 18 Completadas  │
-        │  ●  5 En Proceso   │
-        │  ● 12 Pendientes   │
-        └──────────┘
-     ╭─────────────╮
-     │   🟢 18     │
-     │  🟡 5       │
-     │  🔴 12      │
-     ╰─────────────╯
-```
-
-### Estados de Carga
-
-| Estado | Comportamiento |
-|---|---|
-| `isLoading = true` | `EstadisticasSkeleton`: 4 skeletons de tarjeta + 2 skeletons de gráfico |
-| `error` | `Alert` con mensaje de error + botón "Reintentar" que refetch la query |
-| `data vacía` | Mensaje "No hay datos disponibles para esta carrera" |
-| `success` | Render completo de todos los componentes |
+1. Si `isLoading` → `EstadisticasSkeleton`.
+2. Si el usuario no tiene carreras → `EmptyState` con CTA a `/carreras`.
+3. Si hay carreras → header con selector (si >1) y los valores reales en las 4 tarjetas y en los dos bloques
+   de gráficos (datos del backend vía `useDashboard`).
 
 ### Selector de Carrera (Multi-carrera)
 
-Si el usuario tiene más de una carrera activa, aparece un `<select>` en el header que permite cambiar entre ellas. Al cambiar, React Query invalida las queries y refetch automáticamente.
+Cuando el usuario tiene más de una carrera activa aparece un `<select>` en el header. Al cambiar,
+`useDashboard` invalida/refetch de las queries por `usuarioCarreraId`.
