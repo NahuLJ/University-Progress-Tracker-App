@@ -76,7 +76,17 @@ Asigna una materia a un bloque horario y día específico dentro del período.
 |---|---|
 | 201 | Materia planificada exitosamente |
 | 400 | Conflicto de horario (el bloque ya está ocupado en ese día) |
+| 400 | Correlativas pendientes de aprobación |
 | 404 | Período o materia no encontrada |
+
+### GET /api/planificacion/periodos/:id/materias-desbloqueables
+
+Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias actualmente planificadas en el período.
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ materiaId, nombre, codigo, creditos, ... }]` |
+| 404 | Período no encontrado |
 
 ### DELETE /api/planificacion/materias/:id
 
@@ -145,6 +155,11 @@ export class PlanificarMateriaDto {
 ### PlanificacionService
 
 ```typescript
+import { Repository, In } from 'typeorm';
+import { Correlativa } from '../materias/entities/correlativa.entity';
+import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
+import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
+
 @Injectable()
 export class PlanificacionService {
     constructor(
@@ -158,6 +173,12 @@ export class PlanificacionService {
         private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
         @InjectRepository(Materia)
         private readonly materiaRepo: Repository<Materia>,
+        @InjectRepository(Correlativa)
+        private readonly correlativaRepo: Repository<Correlativa>,
+        @InjectRepository(ProgresoMateria)
+        private readonly progresoRepo: Repository<ProgresoMateria>,
+        @InjectRepository(CarreraMateria)
+        private readonly carreraMateriaRepo: Repository<CarreraMateria>,
     ) {}
 
     async listarPeriodos(usuarioCarreraId: number): Promise<PeriodoPlanificacion[]> {
@@ -190,7 +211,6 @@ export class PlanificacionService {
         });
         if (!periodo) throw new NotFoundException('Período no encontrado');
 
-        // Eliminar en cascada las materias planificadas
         await this.materiaPlanificadaRepo.remove(periodo.materiasPlanificadas);
         await this.periodoRepo.remove(periodo);
     }
@@ -211,7 +231,10 @@ export class PlanificacionService {
     }
 
     async planificarMateria(periodoId: number, dto: PlanificarMateriaDto): Promise<MateriaPlanificada> {
-        const periodo = await this.periodoRepo.findOne({ where: { periodoId } });
+        const periodo = await this.periodoRepo.findOne({
+            where: { periodoId },
+            relations: { usuarioCarrera: true },
+        });
         if (!periodo) throw new NotFoundException('Período no encontrado');
 
         const materia = await this.materiaRepo.findOne({ where: { materiaId: dto.materiaId } });
@@ -247,6 +270,17 @@ export class PlanificacionService {
             );
         }
 
+        // Validar que se cumplan las correlativas
+        const correlativasCumplidas = await this.validarCorrelativas(
+            periodo.usuarioCarrera.usuarioCarreraId,
+            dto.materiaId,
+        );
+        if (!correlativasCumplidas) {
+            throw new BadRequestException(
+                'No se puede planificar: existen correlativas pendientes de aprobación',
+            );
+        }
+
         const planificacion = this.materiaPlanificadaRepo.create({
             periodo,
             materia,
@@ -260,6 +294,87 @@ export class PlanificacionService {
         const planificacion = await this.materiaPlanificadaRepo.findOne({ where: { planificacionId: id } });
         if (!planificacion) throw new NotFoundException('Materia planificada no encontrada');
         await this.materiaPlanificadaRepo.remove(planificacion);
+    }
+
+    async obtenerMateriasDesbloqueables(periodoId: number): Promise<Materia[]> {
+        const periodo = await this.periodoRepo.findOne({
+            where: { periodoId },
+            relations: { usuarioCarrera: { carrera: true } },
+        });
+        if (!periodo) throw new NotFoundException('Período no encontrado');
+
+        const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
+        const carreraId = periodo.usuarioCarrera.carrera.carreraId;
+
+        const planificadas = await this.materiaPlanificadaRepo.find({
+            where: { periodo: { periodoId } },
+            relations: { materia: true },
+        });
+        const idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
+
+        const progresos = await this.progresoRepo.find({
+            where: { usuarioCarrera: { usuarioCarreraId } },
+            relations: { materia: true, estado: true },
+        });
+        const idsCompletadas = new Set(
+            progresos.filter((p) => p.estado.nombre === 'Completada').map((p) => p.materia.materiaId),
+        );
+
+        const idsHipoteticamenteCompletadas = new Set([...idsCompletadas, ...idsPlanificadas]);
+
+        const planEstudios = await this.carreraMateriaRepo.find({
+            where: { carrera: { carreraId } },
+            relations: { materia: { correlativasRequeridas: { materiaCorrelativa: true } } },
+        });
+
+        const desbloqueables: Materia[] = [];
+
+        for (const cm of planEstudios) {
+            const materia = cm.materia;
+            const materiaId = materia.materiaId;
+
+            if (idsCompletadas.has(materiaId) || idsPlanificadas.has(materiaId)) continue;
+
+            const correlativas = materia.correlativasRequeridas || [];
+            if (correlativas.length === 0) continue;
+
+            const todasCumplidas = correlativas.every((c) =>
+                idsHipoteticamenteCompletadas.has(c.materiaCorrelativa.materiaId),
+            );
+
+            if (todasCumplidas) desbloqueables.push(materia);
+        }
+
+        return desbloqueables;
+    }
+
+    private async validarCorrelativas(
+        usuarioCarreraId: number,
+        materiaId: number,
+    ): Promise<boolean> {
+        const correlativas = await this.correlativaRepo.find({
+            where: { materia: { materiaId } },
+            relations: { materiaCorrelativa: true },
+        });
+
+        if (correlativas.length === 0) return true;
+
+        const idsCorrelativas = correlativas.map(
+            (c) => c.materiaCorrelativa.materiaId,
+        );
+
+        const progresos = await this.progresoRepo.find({
+            where: {
+                usuarioCarrera: { usuarioCarreraId },
+                materia: { materiaId: In(idsCorrelativas) },
+            },
+            relations: { estado: true },
+        });
+
+        const completadas = progresos.filter(
+            (p) => p.estado.nombre === 'Completada',
+        );
+        return completadas.length === correlativas.length;
     }
 }
 ```
@@ -347,6 +462,8 @@ export class MateriaPlanificada {
 |---|---|
 | No puede haber dos materias en el mismo bloque, día y período | Índice único + validación explícita en el Service |
 | Una materia no puede planificarse dos veces en el mismo período | Validación explícita en el Service |
+| No se puede planificar una materia si no se cumplen sus correlativas | Validación explícita en el Service (`validarCorrelativas`) |
+| Las materias que se desbloquearían al completar la planificación se calculan en `GET /periodos/:id/materias-desbloqueables` | Endpoint dedicado que compara planificadas + completadas vs. correlativas del plan |
 | Solo existen 7 bloques fijos: 08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22 | Catálogo predefinido en base de datos (seed) |
 | Los días disponibles son Lunes a Sábado | ENUM en la entidad |
 | Un período pertenece siempre a un usuario y una carrera | FK a `usuario_carrera` |

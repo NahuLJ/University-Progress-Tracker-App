@@ -74,6 +74,20 @@ export class PlanificacionController {
     return this.planificacionService.planificarMateria(id, dto);
   }
 
+  @Get('periodos/:id/materias-desbloqueables')
+  @ApiOperation({
+    summary:
+      'Materias que se desbloquearían al completar las planificadas en el período',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de materias desbloqueables',
+  })
+  @ApiResponse({ status: 404, description: 'Período no encontrado' })
+  async obtenerMateriasDesbloqueables(@Param('id') id: number) {
+    return this.planificacionService.obtenerMateriasDesbloqueables(id);
+  }
+
   @Delete('materias/:id')
   @ApiOperation({ summary: 'Eliminar materia planificada' })
   @ApiResponse({

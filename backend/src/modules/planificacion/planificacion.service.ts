@@ -4,12 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PeriodoPlanificacion } from './entities/periodo-planificacion.entity';
 import { MateriaPlanificada } from './entities/materia-planificada.entity';
 import { BloqueHorario } from './entities/bloque-horario.entity';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { Materia } from '../materias/entities/materia.entity';
+import { Correlativa } from '../materias/entities/correlativa.entity';
+import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
+import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
 import { CrearPeriodoDto } from './dto/crear-periodo.dto';
 import { PlanificarMateriaDto } from './dto/planificar-materia.dto';
 
@@ -26,6 +29,12 @@ export class PlanificacionService {
     private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
     @InjectRepository(Materia)
     private readonly materiaRepo: Repository<Materia>,
+    @InjectRepository(Correlativa)
+    private readonly correlativaRepo: Repository<Correlativa>,
+    @InjectRepository(ProgresoMateria)
+    private readonly progresoRepo: Repository<ProgresoMateria>,
+    @InjectRepository(CarreraMateria)
+    private readonly carreraMateriaRepo: Repository<CarreraMateria>,
   ) {}
 
   async listarPeriodos(
@@ -85,7 +94,10 @@ export class PlanificacionService {
     periodoId: number,
     dto: PlanificarMateriaDto,
   ): Promise<MateriaPlanificada> {
-    const periodo = await this.periodoRepo.findOne({ where: { periodoId } });
+    const periodo = await this.periodoRepo.findOne({
+      where: { periodoId },
+      relations: { usuarioCarrera: true },
+    });
     if (!periodo) throw new NotFoundException('Período no encontrado');
 
     const materia = await this.materiaRepo.findOne({
@@ -123,6 +135,16 @@ export class PlanificacionService {
       );
     }
 
+    const correlativasCumplidas = await this.validarCorrelativas(
+      periodo.usuarioCarrera.usuarioCarreraId,
+      dto.materiaId,
+    );
+    if (!correlativasCumplidas) {
+      throw new BadRequestException(
+        'No se puede planificar: existen correlativas pendientes de aprobación',
+      );
+    }
+
     const planificacion = this.materiaPlanificadaRepo.create({
       periodo,
       materia,
@@ -139,5 +161,101 @@ export class PlanificacionService {
     if (!planificacion)
       throw new NotFoundException('Materia planificada no encontrada');
     await this.materiaPlanificadaRepo.remove(planificacion);
+  }
+
+  async obtenerMateriasDesbloqueables(
+    periodoId: number,
+  ): Promise<Materia[]> {
+    const periodo = await this.periodoRepo.findOne({
+      where: { periodoId },
+      relations: { usuarioCarrera: { carrera: true } },
+    });
+    if (!periodo) throw new NotFoundException('Período no encontrado');
+
+    const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
+    const carreraId = periodo.usuarioCarrera.carrera.carreraId;
+
+    const planificadas = await this.materiaPlanificadaRepo.find({
+      where: { periodo: { periodoId } },
+      relations: { materia: true },
+    });
+    const idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
+
+    const progresos = await this.progresoRepo.find({
+      where: { usuarioCarrera: { usuarioCarreraId } },
+      relations: { materia: true, estado: true },
+    });
+    const idsCompletadas = new Set(
+      progresos
+        .filter((p) => p.estado.nombre === 'Completada')
+        .map((p) => p.materia.materiaId),
+    );
+
+    const idsHipoteticamenteCompletadas = new Set([
+      ...idsCompletadas,
+      ...idsPlanificadas,
+    ]);
+
+    const planEstudios = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId } },
+      relations: {
+        materia: {
+          correlativasRequeridas: { materiaCorrelativa: true },
+        },
+      },
+    });
+
+    const desbloqueables: Materia[] = [];
+
+    for (const cm of planEstudios) {
+      const materia = cm.materia;
+      const materiaId = materia.materiaId;
+
+      if (idsCompletadas.has(materiaId) || idsPlanificadas.has(materiaId)) {
+        continue;
+      }
+
+      const correlativas = materia.correlativasRequeridas || [];
+      if (correlativas.length === 0) continue;
+
+      const todasCumplidas = correlativas.every((c) =>
+        idsHipoteticamenteCompletadas.has(c.materiaCorrelativa.materiaId),
+      );
+
+      if (todasCumplidas) {
+        desbloqueables.push(materia);
+      }
+    }
+
+    return desbloqueables;
+  }
+
+  private async validarCorrelativas(
+    usuarioCarreraId: number,
+    materiaId: number,
+  ): Promise<boolean> {
+    const correlativas = await this.correlativaRepo.find({
+      where: { materia: { materiaId } },
+      relations: { materiaCorrelativa: true },
+    });
+
+    if (correlativas.length === 0) return true;
+
+    const idsCorrelativas = correlativas.map(
+      (c) => c.materiaCorrelativa.materiaId,
+    );
+
+    const progresos = await this.progresoRepo.find({
+      where: {
+        usuarioCarrera: { usuarioCarreraId },
+        materia: { materiaId: In(idsCorrelativas) },
+      },
+      relations: { estado: true },
+    });
+
+    const completadas = progresos.filter(
+      (p) => p.estado.nombre === 'Completada',
+    );
+    return completadas.length === correlativas.length;
   }
 }

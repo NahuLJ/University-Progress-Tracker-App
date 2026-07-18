@@ -17,7 +17,8 @@ components/planificacion/
 ├── PlanificacionTabs.tsx             # Tabs para cambiar entre planificaciones del mismo usuario
 ├── VistaSemanalHeader.tsx            # Encabezado con los días de la semana
 ├── VistaHorariosHeader.tsx           # Encabezado lateral con los bloques horarios
-└── LeyendaHorarios.tsx               # Leyenda de colores por materia
+├── LeyendaHorarios.tsx               # Leyenda de colores por materia
+└── MateriasDesbloqueablesList.tsx    # Lista de materias que se desbloquearían al completar las planificadas
 
 components/ui/
 ├── Card.tsx
@@ -76,6 +77,15 @@ MainLayout
     │           │   └── Nombre + código + badge de créditos
     │           ├── MateriaDisponibleItem (...)
     │           └── EmptyState "No hay materias pendientes para planificar"
+    │
+    │
+    ├── MateriasDesbloqueablesList
+    │   ├── Título "Materias que se desbloquearán"
+    │   ├── Subtítulo "Al completar las materias planificadas, también podrás cursar:"
+    │   ├── MateriaDesbloqueableItem (no draggable)
+    │   │   └── Nombre + código + badge de créditos
+    │   ├── MateriaDesbloqueableItem (...)
+    │   └── EmptyState "No hay materias nuevas por desbloquear"
     │
     └── Botones de acción
         ├── "Descartar cambios"
@@ -219,6 +229,16 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
         }
     }, [progreso]);
 
+    // Obtener materias que se desbloquearían al completar las planificadas
+    const { data: materiasDesbloqueables } = useQuery({
+        queryKey: ['planificacion', 'materias-desbloqueables', store.periodoActivo?.periodoId],
+        queryFn: () =>
+            planificacionService.obtenerMateriasDesbloqueables(store.periodoActivo!.periodoId),
+        enabled: !!store.periodoActivo?.periodoId,
+    });
+
+    const materiasDesbloqueablesData = materiasDesbloqueables ?? [];
+
     // Cuando se selecciona un período, cargar sus materias planificadas
     const cargarPeriodo = useCallback(async (periodoId: number) => {
         const materias = await planificacionService.obtenerMateriasDelPeriodo(periodoId);
@@ -283,6 +303,7 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
         crearPeriodo: crearPeriodoMutation,
         guardar: guardarMutation,
         cargarPeriodo,
+        materiasDesbloqueables: materiasDesbloqueablesData,
         store,
     };
 }
@@ -384,6 +405,7 @@ function getColorMateria(materiaId: number): string {
 | Una materia no puede estar en dos bloques distintos en el mismo período | Si se arrastra una materia ya asignada, se mueve (no se duplica) |
 | No puede haber dos materias en la misma celda | La celda solo acepta una materia (si se arrastra otra, se rechaza con feedback visual rojo) |
 | Solo materias pendientes aparecen en la lista disponible | Las completadas se filtran automáticamente |
+| Materias desbloqueables se actualizan al cargar un período | Se fetchean de `GET /planificacion/periodos/:id/materias-desbloqueables` cuando `periodoActivo` cambia |
 | Cambios sin guardar | El store marca `dirty = true`. Si se intenta cambiar de período sin guardar, aparece confirmación "Hay cambios sin guardar. ¿Descartarlos?" |
 | Persistencia al recargar | El estado de planificación no persiste entre sesiones. Se guarda explícitamente con el botón "Guardar" |
 
@@ -397,4 +419,5 @@ function getColorMateria(materiaId: number): string {
 | Guardado exitoso | Toast verde "Planificación guardada correctamente" + store.dirty = false |
 | Error al guardar | Toast rojo "Error al guardar: [mensaje]" |
 | Sin materias pendientes en la carrera | Lista de disponibles vacía con mensaje "No hay materias pendientes para planificar" |
+| Sin materias desbloqueables al cargar período | Lista de desbloqueables vacía con mensaje "No hay materias nuevas por desbloquear" |
 | Conflicto de horario desde el backend | Toast rojo con el conflicto específico |
