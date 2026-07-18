@@ -65,10 +65,10 @@ MainLayout
 
 ```typescript
 // hooks/useDashboard.ts
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { estadisticasService } from '../services/estadisticas.service';
-import { useCarreras } from './useCarreras';
+import { useCarreras } from '../hooks/useCarreras';
 import { useAuthStore } from '../store/auth.store';
 
 export function useDashboard() {
@@ -93,7 +93,7 @@ export function useDashboard() {
 
     const { data: distribucion, isLoading: cargandoDistribucion } = useQuery({
         queryKey: ['estadisticas', 'distribucion', usuarioCarreraId],
-        queryFn: () => estadisticasService.obtenerDistribucion(usuarioCarreraId!),
+        queryFn: () => estadisticasService.obtenerDistribucionEstados(usuarioCarreraId!),
         enabled: !!usuarioCarreraId,
     });
 
@@ -111,7 +111,7 @@ export function useDashboard() {
         resumen,
         distribucion,
         evolucion,
-        isLoading: cargandoCarreras || cargandoResumen,
+        isLoading: cargandoCarreras || cargandoResumen || cargandoDistribucion || cargandoEvolucion,
     };
 }
 ```

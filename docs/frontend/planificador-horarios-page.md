@@ -215,18 +215,17 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
     const { data: progreso } = useProgreso(usuarioCarreraId);
 
     useEffect(() => {
-        if (progreso) {
-            const pendientes = progreso
-                .filter((p) => p.estado.nombre !== 'Completada')
-                .map((p) => ({
-                    planificacionId: 0,
-                    materiaId: p.materia.materiaId,
-                    nombre: p.materia.nombre,
-                    codigo: p.materia.codigo,
-                    creditos: p.materia.creditos,
-                }));
-            store.setMateriasDisponibles(pendientes);
-        }
+        if (!progreso) return;
+        const pendientes = progreso
+            .filter((p) => p.estado.nombre !== 'Completada')
+            .map((p) => ({
+                planificacionId: 0,
+                materiaId: p.materia.materiaId,
+                nombre: p.materia.nombre,
+                codigo: p.materia.codigo,
+                creditos: p.materia.creditos,
+            }));
+        store.setMateriasDisponibles(pendientes);
     }, [progreso]);
 
     // Obtener materias que se desbloquearían al completar las planificadas
@@ -241,30 +240,33 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
 
     // Cuando se selecciona un período, cargar sus materias planificadas
     const cargarPeriodo = useCallback(async (periodoId: number) => {
-        const materias = await planificacionService.obtenerMateriasDelPeriodo(periodoId);
-        const celdas: Record<string, any[]> = {};
-        const planificadas: any[] = [];
+        try {
+            const materias = await planificacionService.obtenerMateriasDelPeriodo(periodoId);
+            const celdas: Record<string, any[]> = {};
+            const planificadas: number[] = [];
 
-        for (const mp of materias) {
-            const key = `${mp.bloque.bloqueId}-${mp.diaSemana}`;
-            if (!celdas[key]) celdas[key] = [];
-            celdas[key].push({
-                planificacionId: mp.planificacionId,
-                materiaId: mp.materia.materiaId,
-                nombre: mp.materia.nombre,
-                codigo: mp.materia.codigo,
-                creditos: mp.materia.creditos,
-            });
-            planificadas.push(mp.materia.materiaId);
+            for (const mp of materias) {
+                const key = `${mp.bloque.bloqueId}-${mp.diaSemana}`;
+                if (!celdas[key]) celdas[key] = [];
+                celdas[key].push({
+                    planificacionId: mp.planificacionId,
+                    materiaId: mp.materia.materiaId,
+                    nombre: mp.materia.nombre,
+                    codigo: mp.materia.codigo,
+                    creditos: mp.materia.creditos,
+                });
+                planificadas.push(mp.materia.materiaId);
+            }
+
+            store.setCeldas(celdas);
+
+            const disponibles = store.materiasDisponibles.filter(
+                (m) => !planificadas.includes(m.materiaId),
+            );
+            store.setMateriasDisponibles(disponibles);
+        } catch (error) {
+            console.error('Error al cargar período:', error);
         }
-
-        store.setCeldas(celdas);
-
-        // Remover de disponibles las que ya están planificadas
-        const disponibles = store.materiasDisponibles.filter(
-            (m) => !planificadas.includes(m.materiaId),
-        );
-        store.setMateriasDisponibles(disponibles);
     }, []);
 
     const crearPeriodoMutation = useMutation({
@@ -277,19 +279,22 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
     const guardarMutation = useMutation({
         mutationFn: async (periodoId: number) => {
             const state = usePlanificacionStore.getState();
-            // Enviar todas las asignaciones al backend
             const asignaciones = Object.entries(state.celdas).flatMap(([key, materias]) => {
                 const [bloqueId, diaSemana] = key.split('-');
                 return materias
                     .filter((m) => m.planificacionId === 0) // Solo nuevas
                     .map((m) => ({
-                        periodoId,
                         materiaId: m.materiaId,
                         bloqueId: parseInt(bloqueId),
                         diaSemana,
                     }));
             });
-            await planificacionService.guardarAsignaciones(periodoId, asignaciones);
+            // Enviar una por una (el backend solo acepta una materia a la vez)
+            await Promise.all(
+                asignaciones.map((asignacion) =>
+                    planificacionService.planificarMateria(periodoId, asignacion),
+                ),
+            );
         },
         onSuccess: () => {
             store.marcarGuardado();

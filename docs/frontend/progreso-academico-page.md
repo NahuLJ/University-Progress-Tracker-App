@@ -122,6 +122,10 @@ Cada fila maneja su propio estado local de formulario con `react-hook-form`, ind
 
 ```typescript
 // components/progreso/MateriaProgresoRow.tsx
+import { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { Button } from '../../components/ui/Button';
+
 interface MateriaProgresoRowProps {
     materia: Materia;
     progreso: Progreso;

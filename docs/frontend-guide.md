@@ -71,34 +71,65 @@ frontend/
     │   │   ├── Modal.tsx
     │   │   ├── Badge.tsx
     │   │   ├── Select.tsx
-    │   │   └── Input.tsx
+    │   │   ├── Input.tsx
+    │   │   ├── Alert.tsx
+    │   │   ├── PasswordInput.tsx
+    │   │   ├── ProgressBar.tsx
+    │   │   ├── Skeleton.tsx
+    │   │   ├── StatCard.tsx
+    │   │   ├── Tabs.tsx
+    │   │   ├── Accordion.tsx
+    │   │   ├── ScrollArea.tsx
+    │   │   └── ConfirmDialog.tsx
     │   │
     │   ├── auth/
     │   │   ├── LoginForm.tsx
-    │   │   └── RegisterForm.tsx
+    │   │   ├── RegisterForm.tsx
+    │   │   └── AuthCard.tsx
     │   │
     │   ├── dashboard/
     │   │   ├── PromedioCard.tsx
     │   │   ├── TiempoRestanteCard.tsx
-    │   │   └── MateriasPorEstadoChart.tsx
+    │   │   ├── MateriasPorEstadoChart.tsx
+    │   │   ├── CreditosCard.tsx
+    │   │   ├── ProgresoBar.tsx
+    │   │   ├── CarrerasResumenList.tsx
+    │   │   ├── EvolucionPromedioChart.tsx
+    │   │   └── EstadisticasSkeleton.tsx
     │   │
     │   ├── carrera/
     │   │   ├── CarreraCard.tsx
     │   │   ├── CarreraList.tsx
     │   │   ├── PlanEstudiosTable.tsx      # Tabla de materias con año/cuatrimestre/orden
-    │   │   └── MateriaDetail.tsx          # Modal con info de materia + correlativas
+    │   │   ├── PlanEstudiosTree.tsx       # Árbol año→cuatrimestre
+    │   │   ├── MateriaDetailModal.tsx     # Modal con info de materia + correlativas
+    │   │   ├── MateriaBadge.tsx           # Badge de estado
+    │   │   ├── CorrelativasList.tsx       # Lista de correlativas de una materia
+    │   │   └── InscribirCarreraModal.tsx  # Modal para inscribirse a una carrera
     │   │
     │   ├── progreso/
     │   │   ├── MateriaProgresoRow.tsx     # Fila individual para cambiar estado/nota/tipo
     │   │   ├── FiltroEstado.tsx
-    │   │   └── ProgresoGrid.tsx           # Grid de todas las materias del usuario
+    │   │   ├── FiltroBusqueda.tsx         # Búsqueda por nombre
+    │   │   ├── ProgresoGrid.tsx           # Grid de todas las materias del usuario
+    │   │   ├── ProgresoStatsBar.tsx       # Barra resumen de estados
+    │   │   ├── CompletarMateriaModal.tsx  # Modal para ingresar nota + tipo
+    │   │   ├── ConfirmarCambioModal.tsx   # Confirmación antes de guardar
+    │   │   └── ProgresoBulkActions.tsx    # Acciones masivas
     │   │
     │   ├── planificacion/
     │   │   ├── PeriodoSelector.tsx        # Select de año + instancia (Verano, 1C, 2C)
     │   │   ├── CalendarioSemanal.tsx      # Grilla Lunes–Sábado con bloques de 08-22
     │   │   ├── BloqueHorarioCelda.tsx     # Celda individual de 2h en la grilla
     │   │   ├── MateriaPlanificadaChip.tsx # Chip de materia arrastrable dentro de un bloque
-    │   │   └── MateriaDisponibleList.tsx  # Lista de materias pendientes para arrastrar
+    │   │   ├── MateriaDisponibleList.tsx  # Lista de materias pendientes para arrastrar
+    │   │   ├── MateriaDisponibleItem.tsx  # Ítem individual en lista (draggable)
+    │   │   ├── NuevoPeriodoModal.tsx      # Modal para crear nuevo período
+    │   │   ├── PlanificacionTabs.tsx      # Tabs para cambiar entre variantes
+    │   │   ├── VistaSemanalHeader.tsx     # Encabezado con días de la semana
+    │   │   ├── VistaHorariosHeader.tsx    # Encabezado con bloques horarios
+    │   │   ├── LeyendaHorarios.tsx        # Leyenda de colores por materia
+    │   │   └── MateriasDesbloqueablesList.tsx  # Materias que se desbloquearían
     │   │
     │   └── common/
     │       ├── LoadingSpinner.tsx
@@ -110,18 +141,20 @@ frontend/
     │   ├── useCarreras.ts                # useQuery para lista de carreras del usuario
     │   ├── usePlanEstudios.ts            # useQuery para materias de una carrera
     │   ├── useProgreso.ts                # useQuery + useMutation para estados/notas
-    │   ├── useEstadisticas.ts            # useQuery para promedio y tiempo restante
+    │   ├── useActualizarProgreso.ts      # useMutation para actualizar estado/nota
+    │   ├── useDashboard.ts               # useQuery para estadísticas y carreras activas
     │   ├── usePlanificacion.ts           # useQuery + useMutation para períodos y horarios
-    │   └── useBloquesHorarios.ts         # useQuery para catálogo de bloques
+    │   ├── useAuthForm.ts                # Hooks useLoginForm + useRegisterForm
+    │   └── useInscribirCarrera.ts        # useMutation para inscribirse a una carrera
     │
     ├── services/
     │   ├── api.ts                        # Instancia de Axios (base URL, interceptor JWT)
-    │   ├── auth.service.ts               # login(), register(), refresh()
-    │   ├── carreras.service.ts           # getCarreras(), getPlanEstudios(), inscribir()
-    │   ├── materias.service.ts           # getMaterias(), getCorrelativas()
-    │   ├── progreso.service.ts           # getProgreso(), actualizarProgreso()
-    │   ├── estadisticas.service.ts       # getResumen()
-    │   └── planificacion.service.ts      # getPeriodos(), crearPeriodo(), planificarMateria()
+    │   ├── auth.service.ts               # login(), register()
+    │   ├── carreras.service.ts           # obtenerCarrerasDelUsuario(), obtenerPlanEstudios(), inscribirCarrera()
+    │   ├── materias.service.ts           # listarMaterias(), obtenerMateria()
+    │   ├── progreso.service.ts           # obtenerProgreso(), actualizarProgreso()
+    │   ├── estadisticas.service.ts       # obtenerResumen(), obtenerDistribucionEstados(), obtenerEvolucion()
+    │   └── planificacion.service.ts      # listarPeriodos(), crearPeriodo(), obtenerMateriasDelPeriodo(), planificarMateria(), obtenerMateriasDesbloqueables()
     │
     ├── store/
     │   ├── auth.store.ts                 # zustand: token, usuario actual, login/logout
@@ -182,32 +215,70 @@ export const useAuthStore = create<AuthState>()(
 ```typescript
 // store/planificacion.store.ts
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
-interface PlanificacionState {
-    periodoActivo: { periodoId: number; anio: number; instancia: string } | null;
-    materiasSeleccionadas: Map<string, number>; // "LUNES-1" → materiaId
-    setPeriodoActivo: (periodo: PlanificacionState['periodoActivo']) => void;
-    asignarMateria: (key: string, materiaId: number) => void;
-    quitarMateria: (key: string) => void;
+interface MateriaEnCelda {
+    planificacionId: number;
+    materiaId: number;
+    nombre: string;
+    codigo: string;
+    creditos: number;
 }
 
-export const usePlanificacionStore = create<PlanificacionState>((set) => ({
-    periodoActivo: null,
-    materiasSeleccionadas: new Map(),
-    setPeriodoActivo: (periodo) => set({ periodoActivo: periodo }),
-    asignarMateria: (key, materiaId) =>
-        set((state) => {
-            const nuevo = new Map(state.materiasSeleccionadas);
-            nuevo.set(key, materiaId);
-            return { materiasSeleccionadas: nuevo };
+interface PlanificacionState {
+    periodoActivo: {
+        periodoId: number | null;
+        anio: number;
+        instancia: string;
+        nombre: string | null;
+    } | null;
+    celdas: Record<string, MateriaEnCelda[]>; // "BLOQUE_ID-DIA" → materias[]
+    materiasDisponibles: MateriaEnCelda[];
+    dirty: boolean;
+    setPeriodoActivo: (periodo: PlanificacionState['periodoActivo']) => void;
+    setCeldas: (celdas: Record<string, MateriaEnCelda[]>) => void;
+    asignarMateria: (bloqueId: number, dia: string, materiaId: number) => void;
+    quitarMateria: (bloqueId: number, dia: string, planificacionId: number) => void;
+    setMateriasDisponibles: (materias: MateriaEnCelda[]) => void;
+    marcarGuardado: () => void;
+}
+
+export const usePlanificacionStore = create<PlanificacionState>()(
+    devtools(
+        (set, get) => ({
+            periodoActivo: null,
+            celdas: {},
+            materiasDisponibles: [],
+            dirty: false,
+            setPeriodoActivo: (periodo) => set({ periodoActivo: periodo }),
+            setCeldas: (celdas) => set({ celdas, dirty: false }),
+            asignarMateria: (bloqueId, dia, materiaId) => {
+                const key = `${bloqueId}-${dia}`;
+                const materia = get().materiasDisponibles.find((m) => m.materiaId === materiaId);
+                if (!materia) return;
+                const celdas = { ...get().celdas };
+                if (!celdas[key]) celdas[key] = [];
+                celdas[key] = [...celdas[key], { ...materia, planificacionId: 0 }];
+                const disponibles = get().materiasDisponibles.filter((m) => m.materiaId !== materiaId);
+                set({ celdas, materiasDisponibles: disponibles, dirty: true });
+            },
+            quitarMateria: (bloqueId, dia, planificacionId) => {
+                const key = `${bloqueId}-${dia}`;
+                const celdas = { ...get().celdas };
+                const materiaRemovida = celdas[key]?.find((m) => m.planificacionId === planificacionId);
+                celdas[key] = celdas[key]?.filter((m) => m.planificacionId !== planificacionId) ?? [];
+                if (celdas[key].length === 0) delete celdas[key];
+                const disponibles = materiaRemovida
+                    ? [...get().materiasDisponibles, materiaRemovida]
+                    : get().materiasDisponibles;
+                set({ celdas, materiasDisponibles: disponibles, dirty: true });
+            },
+            setMateriasDisponibles: (materias) => set({ materiasDisponibles: materias }),
+            marcarGuardado: () => set({ dirty: false }),
         }),
-    quitarMateria: (key) =>
-        set((state) => {
-            const nuevo = new Map(state.materiasSeleccionadas);
-            nuevo.delete(key);
-            return { materiasSeleccionadas: nuevo };
-        }),
-}));
+        { name: 'planificacion-store' },
+    ),
+);
 ```
 
 #### React Query — Datos del Servidor
@@ -220,7 +291,7 @@ import { progresoService } from '../services/progreso.service';
 export function useProgreso(usuarioCarreraId: number) {
     return useQuery({
         queryKey: ['progreso', usuarioCarreraId],
-        queryFn: () => progresoService.getProgreso(usuarioCarreraId),
+        queryFn: () => progresoService.obtenerProgreso(usuarioCarreraId),
     });
 }
 
@@ -278,6 +349,7 @@ El componente `CalendarioSemanal` renderiza una grilla de 7 bloques (08-10, 10-1
 
 ```typescript
 // components/planificacion/CalendarioSemanal.tsx
+import React from 'react';
 import { usePlanificacionStore } from '../../store/planificacion.store';
 import { BloqueHorarioCelda } from './BloqueHorarioCelda';
 
@@ -296,8 +368,7 @@ export function CalendarioSemanal() {
     const asignarMateria = usePlanificacionStore((s) => s.asignarMateria);
 
     const handleDrop = (bloqueId: number, dia: string, materiaId: number) => {
-        const key = `${dia.toUpperCase()}-${bloqueId}`;
-        asignarMateria(key, materiaId);
+        asignarMateria(bloqueId, dia, materiaId);
     };
 
     return (
@@ -307,8 +378,8 @@ export function CalendarioSemanal() {
                 <div key={dia} className="font-semibold p-2 text-center">{dia}</div>
             ))}
             {BLOQUES.map((bloque) => (
-                <>
-                    <div key={bloque.id} className="p-2 text-sm text-gray-500">
+                <React.Fragment key={bloque.id}>
+                    <div className="p-2 text-sm text-gray-500">
                         {bloque.inicio} – {bloque.fin}
                     </div>
                     {DIAS.map((dia) => (
@@ -319,7 +390,7 @@ export function CalendarioSemanal() {
                             onDrop={(materiaId) => handleDrop(bloque.id, dia, materiaId)}
                         />
                     ))}
-                </>
+                </React.Fragment>
             ))}
         </div>
     );

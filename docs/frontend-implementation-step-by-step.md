@@ -159,20 +159,20 @@ Cada paso depende del anterior. No saltear.
 
 **Abrir y aplicar:**
 
-- **`docs/security/jwt-auth-specification.md`** sección 1 — Código de `store/auth.store.ts` con zustand persist + `isAuthenticated()` que decodifica el token para verificar expiración (líneas 194–242).
-- **`docs/frontend-guide.md`** sección 1.1 — Store de sesión con zustand (líneas 156–178).
+- **`docs/security/jwt-auth-specification.md`** sección "AuthStore con zustand persist" — Código de `store/auth.store.ts` con zustand persist + `isAuthenticated()` que decodifica el token para verificar expiración.
+- **`docs/frontend-guide.md`** sección "zustand — Sesión de Usuario" — Store de sesión con zustand (versión simplificada).
 
 **Código base de interconexión (esqueleto crítico):**
 
 ```typescript
-// src/store/auth.store.ts — Ver código en jwt-auth-specification.md (líneas 194-242)
+// src/store/auth.store.ts — Ver código en jwt-auth-specification.md (sección AuthStore)
 // Usar zustand persist middleware para guardar token en localStorage
 // Incluir método isAuthenticated() que verifica exp del token localmente
 ```
 
 ```typescript
-// src/routes/PrivateRoute.tsx — Ver código en frontend-guide.md (líneas 457-471)
-// y jwt-auth-specification.md (líneas 324-353)
+// src/routes/PrivateRoute.tsx — Ver código en frontend-guide.md (sección PrivateRoute)
+// y jwt-auth-specification.md (sección PrivateRoute)
 // Debe: verificar token, si expirado → logout, si no hay token → redirect a /login
 ```
 
@@ -208,7 +208,7 @@ Cada paso depende del anterior. No saltear.
 - **`docs/frontend/plan-estudios-page.md`** — `CarrerasPage` (lista + inscripción), `CarreraDetailPage` con `PlanEstudiosTree` (acordeones Año → Cuatrimestre → Materias), `MateriaDetailModal` con correlativas, hooks `useCarreras`, `usePlanEstudios`, `useInscribirCarrera`.
 - **`docs/frontend-guide.md`** sección "Estructura de Archivos" — Componentes bajo `components/carrera/` y `components/ui/`.
 
-**Conexión con el paso anterior:** Requiere autenticación (PrivateRoute del paso 3.2). Usa el token del store para consumir `GET /api/carreras`, `GET /api/carreras/:id/plan-estudios`.
+**Conexión con el paso anterior:** Requiere autenticación (PrivateRoute del paso 3.2). Consume `GET /api/carreras/:id/plan-estudios` (las carreras del usuario se obtienen de `GET /api/usuarios/:id/carreras`).
 
 ### 3.5 Progreso Académico (Roadmap #5)
 

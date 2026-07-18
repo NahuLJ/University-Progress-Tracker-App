@@ -16,7 +16,8 @@ components/ui/
 ├── Input.tsx
 ├── Button.tsx
 ├── Alert.tsx             # Mensajes de error/success
-└── PasswordInput.tsx     # Input con toggle de visibilidad
+├── PasswordInput.tsx     # Input con toggle de visibilidad
+└── PasswordStrengthBar.tsx  # Barra de fortaleza de contraseña
 ```
 
 ### Árbol de Composición
@@ -223,6 +224,68 @@ export function RegisterForm() {
             </p>
         </form>
     );
+}
+```
+
+---
+
+### PasswordStrengthBar
+
+```typescript
+// components/ui/PasswordStrengthBar.tsx
+interface PasswordStrengthBarProps {
+    value: number; // 0–100
+}
+
+const COLORES = [
+    'bg-red-500',    // 0-20: Muy débil
+    'bg-orange-500', // 21-40: Débil
+    'bg-yellow-500', // 41-60: Regular
+    'bg-lime-500',   // 61-80: Fuerte
+    'bg-green-500',  // 81-100: Muy fuerte
+];
+
+const ETIQUETAS = [
+    'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte',
+];
+
+export function PasswordStrengthBar({ value }: PasswordStrengthBarProps) {
+    const idx = Math.min(Math.floor(value / 25), 4);
+    return (
+        <div className="space-y-1">
+            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div
+                    className={`h-full transition-all ${COLORES[idx]}`}
+                    style={{ width: `${value}%` }}
+                />
+            </div>
+            <p className="text-xs text-gray-500">Fortaleza: {ETIQUETAS[idx]} ({value}%)</p>
+        </div>
+    );
+}
+```
+
+### calcularFortaleza — Utilidad
+
+```typescript
+// utils/fortaleza.ts
+export function calcularFortaleza(password: string): number {
+    let puntaje = 0;
+
+    // Longitud
+    if (password.length >= 8) puntaje += 20;
+    if (password.length >= 12) puntaje += 10;
+
+    // Tipos de caracteres
+    if (/[A-Z]/.test(password)) puntaje += 20;
+    if (/[a-z]/.test(password)) puntaje += 15;
+    if (/[0-9]/.test(password)) puntaje += 20;
+    if (/[!@#$%^&*]/.test(password)) puntaje += 25;
+
+    // Penalizar si es muy corta
+    if (password.length < 6) puntaje = Math.min(puntaje, 30);
+
+    return Math.min(puntaje, 100);
 }
 ```
 
