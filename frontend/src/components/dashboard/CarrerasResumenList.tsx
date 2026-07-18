@@ -20,15 +20,15 @@ export function CarrerasResumenList({ carreras }: CarrerasResumenListProps) {
             <div className="space-y-3">
                 {carreras.map((carrera) => (
                     <div key={carrera.usuarioCarreraId} className="flex items-center justify-between p-3 border border-base-600 rounded-lg hover:bg-base-700/50">
-                        <div>
-                            <h3 className="font-medium">{carrera.carrera.nombre}</h3>
+                        <div className="min-w-0">
+                            <h3 className="font-medium truncate">{carrera.carrera.nombre}</h3>
                             <p className="text-sm text-slate-400">
-                                Activa desde {new Date(carrera.fechaInicio).toLocaleDateString('es-AR')}
+                                {carrera.activo ? 'Carrera activa' : 'Inactiva'}
                             </p>
                         </div>
-                        <div className="text-right">
-                            <Badge variant="success" size="sm" className="mb-1 block">
-                                Activa
+                        <div className="text-right shrink-0">
+                            <Badge variant={carrera.activo ? 'success' : 'default'} size="sm" className="mb-1">
+                                {carrera.activo ? 'Activa' : 'Inactiva'}
                             </Badge>
                             <div className="w-48 mt-1">
                                 <ProgressBar value={carrera.progresoPorcentaje || 0} />

@@ -14,6 +14,10 @@ import {
     Loader2,
     Circle,
     CalendarDays,
+    ChevronDown,
+    PanelLeft,
+    ChevronsLeft,
+    Menu,
 } from 'lucide-react';
 
 export const Icons = {
@@ -32,6 +36,10 @@ export const Icons = {
     loading: Loader2,
     circle: Circle,
     calendar: CalendarDays,
+    chevron: ChevronDown,
+    panel: PanelLeft,
+    collapse: ChevronsLeft,
+    menu: Menu,
 } as const;
 
 export type IconName = keyof typeof Icons;

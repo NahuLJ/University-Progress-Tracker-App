@@ -14,14 +14,16 @@ import {
 } from '../components/dashboard/Charts';
 import { CarrerasResumenList } from '../components/dashboard/CarrerasResumenList';
 import { useDashboard } from '../hooks/useDashboard';
+import { useCarrerasResumen } from '../hooks/useCarrerasResumen';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
 export function DashboardPage() {
     const {
-        carreras, usuarioCarreraId, setUsuarioCarreraId,
+        carreras,
         resumen, distribucion, evolucion, isLoading, error,
     } = useDashboard();
+    const { data: resumenCarreras } = useCarrerasResumen();
     const queryClient = useQueryClient();
 
     if (isLoading) return <EstadisticasSkeleton />;
@@ -48,25 +50,11 @@ export function DashboardPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Dashboard</h1>
-                {carreras && carreras.length > 1 && (
-                    <select
-                        value={usuarioCarreraId ?? ''}
-                        onChange={(e) => setUsuarioCarreraId(Number(e.target.value))}
-                        className="border rounded-lg p-2"
-                    >
-                        {carreras.map((c) => (
-                            <option key={c.usuarioCarreraId} value={c.usuarioCarreraId}>
-                                {c.carrera.nombre}
-                            </option>
-                        ))}
-                    </select>
-                )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">
                 <PromedioCard
                     promedio={resumen?.promedioGeneral ?? null}
-                    materiasConNota={resumen?.materiasCompletadas ?? 0}
                 />
                 <TiempoRestanteCard cuatrimestres={resumen?.cuatrimestresRestantes ?? null} />
                 <CreditosCard
@@ -83,7 +71,7 @@ export function DashboardPage() {
 
             <div>
                 <h2 className="text-lg font-semibold mb-3">Mis carreras</h2>
-                <CarrerasResumenList carreras={carreras ?? []} />
+                <CarrerasResumenList carreras={resumenCarreras ?? []} />
             </div>
         </div>
     );

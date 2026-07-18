@@ -33,10 +33,10 @@ export function CarreraCard({
 
     return (
         <Card className="hover:shadow-neon-cyan transition-shadow">
-            <div className="flex justify-between items-start mb-3">
+            <div className="flex justify-between items-start gap-3 mb-3">
                 <h3 className="text-lg font-semibold text-white">{carrera.nombre}</h3>
                 {inscripto && (
-                    <Badge variant="success" className="text-xs">
+                    <Badge variant="success" size="sm" className="shrink-0 text-xs">
                         Inscripto
                     </Badge>
                 )}
