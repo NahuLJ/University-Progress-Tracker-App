@@ -247,7 +247,7 @@ Definidas en `routes/index.tsx` con `createBrowserRouter` (React Router 7).
 | `/registro` | `RegisterPage` | Registro de usuario (RHF + Zod). | Público |
 | `/dashboard` | `DashboardPage` | Tarjetas de resumen + gráficos + carreras. | Privado |
 | `/carreras` | `CarrerasPage` | Catálogo de carreras; solo "Ver plan de estudios" por card. | Privado |
-| `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (vista árbol/tabla, toggles en header) + acciones inscribir/desinscribir/eliminar. | Privado |
+| `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (toggle árbol/tabla entre cards; botones Expandir/Contraer todo en header de "Plan de estudios" en vista árbol) + acciones inscribir/desinscribir/eliminar. | Privado |
 | `/progreso` | `ProgresoPage` | Progreso académico con edición de estado/nota/tipo. | Privado |
 | `/planificacion` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
 | `/admin` | `AdminPage` | Administración: crear carreras, materias y correlativas. | Privado |

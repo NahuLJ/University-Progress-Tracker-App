@@ -43,6 +43,11 @@ interface LoginDto {
 | `PATCH` | `/usuarios/:id/carreras/:usuarioCarreraId/reactivar` | ✅ Bearer | — | `200`: Inscripción reactivada · `400`: Ya activa · `404`: No encontrada |
 | `DELETE` | `/usuarios/:id/carreras/:usuarioCarreraId/definitivo` | ✅ Bearer | — | `200`: Inscripción eliminada · `404`: No encontrada |
 
+> **Nota de eliminación definitiva:** Solo se borra el progreso y la planificación de las materias
+> **exclusivas** de la carrera eliminada. Si una materia está compartida con otra carrera **activa**
+> en la que el usuario sigue inscripto, su progreso se conserva. El soft delete
+> (`DELETE /.../:usuarioCarreraId`, sin `/definitivo`) **no borra ningún progreso**.
+
 ### DTOs
 
 ```typescript

@@ -4,11 +4,12 @@
 > que lista las inscripciones del usuario (activas e inactivas) y las carreras disponibles del catálogo.
 > Cada `CarreraCard` solo tiene el botón **Ver plan de estudios** que navega a `/carreras/:id`.
 > Las acciones de inscripción/desinscripción/eliminación están en `CarreraDetailPage`.
-> `CarreraDetailPage` muestra el plan vía `usePlanEstudios` (vista árbol/tabla, toggles en el header
-> de la card "Plan de estudios"). `usePlanEstudios` acepta `usuarioCarreraId` opcional para mergear
-> el progreso del usuario (estado, nota, tipo) en cada materia. Abre `MateriaDetailModal`
-> (info + `CorrelativasList`) al click en una materia. Sin datos mockeados. Snackbar global para
-> notificaciones de éxito/error.
+> `CarreraDetailPage` muestra el plan vía `usePlanEstudios`. El progreso del usuario (estado, nota, tipo)
+> se mergea por la **inscripción de la carrera que está en la URL**, no por la carrera activa del navbar.
+> Vista árbol/tabla: el toggle está **entre** la card de info de la carrera y la card "Plan de estudios"
+> (alineado a la derecha). En vista árbol, la card "Plan de estudios" tiene en su header los botones
+> **Expandir todo / Contraer todo**. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
+> una materia. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
 
@@ -60,6 +61,9 @@ store/
 > (con modal de confirmación) y "Eliminar definitivamente". Toda acción muestra notificación
 > snackbar con resultado. Al desinscribir/eliminar, la carrera activa del store se resetea
 > a la primera disponible o null.
+> El progreso mostrado en el plan de estudios corresponde a la **inscripción de la carrera que está en
+> la URL** (`inscripcionActual.usuarioCarreraId`), no a la carrera activa seleccionada en el navbar,
+> de modo que el detalle de cada carrera muestra siempre su propio progreso.
 
 ### Árbol de Composición
 
@@ -72,13 +76,14 @@ Ruta /carreras
     │   └── Desinscriptas → CarreraCard (badge "Desinscripto" + "Ver plan de estudios")
     └── Carreras disponibles → CarreraCard (solo "Ver plan de estudios")
 
-Ruta /carreras/:id
+ Ruta /carreras/:id
 └── CarreraDetailPage
     ├── Header: nombre + descripción + badge Inscripto/Desinscripto
     │   ├── Si inscripto: "Desinscribirse" + "Eliminar" (abre modales)
     │   ├── Si desinscripto: "Volver a inscribirse" + "Eliminar definitivamente"
     │   └── Si no inscripto: "Inscribirse a esta carrera"
-    ├── Plan de estudios (card con título + toggles Vista árbol/tabla en el header)
+    ├── Toggle Vista árbol / Vista tabla (entre cards, alineado a la derecha)
+    ├── Plan de estudios (card con título + botones Expandir todo / Contraer todo en el header, solo vista árbol)
     │   ├── Vista árbol: Accordion Año → Cuatrimestre → MateriaRow (con StatusBadge)
     │   └── Vista tabla: columnas centradas Nro | Código | Materia | Año | Cuatrimestre | Créditos | Estado
     ├── InscribirCarreraModal
@@ -134,10 +139,13 @@ export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?
 
 ### PlanEstudiosTree — Árbol de Materias
 
-Usa `Accordion` anidados: `AnioAccordion` (1° Año, 2° Año, …) → `CuatrimestreAccordion`
-(1° Cuatrimestre, …) → `MateriaRow`. Cada materia muestra orden, nombre, código y créditos, y un
-`StatusBadge` con el estado del usuario (`estadoUsuario` como string directo). Click en una materia
-abre `MateriaDetailModal`.
+Usa `Accordion` anidados (controlados vía props `open`/`onOpenChange`): `AnioAccordion`
+(1° Año, 2° Año, …) → `CuatrimestreAccordion` (1° Cuatrimestre, …) → `MateriaRow`. Cada materia
+muestra orden, nombre, código y créditos, y un `StatusBadge` con el estado del usuario
+(`estadoUsuario` como string directo). El componente recibe `expandirSignal` / `contraerSignal`
+(números) que disparan expandir/contraer todo vía `useEffect`. Click en una materia abre
+`MateriaDetailModal`. Los botones "Expandir todo / Contraer todo" viven en el header de la card
+"Plan de estudios" (en `CarreraDetailPage`), no dentro del árbol.
 
 ### MateriaDetailModal — Detalle de Materia
 
@@ -162,7 +170,8 @@ cierra el modal.
 | Click "Desinscribirse" (detail) | Abre `DesinscribirCarreraModal` (confirmación simple) → DELETE + snackbar + reset store |
 | Click "Eliminar" (detail) | Abre modal de confirmación hard delete → DELETE definitivo + snackbar + reset store |
 | Click "Volver a inscribirse" | Abre modal de confirmación → PATCH reactivar + snackbar |
-| Cambio árbol/tabla | Switch visual (toggles en el header de "Plan de estudios") |
+| Cambio árbol/tabla | Switch visual (toggle entre cards, a la derecha) |
+| Expandir/Contraer todo | Botones en el header de "Plan de estudios" (solo vista árbol) |
 | Columnas tabla | Centradas (tanto header como datos) |
 
 ### Estados

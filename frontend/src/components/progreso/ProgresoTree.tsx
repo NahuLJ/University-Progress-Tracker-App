@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { MateriaProgresoRow } from './MateriaProgresoRow';
 import { Accordion } from '../ui/Accordion';
 
@@ -29,6 +29,27 @@ export function ProgresoTree({ progresos, onSave, isSaving }: ProgresoTreeProps)
         return result;
     }, [progresos]);
 
+    const [aniosOpen, setAniosOpen] = useState<Record<number, boolean>>({});
+    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<number, boolean>>({});
+
+    const expandirTodo = () => {
+        const newAnios: Record<number, boolean> = {};
+        const newCuatrimestres: Record<number, boolean> = {};
+        grouped.forEach((anio) => {
+            newAnios[anio.anio] = true;
+            anio.cuatrimestres.forEach((cuat) => {
+                newCuatrimestres[cuat.cuatrimestre] = true;
+            });
+        });
+        setAniosOpen(newAnios);
+        setCuatrimestresOpen(newCuatrimestres);
+    };
+
+    const contraerTodo = () => {
+        setAniosOpen({});
+        setCuatrimestresOpen({});
+    };
+
     if (progresos.length === 0) {
         return (
             <div className="text-center py-12 text-slate-400">
@@ -39,14 +60,31 @@ export function ProgresoTree({ progresos, onSave, isSaving }: ProgresoTreeProps)
 
     return (
         <div className="space-y-4">
+            <div className="flex justify-end gap-2 mb-4">
+                <button
+                    type="button"
+                    onClick={expandirTodo}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
+                >
+                    Expandir todo
+                </button>
+                <button
+                    type="button"
+                    onClick={contraerTodo}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
+                >
+                    Contraer todo
+                </button>
+            </div>
             {grouped.map((anio) => (
-                <Accordion key={anio.anio} title={`${anio.anio}° Año`} defaultOpen={true}>
+                <Accordion key={anio.anio} title={`${anio.anio}° Año`} open={aniosOpen[anio.anio] ?? true} onOpenChange={(open) => setAniosOpen((prev) => ({ ...prev, [anio.anio]: open }))}>
                     <div className="space-y-2">
                         {anio.cuatrimestres.map((cuat) => (
                             <Accordion
                                 key={cuat.cuatrimestre}
                                 title={`${cuat.cuatrimestre}° Cuatrimestre`}
-                                defaultOpen={false}
+                                open={cuatrimestresOpen[cuat.cuatrimestre] ?? false}
+                                onOpenChange={(open) => setCuatrimestresOpen((prev) => ({ ...prev, [cuat.cuatrimestre]: open }))}
                             >
                                 <div className="space-y-1 pl-2">
                                     <div className="grid grid-cols-12 gap-2 p-3 text-sm font-medium text-slate-400">

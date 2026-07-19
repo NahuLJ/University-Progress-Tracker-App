@@ -3,12 +3,11 @@ import { Modal } from '../ui/Modal';
 interface DesinscribirCarreraModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (carreraId: number) => void;
-    carreraId: number;
+    onSuccess: () => void;
     carreraNombre: string;
 }
 
-export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, carreraNombre }: DesinscribirCarreraModalProps) {
+export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraNombre }: DesinscribirCarreraModalProps) {
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Desinscribirse de ${carreraNombre}`} size="sm">
             <div className="space-y-4">
@@ -26,7 +25,7 @@ export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId
                     </button>
                     <button
                         type="button"
-                        onClick={() => { onSuccess(carreraId); onClose(); }}
+                        onClick={() => { onSuccess(); onClose(); }}
                         className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
                     >
                         Desinscribirme

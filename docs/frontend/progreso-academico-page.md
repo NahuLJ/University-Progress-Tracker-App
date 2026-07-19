@@ -34,7 +34,8 @@ services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarrera
 > **Estado:** `ProgresoPage` resuelve la carrera activa con `useCarreraActiva()` (empty state si no hay
 > carreras). Usa `Filtros` (`FiltroEstado`/`FiltroBusqueda` con debounce), `ProgresoTree` como única
 > vista (árbol Año → Cuatrimestre) y `CarrerasResumenList` (selector de carrera activa cuando hay más
-> de una). Maneja error de la query con `QueryError` + botón reintentar.
+> de una). `ProgresoTree` tiene botones **Expandir todo / Contraer todo** alineados a la derecha.
+> Maneja error de la query con `QueryError` + botón reintentar.
 > `ProgresoPage` se exporta como `export default` (para el lazy import en `routes/lazy-pages.tsx`).
 > La inicialización de registros de progreso es automática al entrar sin datos previos.
 
@@ -130,9 +131,12 @@ Validaciones:
 
 ### ProgresoTree — Vista Principal (única)
 
-Vista árbol con acordeones Año → Cuatrimestre. Cada cuatrimestre tiene un header de columnas:
+Vista árbol con acordeones Año → Cuatrimestre (controlados vía props `open`/`onOpenChange`).
+Cada cuatrimestre tiene un header de columnas:
 Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones). Los datos vienen del backend
-con `anio`, `cuatrimestre` y `orden` incluidos en la respuesta de `GET /progreso`.
+con `anio`, `cuatrimestre` y `orden` incluidos en la respuesta de `GET /progreso`. En la parte superior
+derecha tiene los botones **Expandir todo / Contraer todo** que abren/cierran todos los años y
+cuatrimestres a la vez.
 
 ### Validaciones del Lado del Cliente
 

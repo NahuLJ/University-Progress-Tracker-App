@@ -130,7 +130,10 @@ export class CarrerasService {
       order: { orden: 'ASC' },
     });
 
-    let progresoMap = new Map<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>();
+    const progresoMap = new Map<
+      number,
+      { estado: string; nota: number | null; tipoAprobacion: string | null }
+    >();
     if (usuarioCarreraId) {
       const progresos = await this.progresoRepo.find({
         where: { usuarioCarrera: { usuarioCarreraId } },

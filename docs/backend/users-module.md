@@ -89,7 +89,7 @@ Reactivar una inscripción previamente desactivada (soft delete).
 
 ### DELETE /api/usuarios/:id/carreras/:usuarioCarreraId/definitivo
 
-Elimina definitivamente la inscripción y todo su progreso y planificación asociada.
+Elimina definitivamente la inscripción y su progreso y planificación asociados. **Solo se elimina el progreso y la planificación de las materias que son exclusivas de esa carrera**; si una materia está compartida con otra carrera activa en la que el usuario está inscripto, su progreso se conserva.
 
 | Código | Descripción |
 |---|---|
@@ -172,6 +172,10 @@ export class UsuariosService {
         private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
         @InjectRepository(Carrera)
         private readonly carreraRepo: Repository<Carrera>,
+        @InjectRepository(CarreraMateria)
+        private readonly carreraMateriaRepo: Repository<CarreraMateria>,
+        @InjectRepository(ProgresoMateria)
+        private readonly progresoRepo: Repository<ProgresoMateria>,
     ) {}
 
     async buscarPorEmail(email: string): Promise<Usuario | null> {
@@ -258,17 +262,57 @@ export class UsuariosService {
     async eliminarCarreraDefinitivamente(usuarioId: number, usuarioCarreraId: number): Promise<void> {
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId, usuario: { usuarioId } },
-            relations: { progresos: true, periodos: { materiasPlanificadas: true } },
+            relations: { carrera: true, progresos: true, periodos: { materiasPlanificadas: true } },
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
+        // Buscar otras inscripciones activas del usuario para preservar progreso compartido
+        const otrasInscripcionesActivas = await this.usuarioCarreraRepo.find({
+            where: { usuario: { usuarioId }, activo: true },
+            relations: { carrera: true },
+        });
+        const otrasCarrerasIds = otrasInscripcionesActivas
+            .filter((i) => i.usuarioCarreraId !== usuarioCarreraId)
+            .map((i) => i.carrera.carreraId);
+
+        let materiasExclusivasIds: number[] = [];
+        if (otrasCarrerasIds.length > 0) {
+            const materiasDeEstaCarrera = await this.carreraMateriaRepo.find({
+                where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+                relations: { materia: true },
+            });
+            const materiasIdsDeEstaCarrera = materiasDeEstaCarrera.map((cm) => cm.materia.materiaId);
+            const materiasCompartidas = await this.carreraMateriaRepo.find({
+                where: { carrera: { carreraId: In(otrasCarrerasIds) }, materia: { materiaId: In(materiasIdsDeEstaCarrera) } },
+                relations: { materia: true },
+            });
+            const materiasCompartidasIds = new Set(materiasCompartidas.map((cm) => cm.materia.materiaId));
+            materiasExclusivasIds = materiasIdsDeEstaCarrera.filter((id) => !materiasCompartidasIds.has(id));
+        } else {
+            const materiasDeEstaCarrera = await this.carreraMateriaRepo.find({
+                where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+                relations: { materia: true },
+            });
+            materiasExclusivasIds = materiasDeEstaCarrera.map((cm) => cm.materia.materiaId);
+        }
+
         if (inscripcion.progresos?.length) {
-            await this.usuarioCarreraRepo.manager.remove(inscripcion.progresos);
+            const progresosAEliminar = inscripcion.progresos.filter(
+                (p) => materiasExclusivasIds.includes(p.materia.materiaId),
+            );
+            if (progresosAEliminar.length > 0) {
+                await this.progresoRepo.remove(progresosAEliminar);
+            }
         }
         if (inscripcion.periodos?.length) {
             for (const periodo of inscripcion.periodos) {
                 if (periodo.materiasPlanificadas?.length) {
-                    await this.usuarioCarreraRepo.manager.remove(periodo.materiasPlanificadas);
+                    const materiasAEliminar = periodo.materiasPlanificadas.filter(
+                        (mp) => materiasExclusivasIds.includes(mp.materia.materiaId),
+                    );
+                    if (materiasAEliminar.length > 0) {
+                        await this.usuarioCarreraRepo.manager.remove(materiasAEliminar);
+                    }
                 }
             }
             await this.usuarioCarreraRepo.manager.remove(inscripcion.periodos);

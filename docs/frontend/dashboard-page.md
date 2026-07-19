@@ -104,7 +104,9 @@ activa (o la primera) en `useEffect`.
 
 "Mis carreras" usa `useCarrerasResumen` → `estadisticas/carreras-resumen`, que devuelve para cada
 inscripción `materiasCompletadas`, `materiasTotales` y `progresoPorcentaje` reales (corrige el bug
-de mostrar `0/0`).
+de mostrar `0/0`). Las mutaciones de carrera (`useDesinscribirCarrera`, `useReactivarCarrera`,
+`useEliminarCarreraDefinitivamente` en `hooks/useCarreras.ts`) invalidan esta query, por lo que el
+dashboard refleja el cambio de estado (activa/inactiva) sin recargar la página.
 
 ---
 

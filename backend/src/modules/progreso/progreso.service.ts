@@ -27,9 +27,7 @@ export class ProgresoService {
     private readonly estadoRepo: Repository<EstadoMateria>,
   ) {}
 
-  async obtenerPorCarrera(
-    usuarioCarreraId: number,
-  ): Promise<any[]> {
+  async obtenerPorCarrera(usuarioCarreraId: number): Promise<any[]> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
       relations: { carrera: true },
@@ -51,9 +49,7 @@ export class ProgresoService {
       relations: { materia: true, estado: true },
     });
 
-    const progresoMap = new Map(
-      progresos.map((p) => [p.materia.materiaId, p]),
-    );
+    const progresoMap = new Map(progresos.map((p) => [p.materia.materiaId, p]));
 
     return materiaIds
       .map((id) => {

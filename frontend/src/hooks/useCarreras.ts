@@ -50,6 +50,7 @@ export function useDesinscribirCarrera() {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
             addNotification('Inscripción desactivada', 'success');
 
             const activas = await queryClient.fetchQuery({
@@ -77,6 +78,7 @@ export function useReactivarCarrera() {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
             addNotification('Inscripción reactivada', 'success');
         },
         onError: () => {
@@ -99,6 +101,7 @@ export function useEliminarCarreraDefinitivamente() {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
             addNotification('Inscripción eliminada definitivamente', 'success');
 
             const activas = await queryClient.fetchQuery({

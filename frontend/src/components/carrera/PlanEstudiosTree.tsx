@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Accordion } from '../ui/Accordion';
 import { StatusBadge } from '../ui/StatusBadge';
 import type { PlanEstudios } from '../../types/carrera.types';
@@ -36,13 +37,16 @@ function MateriaRow({ materia, onClick }: MateriaRowProps) {
 interface CuatrimestreAccordionProps {
     cuatrimestre: { cuatrimestre: number; materias: any[] };
     onMateriaClick: (materia: any) => void;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-function CuatrimestreAccordion({ cuatrimestre, onMateriaClick }: CuatrimestreAccordionProps) {
+function CuatrimestreAccordion({ cuatrimestre, onMateriaClick, isOpen, onOpenChange }: CuatrimestreAccordionProps) {
     return (
         <Accordion
             title={`${cuatrimestre.cuatrimestre}° Cuatrimestre`}
-            defaultOpen={false}
+            open={isOpen}
+            onOpenChange={onOpenChange}
         >
             <div className="space-y-1 pl-4">
                 {cuatrimestre.materias.map((materia: any) => (
@@ -60,17 +64,23 @@ function CuatrimestreAccordion({ cuatrimestre, onMateriaClick }: CuatrimestreAcc
 interface AnioAccordionProps {
     anio: { anio: number; cuatrimestres: { cuatrimestre: number; materias: any[] }[] };
     onMateriaClick: (materia: any) => void;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    cuatrimestresOpen: Record<number, boolean>;
+    onCuatrimestreOpenChange: (cuatrimestre: number, open: boolean) => void;
 }
 
-function AnioAccordion({ anio, onMateriaClick }: AnioAccordionProps) {
+function AnioAccordion({ anio, onMateriaClick, isOpen, onOpenChange, cuatrimestresOpen, onCuatrimestreOpenChange }: AnioAccordionProps) {
     return (
-        <Accordion title={`${anio.anio}° Año`} defaultOpen={true}>
+        <Accordion title={`${anio.anio}° Año`} open={isOpen} onOpenChange={onOpenChange}>
             <div className="space-y-2">
                 {anio.cuatrimestres.map((cuatrimestre) => (
                     <CuatrimestreAccordion
                         key={cuatrimestre.cuatrimestre}
                         cuatrimestre={cuatrimestre}
                         onMateriaClick={onMateriaClick}
+                        isOpen={cuatrimestresOpen[cuatrimestre.cuatrimestre] ?? false}
+                        onOpenChange={(open) => onCuatrimestreOpenChange(cuatrimestre.cuatrimestre, open)}
                     />
                 ))}
             </div>
@@ -81,9 +91,36 @@ function AnioAccordion({ anio, onMateriaClick }: AnioAccordionProps) {
 interface PlanEstudiosTreeProps {
     planEstudios: PlanEstudios;
     onMateriaClick?: (materia: any) => void;
+    expandirSignal?: number;
+    contraerSignal?: number;
 }
 
-export function PlanEstudiosTree({ planEstudios, onMateriaClick }: PlanEstudiosTreeProps) {
+export function PlanEstudiosTree({ planEstudios, onMateriaClick, expandirSignal = 0, contraerSignal = 0 }: PlanEstudiosTreeProps) {
+    const [aniosOpen, setAniosOpen] = useState<Record<number, boolean>>({});
+    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<number, boolean>>({});
+
+    useEffect(() => {
+        if (expandirSignal > 0) {
+            const newAnios: Record<number, boolean> = {};
+            const newCuatrimestres: Record<number, boolean> = {};
+            planEstudios.anios.forEach((anio) => {
+                newAnios[anio.anio] = true;
+                anio.cuatrimestres.forEach((cuat) => {
+                    newCuatrimestres[cuat.cuatrimestre] = true;
+                });
+            });
+            setAniosOpen(newAnios);
+            setCuatrimestresOpen(newCuatrimestres);
+        }
+    }, [expandirSignal, planEstudios]);
+
+    useEffect(() => {
+        if (contraerSignal > 0) {
+            setAniosOpen({});
+            setCuatrimestresOpen({});
+        }
+    }, [contraerSignal]);
+
     return (
         <div className="space-y-4">
             {planEstudios.anios.map((anio) => (
@@ -91,6 +128,12 @@ export function PlanEstudiosTree({ planEstudios, onMateriaClick }: PlanEstudiosT
                     key={anio.anio}
                     anio={anio}
                     onMateriaClick={onMateriaClick || (() => {})}
+                    isOpen={aniosOpen[anio.anio] ?? true}
+                    onOpenChange={(open) => setAniosOpen((prev) => ({ ...prev, [anio.anio]: open }))}
+                    cuatrimestresOpen={cuatrimestresOpen}
+                    onCuatrimestreOpenChange={(cuatrimestre, open) =>
+                        setCuatrimestresOpen((prev) => ({ ...prev, [cuatrimestre]: open }))
+                    }
                 />
             ))}
         </div>

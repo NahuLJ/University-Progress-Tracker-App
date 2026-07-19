@@ -13,7 +13,6 @@ import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../components/ui/Modal';
-import { useCarreraStore } from '../store/carrera.store';
 import { StatusBadge } from '../components/ui/StatusBadge';
 
 export function CarreraDetailPage() {
@@ -23,6 +22,8 @@ export function CarreraDetailPage() {
     const [mostrarDesinscribirModal, setMostrarDesinscribirModal] = useState(false);
     const [materiaSeleccionada, setMateriaSeleccionada] = useState<any>(null);
     const [confirmDelete, setConfirmDelete] = useState<{ usuarioCarreraId: number; carreraNombre: string } | null>(null);
+    const [expandirSignal, setExpandirSignal] = useState(0);
+    const [contraerSignal, setContraerSignal] = useState(0);
     const [confirmReactivar, setConfirmReactivar] = useState<{ usuarioCarreraId: number; carreraNombre: string } | null>(null);
 
     const usuarioCarrera = useCarreras();
@@ -30,7 +31,6 @@ export function CarreraDetailPage() {
     const reactivarCarrera = useReactivarCarrera();
     const eliminarCarreraDefinitivamente = useEliminarCarreraDefinitivamente();
 
-    const usuarioCarreraId = useCarreraStore((s) => s.usuarioCarreraId);
     const inscripcionActual = usuarioCarrera.data?.find(c => c.carrera?.carreraId === parseInt(id!));
     const inscripto = inscripcionActual?.activo === true;
     const desinscripto = inscripcionActual?.activo === false;
@@ -40,7 +40,7 @@ export function CarreraDetailPage() {
         isLoading,
         error,
         refetch,
-    } = usePlanEstudios(parseInt(id!), usuarioCarreraId);
+    } = usePlanEstudios(parseInt(id!), inscripcionActual?.usuarioCarreraId);
 
     const queryClient = useQueryClient();
 
@@ -49,8 +49,9 @@ export function CarreraDetailPage() {
         setMostrarDesinscribirModal(true);
     };
 
-    const handleDesinscribirConfirmado = (usuarioCarreraId: number) => {
-        desinscribirCarrera.mutate(usuarioCarreraId, {
+    const handleDesinscribirConfirmado = () => {
+        if (!inscripcionActual) return;
+        desinscribirCarrera.mutate(inscripcionActual.usuarioCarreraId, {
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['carreras'] });
                 queryClient.invalidateQueries({ queryKey: ['plan-estudios', parseInt(id!)] });
@@ -193,32 +194,51 @@ export function CarreraDetailPage() {
                 </div>
             </Card>
 
+            {planEstudios.anios.length > 1 && (
+                <div className="flex justify-end gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setVistaActiva('arbol')}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                            vistaActiva === 'arbol'
+                                ? 'bg-neon-cyan text-base-900'
+                                : 'border-2 border-neon-cyan/60 text-neon-cyan hover:bg-neon-cyan/10 hover:shadow-neon-cyan'
+                        }`}
+                    >
+                        Vista árbol
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setVistaActiva('tabla')}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                            vistaActiva === 'tabla'
+                                ? 'bg-neon-cyan text-base-900'
+                                : 'border-2 border-neon-cyan/60 text-neon-cyan hover:bg-neon-cyan/10 hover:shadow-neon-cyan'
+                        }`}
+                    >
+                        Vista tabla
+                    </button>
+                </div>
+            )}
+
             <Card className="relative">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-base-600">
-                    <h3 className="text-lg font-semibold text-white">Plan de estudios</h3>
-                    {planEstudios.anios.length > 1 && (
+                    <h3 className="text-2xl font-semibold text-white">Plan de estudios</h3>
+                    {vistaActiva === 'arbol' && planEstudios.anios.length > 0 && (
                         <div className="flex gap-2">
-                            <button
+                                <button
                                 type="button"
-                                onClick={() => setVistaActiva('arbol')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                                    vistaActiva === 'arbol'
-                                        ? 'bg-neon-cyan text-base-900'
-                                        : 'border-2 border-neon-cyan/60 text-neon-cyan hover:bg-neon-cyan/10 hover:shadow-neon-cyan'
-                                }`}
+                                onClick={() => setExpandirSignal((prev) => prev + 1)}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
                             >
-                                Vista árbol
+                                Expandir todo
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setVistaActiva('tabla')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                                    vistaActiva === 'tabla'
-                                        ? 'bg-neon-cyan text-base-900'
-                                        : 'border-2 border-neon-cyan/60 text-neon-cyan hover:bg-neon-cyan/10 hover:shadow-neon-cyan'
-                                }`}
+                                onClick={() => setContraerSignal((prev) => prev + 1)}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
                             >
-                                Vista tabla
+                                Contraer todo
                             </button>
                         </div>
                     )}
@@ -232,6 +252,8 @@ export function CarreraDetailPage() {
                     <PlanEstudiosTree
                         planEstudios={planEstudios}
                         onMateriaClick={(materia) => setMateriaSeleccionada(materia)}
+                        expandirSignal={expandirSignal}
+                        contraerSignal={contraerSignal}
                     />
                 ) : (
                     <div className="overflow-x-auto">
@@ -293,7 +315,6 @@ export function CarreraDetailPage() {
     isOpen={mostrarDesinscribirModal}
     onClose={() => setMostrarDesinscribirModal(false)}
     onSuccess={handleDesinscribirConfirmado}
-    carreraId={inscripcionActual?.usuarioCarreraId || 0}
     carreraNombre={planEstudios?.carrera.nombre || ''}
 />
 
