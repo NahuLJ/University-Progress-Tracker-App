@@ -29,7 +29,9 @@ export class EstadisticasController {
   async obtenerDistribucionEstados(
     @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
   ) {
-    return this.estadisticasService.obtenerDistribucionEstados(usuarioCarreraId);
+    return this.estadisticasService.obtenerDistribucionEstados(
+      usuarioCarreraId,
+    );
   }
 
   @Get('evolucion')
@@ -44,7 +46,9 @@ export class EstadisticasController {
   @Get('carreras-resumen')
   @ApiOperation({ summary: 'Resumen de progreso por cada carrera del usuario' })
   @ApiResponse({ status: 200, description: 'Lista de resúmenes por carrera' })
-  async obtenerCarrerasResumen(@Query('usuarioId', ParseIntPipe) usuarioId: number) {
+  async obtenerCarrerasResumen(
+    @Query('usuarioId', ParseIntPipe) usuarioId: number,
+  ) {
     return this.estadisticasService.obtenerCarrerasResumen(usuarioId);
   }
 }

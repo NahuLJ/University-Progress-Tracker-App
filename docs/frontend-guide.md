@@ -91,7 +91,8 @@ frontend/
     │   │   ├── ProgressBar.tsx
     │   │   ├── Skeleton.tsx
     │   │   ├── Accordion.tsx
-    │   │   └── PasswordInput.tsx # input con toggle de visibilidad (definido, ver nota abajo)
+    │   │   ├── PasswordInput.tsx # input con toggle de visibilidad (definido, ver nota abajo)
+    │   │   └── Snackbar.tsx      # notificaciones flotantes globales (success/error/info)
     │   │
     │   ├── auth/
     │   │   ├── LoginForm.tsx
@@ -103,12 +104,13 @@ frontend/
     │   │   └── CarrerasResumenList.tsx
     │   │
     │   ├── carrera/
-    │   │   ├── CarrerasPage.tsx      # lista TODAS las carreras; botón Inscribirse/Desinscribirse por card
-    │   │   ├── CarreraCard.tsx       # (definido, ver nota)
+    │   │   ├── CarrerasPage.tsx      # lista inscripciones + disponibles; solo "Ver plan de estudios"
+    │   │   ├── CarreraCard.tsx       # card con badge Inscripto/Desinscripto + botón "Ver plan de estudios"
     │   │   ├── PlanEstudiosTree.tsx  # árbol Año → Cuatrimestre → Materia (usa Accordion)
     │   │   ├── MateriaDetailModal.tsx
     │   │   ├── CorrelativasList.tsx
-    │   │   └── InscribirCarreraModal.tsx
+    │   │   ├── InscribirCarreraModal.tsx
+    │   │   └── DesinscribirCarreraModal.tsx # confirmación simple (sin escribir texto)
     │   │
     │   ├── progreso/
     │   │   ├── ProgresoGrid.tsx
@@ -133,7 +135,7 @@ frontend/
     │
     ├── hooks/
     │   ├── useAuthForm.ts        # useLoginForm + useRegisterForm (RHF + Zod + mutation)
-    │   ├── useCarreras.ts        # useCarreras() + useInscribirCarrera()
+    │   ├── useCarreras.ts        # useCarreras() + useInscribir/Desinscribir/Reactivar/EliminarCarrera() + useCarreraActiva()
     │   ├── usePlanEstudios.ts    # useQuery del plan de una carrera
     │   ├── useProgreso.ts        # useQuery + useMutation + filtros (estado/búsqueda)
     │   ├── useDashboard.ts       # carreras + resumen/distribucion/evolucion
@@ -144,7 +146,8 @@ frontend/
     ├── services/
     │   ├── api.ts                # instancia Axios + interceptor JWT
     │   ├── auth.service.ts       # login, register, obtenerPerfil
-    │   ├── carreras.service.ts   # carreras del usuario, disponibles, plan, inscribir, desinscribir
+    │   ├── carreras.service.ts   # carreras del usuario, activas, disponibles, plan, inscribir,
+    │   │                        #   desinscribir, reactivar, eliminar definitivamente
     │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan
     │   │                        #   + materiasAdminService: listar, obtenerMateria, crear,
     │   │                        #     asignarCorrelativa, eliminarCorrelativa
@@ -155,6 +158,9 @@ frontend/
     │
     ├── store/
     │   ├── auth.store.ts         # zustand + persist: token, usuario, setAuth, logout, isAuthenticated
+    │   ├── sidebar.store.ts      # zustand + persist: sidebar collapsed
+    │   ├── carrera.store.ts      # zustand + persist: usuarioCarreraId seleccionado
+    │   ├── notification.store.ts # zustand: notificaciones del snackbar (add/remove + auto-dismiss)
     │   └── planificacion.store.ts# zustand + devtools: período activo, celdas, materias, dirty
     │
     ├── types/
@@ -207,7 +213,8 @@ la lista de materias disponibles y el flag `dirty` (cambios sin guardar). Ver de
 
 Cada dominio tiene su propio hook (`useCarreras`, `useProgreso`, `useDashboard`, `usePlanificacion`, ...).
 El `QueryClient` se configura en `App.tsx` con `staleTime: 5 min` y `retry: 1`. Las mutaciones invalidan
-las query keys correspondientes (`['progreso', usuarioCarreraId]`, `['estadisticas']`, `['carreras', usuarioId]`, etc.).
+las query keys correspondientes (`['progreso', usuarioCarreraId]`, `['estadisticas']`, `['carreras', usuarioId]`, etc.)
+y muestran notificaciones vía `useNotificationStore.addNotification()` (success en `onSuccess`, error en `onError`).
 
 ### 2. Consumo de la API con Axios
 
@@ -239,8 +246,8 @@ Definidas en `routes/index.tsx` con `createBrowserRouter` (React Router 7).
 | `/login` | `LoginPage` | Email + password. Redirige a `/dashboard` si ya hay sesión. | Público |
 | `/registro` | `RegisterPage` | Registro de usuario (RHF + Zod). | Público |
 | `/dashboard` | `DashboardPage` | Tarjetas de resumen + gráficos + carreras. | Privado |
-| `/carreras` | `CarrerasPage` | Catálogo de todas las carreras; Inscribirse/Desinscribirse por card. | Privado |
-| `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (vista árbol/tabla) + detalle de materia. | Privado |
+| `/carreras` | `CarrerasPage` | Catálogo de carreras; solo "Ver plan de estudios" por card. | Privado |
+| `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (vista árbol/tabla, toggles en header) + acciones inscribir/desinscribir/eliminar. | Privado |
 | `/progreso` | `ProgresoPage` | Progreso académico con edición de estado/nota/tipo. | Privado |
 | `/planificacion` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
 | `/admin` | `AdminPage` | Administración: crear carreras, materias y correlativas. | Privado |
@@ -272,10 +279,10 @@ las especificaciones originales pero **no existen** en `src/`:
   con `useCarreraActiva()` (del `auth.store`/inscripciones), no un id fijo. `ProgresoPage` además permite
   cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
 - **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useDashboard`.
-- **Inscripción/desinscripción:** `CarrerasPage` lista SIEMPRE todas las carreras del catálogo y combina con
-las inscripciones del usuario; cada `CarreraCard` muestra "Inscribirse" (`useInscribirCarrera`) o
-"Desinscribirse" (`useDesinscribirCarrera`, con `confirm()`) según corresponda. `InscribirCarreraModal`
-sigue disponible.
+- **Inscripción/desinscripción:** `CarrerasPage` lista inscripciones (activas e inactivas) y disponibles.
+Cada `CarreraCard` solo tiene "Ver plan de estudios". Las acciones de inscribir/desinscribir/reactivar/
+eliminar están en `CarreraDetailPage`. `DesinscribirCarreraModal` es confirmación simple (sin escribir texto).
+Toda mutación muestra snackbar de éxito/error y resetea la carrera activa del store si corresponde.
 - **Progreso:** grilla editable en línea (`MateriaProgresoRow` + RHF/Zod), `CompletarMateriaModal` y
   `Filtros` (debounce) ya integrados en `ProgresoPage`.
 - **Admin:** módulo `/admin` (tabs Carreras/Materias/Plan/Correlativas) implementado y verificado E2E.

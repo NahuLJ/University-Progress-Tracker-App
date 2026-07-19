@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { progresoService } from '../services/progreso.service';
+import { useNotificationStore } from '../store/notification.store';
 import type { ActualizarProgresoDto } from '../types/progreso.types';
 
 export function useProgreso(usuarioCarreraId: number | null) {
@@ -14,12 +15,18 @@ export function useProgreso(usuarioCarreraId: number | null) {
         enabled: !!usuarioCarreraId,
     });
 
+    const addNotification = useNotificationStore((s) => s.addNotification);
+
     const mutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) =>
             progresoService.actualizarProgreso(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            addNotification('Progreso actualizado', 'success');
+        },
+        onError: () => {
+            addNotification('Error al actualizar el progreso', 'error');
         },
     });
 

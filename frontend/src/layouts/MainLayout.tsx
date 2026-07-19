@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Icon } from '../components/ui/Icon';
 import { CarreraSelector } from '../components/layout/CarreraSelector';
+import { Snackbar } from '../components/ui/Snackbar';
 import { useAuthStore } from '../store/auth.store';
 import { useSidebarStore } from '../store/sidebar.store';
 
@@ -97,7 +98,7 @@ export function MainLayout() {
                     type="button"
                     onClick={logout}
                     title={collapsed ? 'Cerrar sesión' : undefined}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-neon-red/10 hover:text-neon-red transition-colors border border-base-600"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
                 >
                     <Icon name="close" className="w-4 h-4 shrink-0" />
                     {!collapsed && 'Cerrar sesión'}
@@ -155,6 +156,8 @@ export function MainLayout() {
             >
                 <Outlet />
             </main>
+
+            <Snackbar />
         </div>
     );
 }

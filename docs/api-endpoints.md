@@ -36,9 +36,12 @@ interface LoginDto {
 |--------|------|------|------|------------|
 | `GET` | `/usuarios/:id` | ✅ Bearer | — | `200`: Usuario · `404`: No encontrado |
 | `PATCH` | `/usuarios/:id` | ✅ Bearer | `ActualizarUsuarioDto` | `200`: Actualizado · `404`: No encontrado |
-| `GET` | `/usuarios/:id/carreras` | ✅ Bearer | — | `200`: Carreras[] del usuario |
+| `GET` | `/usuarios/:id/carreras` | ✅ Bearer | — | `200`: Carreras[] del usuario (todas) |
+| `GET` | `/usuarios/:id/carreras-activas` | ✅ Bearer | — | `200`: Carreras activas[] (sin soft delete) |
 | `POST` | `/usuarios/:id/carreras` | ✅ Bearer | `InscribirCarreraDto` | `201`: Inscripción creada · `400`: Ya inscripto · `404`: Carrera no encontrada |
 | `DELETE` | `/usuarios/:id/carreras/:usuarioCarreraId` | ✅ Bearer | — | `200`: Inscripción desactivada · `404`: No encontrada |
+| `PATCH` | `/usuarios/:id/carreras/:usuarioCarreraId/reactivar` | ✅ Bearer | — | `200`: Inscripción reactivada · `400`: Ya activa · `404`: No encontrada |
+| `DELETE` | `/usuarios/:id/carreras/:usuarioCarreraId/definitivo` | ✅ Bearer | — | `200`: Inscripción eliminada · `404`: No encontrada |
 
 ### DTOs
 
@@ -60,8 +63,9 @@ interface InscribirCarreraDto {
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
 | `GET` | `/carreras` | ❌ Público | — | `200`: Carreras[] |
+| `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | — | `200`: Carreras[] no inscriptas por el usuario |
 | `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada |
-| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con materias + correlativas · `404`: No encontrada |
+| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con materias + correlativas (ordenado por `orden`) · `404`: No encontrada |
 | `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación |
 | `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Agregada · `400`: Ya existe · `404`: No encontrada |
 
@@ -226,12 +230,12 @@ interface CrearMateriaDto {
 | Módulo | Endpoints |
 |--------|-----------|
 | `auth/` | 3 |
-| `usuarios/` | 5 |
-| `carreras/` | 5 |
+| `usuarios/` | 7 |
+| `carreras/` | 6 |
 | `materias/` | 5 |
 | `progreso/` | 4 |
 | `planificacion/` | 8 |
 | `estadisticas/` | 4 |
-| **Total únicos** | **34** |
+| **Total únicos** | **37** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

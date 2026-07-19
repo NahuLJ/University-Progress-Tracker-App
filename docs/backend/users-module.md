@@ -41,6 +41,15 @@ Retorna todas las carreras asociadas al usuario (inscripciones activas e inactiv
 | 200 | `{ carreras: [{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo }] }` |
 | 404 | Usuario no encontrado |
 
+### GET /api/usuarios/:id/carreras-activas
+
+Retorna solo las inscripciones activas del usuario (excluye soft delete).
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo: true }]` |
+| 404 | Usuario no encontrado |
+
 ### POST /api/usuarios/:id/carreras
 
 Inscribe al usuario en una nueva carrera.
@@ -66,6 +75,25 @@ Da de baja (desactiva) la inscripción del usuario en una carrera. No elimina f�
 | Código | Descripción |
 |---|---|
 | 200 | Inscripción desactivada |
+| 404 | Inscripción no encontrada |
+
+### PATCH /api/usuarios/:id/carreras/:usuarioCarreraId/reactivar
+
+Reactivar una inscripción previamente desactivada (soft delete).
+
+| Código | Descripción |
+|---|---|
+| 200 | Inscripción reactivada |
+| 400 | La inscripción ya está activa |
+| 404 | Inscripción no encontrada |
+
+### DELETE /api/usuarios/:id/carreras/:usuarioCarreraId/definitivo
+
+Elimina definitivamente la inscripción y todo su progreso y planificación asociada.
+
+| Código | Descripción |
+|---|---|
+| 200 | Inscripción eliminada |
 | 404 | Inscripción no encontrada |
 
 ---
@@ -207,6 +235,46 @@ export class UsuariosService {
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
         inscripcion.activo = false;
         await this.usuarioCarreraRepo.save(inscripcion);
+    }
+
+    async obtenerCarrerasActivas(id: number): Promise<UsuarioCarrera[]> {
+        return this.usuarioCarreraRepo.find({
+            where: { usuario: { usuarioId: id }, activo: true },
+            relations: { carrera: true },
+            order: { fechaInicio: 'DESC' },
+        });
+    }
+
+    async reactivarCarrera(usuarioId: number, usuarioCarreraId: number): Promise<UsuarioCarrera> {
+        const inscripcion = await this.usuarioCarreraRepo.findOne({
+            where: { usuarioCarreraId, usuario: { usuarioId } },
+        });
+        if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+        if (inscripcion.activo) throw new BadRequestException('La inscripción ya está activa');
+        inscripcion.activo = true;
+        return this.usuarioCarreraRepo.save(inscripcion);
+    }
+
+    async eliminarCarreraDefinitivamente(usuarioId: number, usuarioCarreraId: number): Promise<void> {
+        const inscripcion = await this.usuarioCarreraRepo.findOne({
+            where: { usuarioCarreraId, usuario: { usuarioId } },
+            relations: { progresos: true, periodos: { materiasPlanificadas: true } },
+        });
+        if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
+        if (inscripcion.progresos?.length) {
+            await this.usuarioCarreraRepo.manager.remove(inscripcion.progresos);
+        }
+        if (inscripcion.periodos?.length) {
+            for (const periodo of inscripcion.periodos) {
+                if (periodo.materiasPlanificadas?.length) {
+                    await this.usuarioCarreraRepo.manager.remove(periodo.materiasPlanificadas);
+                }
+            }
+            await this.usuarioCarreraRepo.manager.remove(inscripcion.periodos);
+        }
+
+        await this.usuarioCarreraRepo.remove(inscripcion);
     }
 }
 ```

@@ -64,10 +64,10 @@ export function CarreraSelector({ collapsed = false }: CarreraSelectorProps) {
                                         setUsuarioCarreraId(c.usuarioCarreraId);
                                         setAbierto(false);
                                     }}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors truncate ${
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all truncate ${
                                         activa
-                                            ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
-                                            : 'text-slate-200 hover:bg-white/5 hover:text-white'
+                                            ? 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent shadow-[0_0_10px_rgba(34,211,238,0.8)]'
+                                            : 'border-2 border-transparent text-slate-200 hover:bg-white/5 hover:text-white'
                                     }`}
                                     title={c.carrera?.nombre ?? ''}
                                 >
@@ -119,10 +119,10 @@ export function CarreraSelector({ collapsed = false }: CarreraSelectorProps) {
                                     setUsuarioCarreraId(c.usuarioCarreraId);
                                     setAbierto(false);
                                 }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors truncate ${
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all truncate ${
                                     activa
-                                        ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
-                                        : 'text-slate-200 hover:bg-white/5 hover:text-white'
+                                        ? 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent shadow-[0_0_10px_rgba(34,211,238,0.8)]'
+                                        : 'border-2 border-transparent text-slate-200 hover:bg-white/5 hover:text-white'
                                 }`}
                                 title={c.carrera?.nombre ?? ''}
                             >

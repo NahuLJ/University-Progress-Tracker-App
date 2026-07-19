@@ -1,28 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
 
 interface CarreraCardProps {
     carrera: any;
     onClick?: () => void;
     inscripto?: boolean;
+    desinscripto?: boolean;
     fechaInicio?: string;
-    onInscribir?: () => void;
-    inscribiendo?: boolean;
-    onDesinscribir?: () => void;
-    desinscribiendo?: boolean;
 }
 
 export function CarreraCard({
     carrera,
     onClick,
     inscripto = false,
+    desinscripto = false,
     fechaInicio,
-    onInscribir,
-    inscribiendo = false,
-    onDesinscribir,
-    desinscribiendo = false,
 }: CarreraCardProps) {
     const navigate = useNavigate();
 
@@ -31,13 +24,29 @@ export function CarreraCard({
         else navigate(`/carreras/${carrera.carreraId}`);
     };
 
+    const duracionAnios = carrera.duracionAnios;
+    const duracionCuatrimestres =
+        carrera.duracionEstimadaCuatrimestres ??
+        (duracionAnios ? Math.round(duracionAnios * 2) : null);
+
+    const duracionTexto = duracionAnios != null && duracionCuatrimestres != null
+        ? `${duracionAnios} años (${duracionCuatrimestres} cuatrimestres)`
+        : duracionCuatrimestres != null
+            ? `${duracionCuatrimestres} cuatrimestres`
+            : '—';
+
     return (
-        <Card className="hover:shadow-neon-cyan transition-shadow">
+        <Card className="hover:border-neon-cyan/60 hover:shadow-neon-soft transition-shadow">
             <div className="flex justify-between items-start gap-3 mb-3">
                 <h3 className="text-lg font-semibold text-white">{carrera.nombre}</h3>
                 {inscripto && (
                     <Badge variant="success" size="sm" className="shrink-0 text-xs">
                         Inscripto
+                    </Badge>
+                )}
+                {desinscripto && (
+                    <Badge variant="warning" size="sm" className="shrink-0 text-xs">
+                        Desinscripto
                     </Badge>
                 )}
             </div>
@@ -47,11 +56,7 @@ export function CarreraCard({
             <div className="space-y-2 text-sm text-slate-300">
                 <div className="flex justify-between">
                     <span>Duración:</span>
-                    <span className="font-medium">{carrera.duracionEstimadaCuatrimestres} cuatrimestres</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Créditos:</span>
-                    <span className="font-medium">{carrera.creditosTotales}</span>
+                    <span className="font-medium">{duracionTexto}</span>
                 </div>
                 {fechaInicio && (
                     <div className="flex justify-between">
@@ -62,33 +67,13 @@ export function CarreraCard({
             </div>
 
             <div className="pt-4 mt-4 border-t flex gap-2">
-                <Button variant="primary" size="sm" className="flex-1" onClick={verPlan}>
+                <button
+                    type="button"
+                    onClick={verPlan}
+                    className="flex-1 px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
+                >
                     Ver plan de estudios
-                </Button>
-                {inscripto ? (
-                    onDesinscribir && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-neon-red hover:text-red-400"
-                            loading={desinscribiendo}
-                            onClick={onDesinscribir}
-                        >
-                            Desinscribirse
-                        </Button>
-                    )
-                ) : (
-                    onInscribir && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            loading={inscribiendo}
-                            onClick={onInscribir}
-                        >
-                            Inscribirse
-                        </Button>
-                    )
-                )}
+                </button>
             </div>
         </Card>
     );

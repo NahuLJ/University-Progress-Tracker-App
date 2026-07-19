@@ -15,8 +15,18 @@ export const carrerasService = {
         return response.data;
     },
 
+    async obtenerCarrerasActivasDelUsuario(usuarioId: number): Promise<UsuarioCarrera[]> {
+        const response = await api.get(`/usuarios/${usuarioId}/carreras-activas`);
+        return response.data;
+    },
+
     async obtenerCarrerasDisponibles(): Promise<CarreraDisponible[]> {
         const response = await api.get('/carreras');
+        return response.data;
+    },
+
+    async obtenerCarrerasDisponiblesParaUsuario(usuarioId: number): Promise<CarreraDisponible[]> {
+        const response = await api.get(`/carreras/disponibles/${usuarioId}`);
         return response.data;
     },
 
@@ -32,6 +42,15 @@ export const carrerasService = {
 
     async desinscribirCarrera(usuarioId: number, usuarioCarreraId: number): Promise<void> {
         await api.delete(`/usuarios/${usuarioId}/carreras/${usuarioCarreraId}`);
+    },
+
+    async reactivarCarrera(usuarioId: number, usuarioCarreraId: number): Promise<UsuarioCarrera> {
+        const response = await api.patch(`/usuarios/${usuarioId}/carreras/${usuarioCarreraId}/reactivar`);
+        return response.data;
+    },
+
+    async eliminarCarreraDefinitivamente(usuarioId: number, usuarioCarreraId: number): Promise<void> {
+        await api.delete(`/usuarios/${usuarioId}/carreras/${usuarioCarreraId}/definitivo`);
     },
 
     // --- Administración (solo admin) ---

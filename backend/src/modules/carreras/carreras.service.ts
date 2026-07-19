@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Carrera } from './entities/carrera.entity';
 import { CarreraMateria } from './entities/carrera-materia.entity';
 import { Materia } from '../materias/entities/materia.entity';
+import { UsuarioCarrera } from './entities/usuario-carrera.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
 
@@ -20,10 +21,28 @@ export class CarrerasService {
     private readonly carreraMateriaRepo: Repository<CarreraMateria>,
     @InjectRepository(Materia)
     private readonly materiaRepo: Repository<Materia>,
+    @InjectRepository(UsuarioCarrera)
+    private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
   ) {}
 
   async listar(): Promise<Carrera[]> {
     return this.carreraRepo.find({ order: { nombre: 'ASC' } });
+  }
+
+  async obtenerDisponibles(usuarioId: number): Promise<Carrera[]> {
+    const inscripciones = await this.usuarioCarreraRepo.find({
+      where: { usuario: { usuarioId } },
+      relations: { carrera: true },
+    });
+    const inscritasIds = inscripciones.map((i) => i.carrera.carreraId);
+    if (inscritasIds.length === 0) {
+      return this.carreraRepo.find({ order: { nombre: 'ASC' } });
+    }
+    return this.carreraRepo
+      .createQueryBuilder('c')
+      .where('c.carreraId NOT IN (:...ids)', { ids: inscritasIds })
+      .orderBy('c.nombre', 'ASC')
+      .getMany();
   }
 
   async obtenerConPlan(id: number): Promise<Carrera> {
@@ -52,7 +71,11 @@ export class CarrerasService {
         correlativaId: number;
         materiaId: number;
         materiaCorrelativaId: number;
-        materiaCorrelativa: { materiaId: number; nombre: string; codigo: string };
+        materiaCorrelativa: {
+          materiaId: number;
+          nombre: string;
+          codigo: string;
+        };
       }[];
     }[];
     anios: {
@@ -74,7 +97,11 @@ export class CarrerasService {
             correlativaId: number;
             materiaId: number;
             materiaCorrelativaId: number;
-            materiaCorrelativa: { materiaId: number; nombre: string; codigo: string };
+            materiaCorrelativa: {
+              materiaId: number;
+              nombre: string;
+              codigo: string;
+            };
           }[];
         }[];
       }[];
@@ -88,7 +115,7 @@ export class CarrerasService {
       relations: {
         materia: { correlativasRequeridas: { materiaCorrelativa: true } },
       },
-      order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
+      order: { orden: 'ASC' },
     });
 
     const materias = entries.map((e) => ({

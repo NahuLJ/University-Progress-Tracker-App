@@ -2,6 +2,7 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { planificacionService } from '../services/planificacion.service';
 import { usePlanificacionStore } from '../store/planificacion.store';
+import { useNotificationStore } from '../store/notification.store';
 import { useProgreso } from './useProgreso';
 import type { Progreso } from '../types/progreso.types';
 import type { CrearPeriodoDto, MateriaEnCelda } from '../types/planificacion.types';
@@ -75,10 +76,16 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
         }
     }, []);
 
+    const addNotification = useNotificationStore((s) => s.addNotification);
+
     const crearPeriodoMutation = useMutation({
         mutationFn: (data: CrearPeriodoDto) => planificacionService.crearPeriodo(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['planificacion', 'periodos', usuarioCarreraId] });
+            addNotification('Período creado', 'success');
+        },
+        onError: () => {
+            addNotification('Error al crear el período', 'error');
         },
     });
 
@@ -104,6 +111,10 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
         onSuccess: () => {
             store.marcarGuardado();
             queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+            addNotification('Planificación guardada', 'success');
+        },
+        onError: () => {
+            addNotification('Error al guardar la planificación', 'error');
         },
     });
 

@@ -1,16 +1,12 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { carrerasService } from '../../services/carreras.service';
 import { useInscribirCarrera } from '../../hooks/useCarreras';
 
 const inscribirSchema = z.object({
-    carreraId: z.number().min(1, 'Seleccioná una carrera'),
     fechaInicio: z.string().min(1, 'La fecha es obligatoria'),
 });
 
@@ -20,27 +16,22 @@ interface InscribirCarreraModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    carreraId: number;
+    carreraNombre: string;
 }
 
-export function InscribirCarreraModal({ isOpen, onClose, onSuccess }: InscribirCarreraModalProps) {
+export function InscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, carreraNombre }: InscribirCarreraModalProps) {
     const form = useForm<InscribirFormData>({
         resolver: zodResolver(inscribirSchema),
         defaultValues: {
-            carreraId: 0,
             fechaInicio: new Date().toISOString().split('T')[0],
         },
     });
 
     const inscribirCarrera = useInscribirCarrera();
 
-    const { data: carrerasDisponibles, isLoading } = useQuery({
-        queryKey: ['carreras', 'disponibles'],
-        queryFn: () => carrerasService.obtenerCarrerasDisponibles(),
-        enabled: isOpen,
-    });
-
     const onSubmit = (data: InscribirFormData) => {
-        inscribirCarrera.mutate(data, {
+        inscribirCarrera.mutate({ carreraId, ...data }, {
             onSuccess: () => {
                 if (onSuccess) onSuccess();
                 onClose();
@@ -50,24 +41,12 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess }: InscribirC
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Inscribirse a una carrera" size="md">
+        <Modal isOpen={isOpen} onClose={onClose} title={`Inscribirse a ${carreraNombre}`} size="md">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <Select
-                    label="Carrera"
-                    placeholder="Seleccioná una carrera"
-                    error={form.formState.errors.carreraId?.message}
-                    disabled={isLoading}
-                    {...form.register('carreraId', { valueAsNumber: true })}
-                >
-                    <option value="0">
-                        {isLoading ? 'Cargando carreras...' : 'Seleccioná una carrera'}
-                    </option>
-                    {carrerasDisponibles
-                        ?.filter((c) => !c.inscripto)
-                        .map((c) => (
-                            <option key={c.carreraId} value={c.carreraId}>{c.nombre}</option>
-                        ))}
-                </Select>
+                <div className="p-3 bg-base-800/50 rounded-lg border border-base-600">
+                    <p className="text-sm font-medium text-slate-300 mb-1">Carrera</p>
+                    <p className="text-white">{carreraNombre}</p>
+                </div>
 
                 <Input
                     label="Fecha de inicio"

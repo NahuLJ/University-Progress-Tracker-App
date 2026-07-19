@@ -1,11 +1,12 @@
 # Página Plan de Estudios — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. `CarrerasPage` delega a `components/carrera/CarrerasPage`,
-> que **siempre lista TODAS las carreras disponibles** (catálogo) y, combinando con las inscripciones del
-> usuario, muestra en cada `CarreraCard` el botón **Inscribirse** (si no está inscripto) o **Desinscribirse**
-> (si lo está) vía `useInscribirCarrera`/`useDesinscribirCarrera`. `CarreraDetailPage` muestra el plan vía
-> `usePlanEstudios` (vista árbol/tabla) y abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
-> una materia. Sin datos mockeados. La gestión de catálogo (crear carreras/materias/correlativas) vive en `/admin`.
+> que lista las inscripciones del usuario (activas e inactivas) y las carreras disponibles del catálogo.
+> Cada `CarreraCard` solo tiene el botón **Ver plan de estudios** que navega a `/carreras/:id`.
+> Las acciones de inscripción/desinscripción/eliminación están en `CarreraDetailPage`.
+> `CarreraDetailPage` muestra el plan vía `usePlanEstudios` (vista árbol/tabla, toggles en el header
+> de la card "Plan de estudios") y abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
+> una materia. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
 
@@ -15,49 +16,75 @@ pages/
 └── CarreraDetailPage.tsx       # plan de estudios de una carrera (árbol/tabla)
 
 components/carrera/
-├── CarrerasPage.tsx            # lista TODAS las carreras; cada card con botón Inscribirse/Desinscribirse
+├── CarrerasPage.tsx            # lista inscripciones activas/inactivas + disponibles; solo "Ver plan de estudios"
+├── CarreraCard.tsx             # card con badge Inscripto/Desinscripto + botón "Ver plan de estudios"
 ├── PlanEstudiosTree.tsx        # árbol Año → Cuatrimestre → Materia (usa Accordion)
 ├── MateriaDetailModal.tsx      # detalle de materia + CorrelativasList
 ├── CorrelativasList.tsx        # correlativas y "es correlativa de"
-└── InscribirCarreraModal.tsx   # formulario de inscripción (carreras disponibles reales)
+├── InscribirCarreraModal.tsx   # formulario de inscripción (carreras disponibles reales)
+└── DesinscribirCarreraModal.tsx# modal de confirmación simple para desinscribirse
 
 components/ui/
 ├── Card.tsx · Modal.tsx · Badge.tsx · Accordion.tsx · Button.tsx · Input.tsx · Select.tsx · Skeleton.tsx
+├── Snackbar.tsx                # notificaciones flotantes globales
+
+components/layout/
+└── CarreraSelector.tsx         # selector de carrera activa en sidebar
 
 hooks/
-├── useCarreras.ts              # useCarreras() + useInscribirCarrera()
+├── useCarreras.ts              # useCarreras() + useInscribirCarrera() + useDesinscribirCarrera()
+│                               #   + useReactivarCarrera() + useEliminarCarreraDefinitivamente()
+│                               #   + useCarreraActiva()
 └── usePlanEstudios.ts          # useQuery del plan de una carrera
 
-services/carreras.service.ts    # obtenerCarrerasDelUsuario, obtenerCarrerasDisponibles,
-                                # obtenerPlanEstudios, inscribirCarrera, desinscribirCarrera
+services/carreras.service.ts    # obtenerCarrerasDelUsuario, obtenerCarrerasActivasDelUsuario,
+                                # obtenerCarrerasDisponibles, obtenerPlanEstudios,
+                                # inscribirCarrera, desinscribirCarrera, reactivarCarrera,
+                                # eliminarCarreraDefinitivamente
+
+store/
+├── auth.store.ts               # sesión del usuario
+├── sidebar.store.ts            # colapso del sidebar
+├── carrera.store.ts            # carrera activa seleccionada (se resetea al desinscribir/eliminar)
+├── planificacion.store.ts      # planificación en edición
+└── notification.store.ts       # notificaciones del snackbar
 ```
 
-> **Estado:** `InscribirCarreraModal` obtiene las carreras disponibles con
-> `carrerasService.obtenerCarrerasDisponibles()` (filtra las ya inscriptas) e invoca `useInscribirCarrera`
-> para crear la inscripción. El botón "Desinscribirse" en `CarrerasPage` usa `useDesinscribirCarrera`
-> (con `confirm()` de confirmación). `MateriaDetailModal` (info + correlativas) ya está cableado: al
-> hacer click en una materia en la vista árbol (`PlanEstudiosTree.onMateriaClick`) o en la tabla se abre
-> el modal en `CarreraDetailPage`.
+> **Estado:** Las cards en `CarrerasPage` solo tienen el botón "Ver plan de estudios".
+> Las inactivas (soft delete) muestran badge "Desinscripto" pero sin botones de acción.
+> En `CarreraDetailPage`, si el usuario está inscripto se muestran dos botones:
+> "Desinscribirse" (abre `DesinscribirCarreraModal` simplificado, sin escribir texto) y
+> "Eliminar" (hard delete con confirmación). Si está desinscripto: "Volver a inscribirse"
+> (con modal de confirmación) y "Eliminar definitivamente". Toda acción muestra notificación
+> snackbar con resultado. Al desinscribir/eliminar, la carrera activa del store se resetea
+> a la primera disponible o null.
 
 ### Árbol de Composición
 
 ```
 Ruta /carreras
 └── CarrerasPage (componente)
-    ├── Header "Carreras" + conteo de disponibles
-    ├── Grid de Card por CADA carrera del catálogo
-    │   ├── nombre, descripción, duración, créditos, fecha de inicio (si inscripto)
-    │   ├── Badge "Inscripto" cuando aplica
-    │   ├── "Ver plan de estudios" → /carreras/:carreraId
-    │   ├── "Inscribirse" (si no inscripto) · "Desinscribirse" (si inscripto, usa useDesinscribirCarrera)
-    └── (InscribirCarreraModal queda disponible pero la inscripción se hace desde la card)
+    ├── Header "Carreras"
+    ├── Mis carreras
+    │   ├── Activas → CarreraCard (badge "Inscripto" + "Ver plan de estudios")
+    │   └── Desinscriptas → CarreraCard (badge "Desinscripto" + "Ver plan de estudios")
+    └── Carreras disponibles → CarreraCard (solo "Ver plan de estudios")
 
 Ruta /carreras/:id
 └── CarreraDetailPage
-    ├── Header: nombre + descripción + badge Inscripto + botón Inscribirse
-    ├── Toggle Vista árbol / Vista tabla
-    ├── PlanEstudiosTree (árbol de Accordions) O tabla plana (año/cuatrimestre/orden/créditos)
-    └── InscribirCarreraModal
+    ├── Header: nombre + descripción + badge Inscripto/Desinscripto
+    │   ├── Si inscripto: "Desinscribirse" + "Eliminar" (abre modales)
+    │   ├── Si desinscripto: "Volver a inscribirse" + "Eliminar definitivamente"
+    │   └── Si no inscripto: "Inscribirse a esta carrera"
+    ├── Plan de estudios (card con título + toggles Vista árbol/tabla en el header)
+    │   └── Vista tabla: columnas Nro | Código | Materia | Año | Cuatrimestre | Créditos
+    ├── InscribirCarreraModal
+    ├── DesinscribirCarreraModal (confirmación simple)
+    ├── Modal hard delete + Modal reactivar
+    └── MateriaDetailModal
+
+Global
+└── Snackbar (notificaciones success/error/info con auto-dismiss)
 ```
 
 ---
@@ -127,9 +154,12 @@ cierra el modal.
 | Acción | Comportamiento |
 |---|---|
 | Click en materia | Abre `MateriaDetailModal` con info + correlativas |
-| Click "Inscribirse" en una card | Inscribe al usuario vía `useInscribirCarrera` (sin modal) |
-| Confirmar inscripción | POST + invalidar query de carreras + refetch + cierra modal |
-| Cambio árbol/tabla | Switch visual (la tabla es un `<table>` plano generado en la página) |
+| Click "Inscribirse" | Abre `InscribirCarreraModal` → POST + invalidar queries + snackbar success |
+| Click "Desinscribirse" (detail) | Abre `DesinscribirCarreraModal` (confirmación simple) → DELETE + snackbar + reset store |
+| Click "Eliminar" (detail) | Abre modal de confirmación hard delete → DELETE definitivo + snackbar + reset store |
+| Click "Volver a inscribirse" | Abre modal de confirmación → PATCH reactivar + snackbar |
+| Cambio árbol/tabla | Switch visual (toggles en el header de "Plan de estudios") |
+| Click en materia en tabla | Abre `MateriaDetailModal` |
 
 ### Estados
 
@@ -137,7 +167,9 @@ cierra el modal.
 |---|---|
 | Cargando | `Skeleton` con la estructura de tarjetas/acordeones |
 | Carrera sin materias | `EmptyState` / mensaje en la vista |
-| Usuario sin carreras | `EmptyState` con CTA a inscripción |
+| Usuario sin carreras | Mensaje "Aún no estás inscripto" en la sección Mis carreras |
+| Error en mutación | Snackbar tipo `error` con mensaje descriptivo |
+| Éxito en mutación | Snackbar tipo `success` (3s auto-dismiss) |
 
 > **Gestión de catálogo (admin):** crear carreras, crear materias en el catálogo global y
 > asignar correlativas se especifica en `docs/backend/admin-carreras-materias-module.md`.

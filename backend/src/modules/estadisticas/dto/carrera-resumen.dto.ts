@@ -4,7 +4,10 @@ export class CarreraResumenDto {
   @ApiProperty({ example: 1 })
   usuarioCarreraId: number;
 
-  @ApiProperty({ type: Object, example: { carreraId: 1, nombre: 'Ingeniería en Sistemas' } })
+  @ApiProperty({
+    type: Object,
+    example: { carreraId: 1, nombre: 'Ingeniería en Sistemas' },
+  })
   carrera: {
     carreraId: number;
     nombre: string;

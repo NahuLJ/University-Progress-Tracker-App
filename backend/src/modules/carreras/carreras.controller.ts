@@ -21,6 +21,15 @@ export class CarrerasController {
     return this.carrerasService.listar();
   }
 
+  @Get('disponibles/:usuarioId')
+  @ApiOperation({
+    summary: 'Carreras disponibles para un usuario (no inscriptas)',
+  })
+  @ApiResponse({ status: 200, description: 'Lista de carreras disponibles' })
+  async obtenerDisponibles(@Param('usuarioId') usuarioId: number) {
+    return this.carrerasService.obtenerDisponibles(usuarioId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalles de una carrera' })
   @ApiResponse({ status: 200, description: 'Datos de la carrera' })

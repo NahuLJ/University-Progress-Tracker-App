@@ -22,8 +22,8 @@ export function FiltroEstado({ filtroEstado, setFiltroEstado }: FiltroEstadoProp
                     onClick={() => setFiltroEstado(e.value)}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         filtroEstado === e.value
-                            ? 'bg-neon-cyan text-base-900'
-                            : 'bg-base-700/60 text-slate-300 hover:bg-base-600'
+                            ? 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]'
+                            : 'border-2 border-base-600 text-slate-300 bg-transparent hover:bg-white/5 hover:text-white'
                     }`}
                 >
                     {e.label}

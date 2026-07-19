@@ -57,6 +57,14 @@ export class UsuariosService {
     });
   }
 
+  async obtenerCarrerasActivas(id: number): Promise<UsuarioCarrera[]> {
+    return this.usuarioCarreraRepo.find({
+      where: { usuario: { usuarioId: id }, activo: true },
+      relations: { carrera: true },
+      order: { fechaInicio: 'DESC' as const },
+    });
+  }
+
   async inscribirCarrera(
     usuarioId: number,
     dto: InscribirCarreraDto,
@@ -95,5 +103,44 @@ export class UsuariosService {
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
     inscripcion.activo = false;
     await this.usuarioCarreraRepo.save(inscripcion);
+  }
+
+  async reactivarCarrera(
+    usuarioId: number,
+    usuarioCarreraId: number,
+  ): Promise<UsuarioCarrera> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId, usuario: { usuarioId } },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+    if (inscripcion.activo)
+      throw new BadRequestException('La inscripción ya está activa');
+    inscripcion.activo = true;
+    return this.usuarioCarreraRepo.save(inscripcion);
+  }
+
+  async eliminarCarreraDefinitivamente(
+    usuarioId: number,
+    usuarioCarreraId: number,
+  ): Promise<void> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId, usuario: { usuarioId } },
+      relations: { progresos: true, periodos: { materiasPlanificadas: true } },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
+    if (inscripcion.progresos?.length) {
+      await this.usuarioCarreraRepo.manager.remove(inscripcion.progresos);
+    }
+    if (inscripcion.periodos?.length) {
+      for (const periodo of inscripcion.periodos) {
+        if (periodo.materiasPlanificadas?.length) {
+          await this.usuarioCarreraRepo.manager.remove(periodo.materiasPlanificadas);
+        }
+      }
+      await this.usuarioCarreraRepo.manager.remove(inscripcion.periodos);
+    }
+
+    await this.usuarioCarreraRepo.remove(inscripcion);
   }
 }

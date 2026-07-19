@@ -135,7 +135,9 @@ export class EstadisticasService {
     return Math.ceil(materiasPendientes.length / maxMateriasPorCuatrimestre);
   }
 
-  async obtenerCarrerasResumen(usuarioId: number): Promise<CarreraResumenDto[]> {
+  async obtenerCarrerasResumen(
+    usuarioId: number,
+  ): Promise<CarreraResumenDto[]> {
     const inscripciones = await this.usuarioCarreraRepo.find({
       where: { usuario: { usuarioId } },
       relations: { carrera: true },

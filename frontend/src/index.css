@@ -28,36 +28,16 @@
 
 @layer components {
     .btn-primary {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-base-900 rounded-lg
-            bg-neon-cyan transition-all shadow-neon-cyan
-            hover:bg-cyan-300 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]
-            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
-            disabled:opacity-50 disabled:cursor-not-allowed;
-    }
-    .btn-secondary {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-neon-violet rounded-lg
-            bg-neon-violet/10 border border-neon-violet/40 transition-all
-            hover:bg-neon-violet/20 hover:shadow-neon-violet
-            focus:outline-none focus:ring-2 focus:ring-neon-violet focus:ring-offset-2 focus:ring-offset-base-900
-            disabled:opacity-50 disabled:cursor-not-allowed;
-    }
-    .btn-outline {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-neon-cyan rounded-lg
-            border-2 border-neon-cyan/60 transition-all
-            hover:bg-neon-cyan/10 hover:shadow-neon-cyan
-            focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
-            disabled:opacity-50 disabled:cursor-not-allowed;
-    }
-    .btn-ghost {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-300 rounded-lg
-            transition-colors hover:bg-white/5 hover:text-white
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg
+            text-neon-cyan border-2 border-neon-cyan/60 bg-transparent transition-all
+            hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]
             focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-offset-2 focus:ring-offset-base-900
             disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-danger {
-        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg
-            bg-neon-red/80 border border-neon-red/60 transition-all
-            hover:bg-neon-red hover:shadow-[0_0_10px_rgba(248,113,113,0.7)]
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg
+            text-neon-red border-2 border-neon-red/60 bg-transparent transition-all
+            hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)]
             focus:outline-none focus:ring-2 focus:ring-neon-red focus:ring-offset-2 focus:ring-offset-base-900
             disabled:opacity-50 disabled:cursor-not-allowed;
     }
