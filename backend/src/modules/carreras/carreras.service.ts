@@ -9,6 +9,7 @@ import { Carrera } from './entities/carrera.entity';
 import { CarreraMateria } from './entities/carrera-materia.entity';
 import { Materia } from '../materias/entities/materia.entity';
 import { UsuarioCarrera } from './entities/usuario-carrera.entity';
+import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
 
@@ -23,6 +24,8 @@ export class CarrerasService {
     private readonly materiaRepo: Repository<Materia>,
     @InjectRepository(UsuarioCarrera)
     private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
+    @InjectRepository(ProgresoMateria)
+    private readonly progresoRepo: Repository<ProgresoMateria>,
   ) {}
 
   async listar(): Promise<Carrera[]> {
@@ -54,7 +57,10 @@ export class CarrerasService {
     return carrera;
   }
 
-  async obtenerPlanEstudios(carreraId: number): Promise<{
+  async obtenerPlanEstudios(
+    carreraId: number,
+    usuarioCarreraId?: number,
+  ): Promise<{
     carrera: Carrera;
     materias: {
       materiaId: number;
@@ -67,6 +73,9 @@ export class CarrerasService {
       anio: number;
       cuatrimestre: number;
       orden: number;
+      estadoUsuario: string | null;
+      nota: number | null;
+      tipoAprobacion: string | null;
       correlativas: {
         correlativaId: number;
         materiaId: number;
@@ -93,6 +102,9 @@ export class CarrerasService {
           anio: number;
           cuatrimestre: number;
           orden: number;
+          estadoUsuario: string | null;
+          nota: number | null;
+          tipoAprobacion: string | null;
           correlativas: {
             correlativaId: number;
             materiaId: number;
@@ -118,28 +130,49 @@ export class CarrerasService {
       order: { orden: 'ASC' },
     });
 
-    const materias = entries.map((e) => ({
-      materiaId: e.materia.materiaId,
-      carreraMateriaId: e.carreraMateriaId,
-      nombre: e.materia.nombre,
-      codigo: e.materia.codigo,
-      descripcion: e.materia.descripcion,
-      cargaHoraria: e.materia.cargaHoraria,
-      creditos: e.materia.creditos,
-      anio: e.anio,
-      cuatrimestre: e.cuatrimestre,
-      orden: e.orden,
-      correlativas: (e.materia.correlativasRequeridas ?? []).map((c) => ({
-        correlativaId: c.correlativaId,
+    let progresoMap = new Map<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>();
+    if (usuarioCarreraId) {
+      const progresos = await this.progresoRepo.find({
+        where: { usuarioCarrera: { usuarioCarreraId } },
+        relations: { materia: true, estado: true },
+      });
+      for (const p of progresos) {
+        progresoMap.set(p.materia.materiaId, {
+          estado: p.estado.nombre,
+          nota: p.nota,
+          tipoAprobacion: p.tipoAprobacion,
+        });
+      }
+    }
+
+    const materias = entries.map((e) => {
+      const prog = progresoMap.get(e.materia.materiaId);
+      return {
         materiaId: e.materia.materiaId,
-        materiaCorrelativaId: c.materiaCorrelativa.materiaId,
-        materiaCorrelativa: {
-          materiaId: c.materiaCorrelativa.materiaId,
-          nombre: c.materiaCorrelativa.nombre,
-          codigo: c.materiaCorrelativa.codigo,
-        },
-      })),
-    }));
+        carreraMateriaId: e.carreraMateriaId,
+        nombre: e.materia.nombre,
+        codigo: e.materia.codigo,
+        descripcion: e.materia.descripcion,
+        cargaHoraria: e.materia.cargaHoraria,
+        creditos: e.materia.creditos,
+        anio: e.anio,
+        cuatrimestre: e.cuatrimestre,
+        orden: e.orden,
+        estadoUsuario: prog?.estado ?? null,
+        nota: prog?.nota ?? null,
+        tipoAprobacion: prog?.tipoAprobacion ?? null,
+        correlativas: (e.materia.correlativasRequeridas ?? []).map((c) => ({
+          correlativaId: c.correlativaId,
+          materiaId: e.materia.materiaId,
+          materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+          materiaCorrelativa: {
+            materiaId: c.materiaCorrelativa.materiaId,
+            nombre: c.materiaCorrelativa.nombre,
+            codigo: c.materiaCorrelativa.codigo,
+          },
+        })),
+      };
+    });
 
     const aniosMap = new Map<number, typeof materias>();
     for (const m of materias) {

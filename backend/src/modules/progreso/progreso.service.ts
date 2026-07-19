@@ -29,12 +29,55 @@ export class ProgresoService {
 
   async obtenerPorCarrera(
     usuarioCarreraId: number,
-  ): Promise<ProgresoMateria[]> {
-    return this.progresoRepo.find({
+  ): Promise<any[]> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { carrera: true },
+    });
+    if (!inscripcion) return [];
+
+    const ordenPlan = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+      relations: { materia: true },
+      order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
+    });
+
+    if (ordenPlan.length === 0) return [];
+
+    const materiaIds = ordenPlan.map((cm) => cm.materia.materiaId);
+
+    const progresos = await this.progresoRepo.find({
       where: { usuarioCarrera: { usuarioCarreraId } },
       relations: { materia: true, estado: true },
-      order: { materia: { nombre: 'ASC' } },
     });
+
+    const progresoMap = new Map(
+      progresos.map((p) => [p.materia.materiaId, p]),
+    );
+
+    return materiaIds
+      .map((id) => {
+        const p = progresoMap.get(id);
+        if (!p) return undefined;
+        const cm = ordenPlan.find((o) => o.materia.materiaId === id);
+        return {
+          progresoId: p.progresoId,
+          materiaId: p.materia.materiaId,
+          nota: p.nota,
+          tipoAprobacion: p.tipoAprobacion,
+          estado: { estadoId: p.estado.estadoId, nombre: p.estado.nombre },
+          materia: {
+            materiaId: p.materia.materiaId,
+            nombre: p.materia.nombre,
+            codigo: p.materia.codigo,
+            creditos: p.materia.creditos,
+          },
+          anio: cm?.anio ?? 0,
+          cuatrimestre: cm?.cuatrimestre ?? 0,
+          orden: cm?.orden ?? 0,
+        };
+      })
+      .filter((p) => p !== undefined);
   }
 
   async obtenerPorId(id: number): Promise<ProgresoMateria> {
@@ -103,6 +146,22 @@ export class ProgresoService {
     });
     if (!estado) throw new NotFoundException('Estado no encontrado');
 
+    if (dto.estado === 'Completada') {
+      if (dto.nota == null || !dto.tipoAprobacion) {
+        throw new BadRequestException(
+          'Nota y tipo de aprobación son obligatorios para completar la materia',
+        );
+      }
+      const minNota = dto.tipoAprobacion === 'Promocion' ? 7 : 4;
+      if (dto.nota < minNota || dto.nota > 10) {
+        throw new BadRequestException(
+          dto.tipoAprobacion === 'Promocion'
+            ? 'Para Promoción la nota mínima es 7'
+            : 'La nota debe estar entre 4 y 10',
+        );
+      }
+    }
+
     if (dto.estado === 'En Proceso' || dto.estado === 'Completada') {
       const correlativasCumplidas = await this.validarCorrelativas(
         progreso.usuarioCarrera.usuarioCarreraId,
@@ -128,6 +187,14 @@ export class ProgresoService {
     }
 
     return this.progresoRepo.save(progreso);
+  }
+
+  async eliminar(id: number): Promise<void> {
+    const progreso = await this.progresoRepo.findOne({
+      where: { progresoId: id },
+    });
+    if (!progreso) throw new NotFoundException('Progreso no encontrado');
+    await this.progresoRepo.remove(progreso);
   }
 
   private async validarCorrelativas(

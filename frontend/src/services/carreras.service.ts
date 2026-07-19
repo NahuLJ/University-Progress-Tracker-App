@@ -30,8 +30,10 @@ export const carrerasService = {
         return response.data;
     },
 
-    async obtenerPlanEstudios(carreraId: number): Promise<PlanEstudios> {
-        const response = await api.get(`/carreras/${carreraId}/plan-estudios`);
+    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<PlanEstudios> {
+        const response = await api.get(`/carreras/${carreraId}/plan-estudios`, {
+            params: usuarioCarreraId ? { usuarioCarreraId } : undefined,
+        });
         return response.data;
     },
 

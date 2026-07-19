@@ -18,4 +18,8 @@ export const progresoService = {
         const response = await api.post('/progreso/inicializar', { usuarioCarreraId });
         return response.data;
     },
+
+    async eliminarProgreso(id: number): Promise<void> {
+        await api.delete(`/progreso/${id}`);
+    },
 };

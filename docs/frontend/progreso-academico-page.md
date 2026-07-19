@@ -1,30 +1,29 @@
 # Página Progreso Académico — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. `ProgresoPage` resuelve la carrera activa con
-> `useCarreraActiva()`, muestra `CarrerasResumenList` (selector si hay >1), filtros con debounce, grilla
-> editable en línea (`MateriaProgresoRow` con RHF + Zod) y `CompletarMateriaModal` para nota/tipo al
-> completar. Maneja errores con `QueryError` + reintentar. Consume `GET /progreso?usuarioCarreraId=`
-> (corregido para coincidir con el backend). Sin datos mockeados.
+> `useCarreraActiva()`, muestra `CarrerasResumenList` (selector si hay >1), filtros con debounce,
+> y vista árbol (`ProgresoTree`) agrupada por año → cuatrimestre. Cada fila usa pencil para abrir
+> `EditarProgresoModal` (con validación 4/7 según tipo). Sin datos mockeados.
 
 ## Estructura de Componentes (real)
 
 ```
 pages/
-└── ProgresoPage.tsx            # orquesta filtros + grid (carrera activa vía useCarreraActiva())
+└── ProgresoPage.tsx            # orquesta filtros + vista árbol (carrera activa vía useCarreraActiva())
 
 components/progreso/
-├── ProgresoGrid.tsx            # grilla con header de columnas + lista de filas
-├── MateriaProgresoRow.tsx      # fila con RHF + Zod (estado/nota/tipo en línea)
+├── ProgresoTree.tsx            # árbol Año → Cuatrimestre con header de columnas + filas
+├── MateriaProgresoRow.tsx      # fila con chip de estado + pencil (editar modal) + trash (reset)
+├── EditarProgresoModal.tsx     # modal para cambiar estado/nota/tipo con validación
 ├── Filtros.tsx                 # FiltroEstado + FiltroBusqueda (debounce 300ms)
-├── CompletarMateriaModal.tsx   # modal nota+tipo, se abre al guardar "Completada" sin nota/tipo
 ├── CarrerasResumenList.tsx     # tarjetas por carrera; selector de carrera activa (si >1)
 └── index.tsx                   # barrel export
 
 components/ui/
-├── Card.tsx · Badge.tsx · Skeleton.tsx · Button.tsx
+├── Card.tsx · Skeleton.tsx · Button.tsx · Accordion.tsx · Icon.tsx
 
 hooks/
-├── useProgreso.ts              # useQuery + useMutation + filtros (estado/búsqueda)
+├── useProgreso.ts              # useQuery + useMutation + auto-init + filtros (estado/búsqueda)
 └── useCarrerasResumen.ts       # resumen por carrera (GET /estadisticas/carreras-resumen)
 
 services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarreraId=),
@@ -32,24 +31,27 @@ services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarrera
                                   # inicializarProgreso (POST /progreso/inicializar)
 ```
 
-> **Estado:** `ProgresoPage` resuelve la carrera activa con `useCarreraActiva()` (nombre y
-> `usuarioCarreraId` reales; empty state si no hay carreras). Usa `Filtros` (`FiltroEstado`/`FiltroBusqueda`
-> con debounce), `CompletarMateriaModal` (al marcar "Completada" sin nota/tipo, la fila lo abre para
-> confirmar nota 4–10 y tipo de aprobación antes de guardar) y `CarrerasResumenList` (selector de carrera
-> activa cuando hay más de una). Maneja error de la query con `QueryError` + botón reintentar.
+> **Estado:** `ProgresoPage` resuelve la carrera activa con `useCarreraActiva()` (empty state si no hay
+> carreras). Usa `Filtros` (`FiltroEstado`/`FiltroBusqueda` con debounce), `ProgresoTree` como única
+> vista (árbol Año → Cuatrimestre) y `CarrerasResumenList` (selector de carrera activa cuando hay más
+> de una). Maneja error de la query con `QueryError` + botón reintentar.
 > `ProgresoPage` se exporta como `export default` (para el lazy import en `routes/lazy-pages.tsx`).
+> La inicialización de registros de progreso es automática al entrar sin datos previos.
 
-### Árbol de Composición (objetivo)
+### Árbol de Composición
 
 ```
 MainLayout
 └── ProgresoPage
-    ├── Header "Progreso Académico" + etiqueta de carrera activa
+    ├── Header "Progreso Académico"
     ├── CarrerasResumenList (si hay >1 carrera: tarjetas + selector de activa)
     ├── Card: Badges de totales (completadas / en proceso / pendientes)
     ├── Barra de filtros: FiltroEstado (pills) + FiltroBusqueda (input debounce)
-    └── ProgresoGrid
-        └── MateriaProgresoRow (por cada materia filtrada)
+    └── ProgresoTree (única vista, árbol por año y cuatrimestre)
+        ├── Accordion "N° Año"
+        │   └── Accordion "N° Cuatrimestre"
+        │       ├── Header: Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones)
+        │       └── MateriaProgresoRow (por cada materia)
 ```
 
 ---
@@ -60,12 +62,23 @@ MainLayout
 export function useProgreso(usuarioCarreraId: number | null) {
     const [filtroEstado, setFiltroEstado] = useState('todas');
     const [busqueda, setBusqueda] = useState('');
+    const initializedRef = useRef<Set<number>>(new Set());
 
-    const { data: progresos, isLoading } = useQuery({
+    const { data: progresos, isLoading, error } = useQuery({
         queryKey: ['progreso', usuarioCarreraId],
         queryFn: () => progresoService.obtenerProgreso(usuarioCarreraId!),
         enabled: !!usuarioCarreraId,
     });
+
+    // Auto-init: crea registros Pendiente cuando la consulta devuelve vacío
+    useEffect(() => {
+        if (!usuarioCarreraId || isLoading || error || !progresos || progresos.length > 0) return;
+        if (initializedRef.current.has(usuarioCarreraId)) return;
+        initializedRef.current.add(usuarioCarreraId);
+        progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
+            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+        });
+    }, [usuarioCarreraId, progresos, isLoading, error]);
 
     const mutation = useMutation({
         mutationFn: ({ id, data }) => progresoService.actualizarProgreso(id, data),
@@ -88,52 +101,54 @@ export function useProgreso(usuarioCarreraId: number | null) {
 
     return { progresos: progresosFiltrados, totales, filtroEstado, setFiltroEstado,
              busqueda, setBusqueda, actualizar: (id, data) => mutation.mutate({ id, data }),
+             eliminar: (id) => deleteMutation.mutate(id),
              isLoading: isLoading || mutation.isPending };
 }
 ```
 
 ### Fila Individual — `MateriaProgresoRow`
 
-Cada fila usa su propio `useForm` (RHF + Zod) con el schema:
+Cada fila ya no edita en línea. Usa:
+- **Chip de estado** con color (verde/amarillo/rojo) y nombre
+- **Pencil icon** → abre `EditarProgresoModal` para cambiar estado/nota/tipo
+- **Trash icon** (solo si no es Pendiente) → modal de confirmación para resetear a Pendiente
 
-```typescript
-const progresoSchema = z.object({
-    estado: z.enum(['Pendiente', 'En Proceso', 'Completada']),
-    nota: z.number().min(4).max(10).optional(),
-    tipoAprobacion: z.enum(['Final', 'Promocion']).optional(),
-}).refine(
-    (data) => data.estado !== 'Completada' || (data.nota !== undefined && data.tipoAprobacion !== undefined),
-    { message: 'Nota y tipo de aprobación son obligatorios al completar la materia' },
-);
-```
+Columnas: Nro (1) | Materia (3) | Código (2) | Créd. (1) | Estado (2) | Nota (1) | Tipo (1) | acciones (1).
 
-El botón "Guardar" aparece solo cuando `editando` es true (se activa al cambiar el select de estado).
-Al enviar, llama a `onSave(progreso.progresoId, data)`.
+### EditarProgresoModal
+
+Modal con select de estado, y condicionalmente nota (input numérico) y tipo (select Final/Promoción).
+Validaciones:
+- Promoción requiere nota ≥ 7
+- Final requiere nota ≥ 4
+- Borde rojo en nota si no cumple mínimo según tipo seleccionado
+- Errores se limpian al cambiar cualquier campo
 
 ---
 
 ## Comportamiento UX/UI
 
-### ProgresoGrid — Vista Principal
+### ProgresoTree — Vista Principal (única)
 
-Header de columnas: Materia | Código | Créditos | Estado | Nota | Tipo | (acción).
-Cada `MateriaProgresoRow` muestra nombre, código y créditos; un `<select>` de estado con borde de color
-(verde/amarillo/gris) y, si el estado es "Completada", inputs de nota (4–10) y tipo (Final/Promoción).
+Vista árbol con acordeones Año → Cuatrimestre. Cada cuatrimestre tiene un header de columnas:
+Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones). Los datos vienen del backend
+con `anio`, `cuatrimestre` y `orden` incluidos en la respuesta de `GET /progreso`.
 
 ### Validaciones del Lado del Cliente
 
 | Regla | Comportamiento |
 |---|---|
-| Estado "Completada" sin nota/tipo | Error Zod en los campos (`errors.nota` / `errors.tipoAprobacion`) |
-| Nota fuera de rango (4–10) | `min=4 max=10` + validación Zod |
-| Sin cambios | Botón "Guardar" oculto hasta modificar el select de estado |
+| Promoción con nota < 7 | Error en el modal (borde rojo) |
+| Final con nota < 4 | Error en el modal (borde rojo) |
+| Resetear materia | Modal de confirmación; llama a `onSave({ estado: 'Pendiente' })` |
 | Error de correlativas del backend | El backend rechaza; el error se propaga vía React Query |
-| Búsqueda | `Filtros.FiltroBusqueda` aplica debounce de 300ms y filtra la grilla (ya cableado en la página) |
+| Búsqueda | `Filtros.FiltroBusqueda` aplica debounce de 300ms y filtra el árbol |
 
 ### Estados de la Página
 
 | Estado | Comportamiento |
 |---|---|
 | Cargando | `ProgresoSkeleton`: 10 filas simuladas |
-| Sin resultados tras filtrar | `ProgresoGrid` muestra "No hay materias para mostrar" |
-| Cambio de carrera | `useProgreso` refetch por `queryKey` (cuando se conecte el selector real) |
+| Sin resultados tras filtrar | `ProgresoTree` muestra "No hay materias para mostrar" |
+| Cambio de carrera | `useProgreso` refetch por `queryKey` + auto-init si es necesario |
+| Sin carrera activa | `EmptyState` con enlace a "Ver carreras" |

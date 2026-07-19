@@ -1,141 +1,119 @@
-import { useState, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState } from 'react';
+import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
-import { StatusDot } from '../ui/StatusBadge';
-import { CompletarMateriaModal } from './CompletarMateriaModal';
-
-// Schema de validación para progreso académico
-const progresoSchema = z.object({
-    estado: z.enum(['Pendiente', 'En Proceso', 'Completada']),
-    nota: z.number().min(4).max(10).optional(),
-    tipoAprobacion: z.enum(['Final', 'Promocion']).optional(),
-}).refine(
-    (data) => data.estado !== 'Completada' || (data.nota !== undefined && data.tipoAprobacion !== undefined),
-    { message: 'Nota y tipo de aprobación son obligatorios al completar la materia' }
-);
-
-type ProgresoFormData = z.infer<typeof progresoSchema>;
+import { EditarProgresoModal } from './EditarProgresoModal';
 
 interface MateriaProgresoRowProps {
     materia: any;
     progreso: any;
-    onSave: (id: number, data: ProgresoFormData) => void;
+    onSave: (id: number, data: any) => void;
     isSaving: boolean;
 }
 
+function chipClass(estado: string) {
+    if (estado === 'Completada') {
+        return 'bg-neon-green/15 text-neon-green border border-neon-green/30';
+    }
+    if (estado === 'En Proceso') {
+        return 'bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30';
+    }
+    return 'bg-neon-red/15 text-neon-red border border-neon-red/30';
+}
+
+function dotClass(estado: string) {
+    if (estado === 'Completada') return 'bg-neon-green';
+    if (estado === 'En Proceso') return 'bg-neon-yellow';
+    return 'bg-neon-red';
+}
+
 export function MateriaProgresoRow({ materia, progreso, onSave, isSaving }: MateriaProgresoRowProps) {
-    const [editando, setEditando] = useState(false);
-    const [mostrarModal, setMostrarModal] = useState(false);
-    const estadoAnterior = useRef(progreso.estado.nombre);
+    const [modalEdit, setModalEdit] = useState(false);
+    const [modalReset, setModalReset] = useState(false);
 
-    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<ProgresoFormData>({
-        resolver: zodResolver(progresoSchema),
-        defaultValues: {
-            estado: progreso.estado.nombre,
-            nota: progreso.nota ?? undefined,
-            tipoAprobacion: progreso.tipoAprobacion ?? undefined,
-        },
-    });
-
-    const estadoSeleccionado = watch('estado');
-    const notaActual = watch('nota');
-    const tipoActual = watch('tipoAprobacion');
-
-    const handleEstadoChange = (nuevoEstado: string) => {
-        setEditando(true);
-        if (nuevoEstado === 'Completada' && (notaActual === undefined || tipoActual === undefined)) {
-            setMostrarModal(true);
-        }
-    };
-
-    const handleConfirmarCompletar = (nota: number, tipoAprobacion: string) => {
-        const data: ProgresoFormData = {
-            estado: 'Completada',
-            nota,
-            tipoAprobacion: tipoAprobacion as 'Final' | 'Promocion',
-        };
-        setValue('nota', nota);
-        setValue('tipoAprobacion', tipoAprobacion as 'Final' | 'Promocion');
+    const handleSave = (data: { estado: string; nota?: number; tipoAprobacion?: string }) => {
         onSave(progreso.progresoId, data);
-        estadoAnterior.current = 'Completada';
-        setEditando(false);
     };
 
-    const handleCancelarModal = () => {
-        setMostrarModal(false);
-        if (notaActual === undefined || tipoActual === undefined) {
-            setValue('estado', estadoAnterior.current);
-            setEditando(false);
-        }
-    };
-
-    const onSubmit = (data: ProgresoFormData) => {
-        onSave(progreso.progresoId, data);
-        estadoAnterior.current = data.estado;
-        setEditando(false);
-    };
+    const puedeResetear = progreso.estado.nombre !== 'Pendiente';
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-base-700/50">
-            <span className="col-span-3 font-medium text-slate-100">{materia.nombre}</span>
-            <span className="col-span-2 text-slate-400">{materia.codigo}</span>
-            <span className="col-span-1 text-center text-slate-300">{materia.creditos}</span>
+        <div className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-base-700/50">
+            <span className="col-span-1 text-center text-slate-400 font-mono text-sm">{progreso.orden}</span>
+            <span className="col-span-3 text-center font-medium text-slate-100 truncate" title={materia.nombre}>{materia.nombre}</span>
+            <span className="col-span-2 text-center text-slate-400 font-mono text-sm">{materia.codigo}</span>
+            <span className="col-span-1 text-center text-slate-300 text-sm">{materia.creditos}</span>
 
-            <div className="col-span-2 flex items-center gap-2">
-                    <StatusDot estado={estadoSeleccionado} className="flex-shrink-0" />
-                    <select
-                        {...register('estado', {
-                            onChange: (e) => handleEstadoChange(e.target.value),
-                        })}
-                        className={
-                        `w-full border bg-base-800 rounded p-1 text-sm text-slate-100 ${estadoSeleccionado === 'Completada' ? 'border-neon-green' :
-                            estadoSeleccionado === 'En Proceso' ? 'border-neon-yellow' : 'border-base-500'
-                        }`}
-                    >
-                        <option value="Pendiente">● Pendiente</option>
-                        <option value="En Proceso">● En Proceso</option>
-                        <option value="Completada">● Completada</option>
-                    </select>
-                {errors.estado && <p className="text-sm text-neon-red">{errors.estado.message}</p>}
+            <div className="col-span-2 flex items-center justify-center">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${chipClass(progreso.estado.nombre)}`}>
+                    <span className={`w-2 h-2 rounded-full mr-2 ${dotClass(progreso.estado.nombre)}`} />
+                    {progreso.estado.nombre}
+                </span>
             </div>
 
-            {estadoSeleccionado === 'Completada' && (
+            {progreso.estado.nombre === 'Completada' ? (
                 <>
-                    <div className="col-span-1">
-                        <input type="number" {...register('nota', { valueAsNumber: true })}
-                            placeholder="4-10" min={4} max={10}
-                            className="w-full border bg-base-800 rounded p-1 text-sm text-slate-100 text-center" />
-                        {errors.nota && <p className="text-sm text-neon-red">{errors.nota.message}</p>}
-                    </div>
-                    <div className="col-span-2">
-                        <select {...register('tipoAprobacion')} className="w-full border bg-base-800 rounded p-1 text-sm text-slate-100">
-                            <option value="">Tipo</option>
-                            <option value="Final">Final</option>
-                            <option value="Promocion">Promoción</option>
-                        </select>
-                        {errors.tipoAprobacion && <p className="text-sm text-neon-red">{errors.tipoAprobacion.message}</p>}
-                    </div>
+                    <span className="col-span-1 text-center text-slate-300">{progreso.nota ?? '—'}</span>
+                    <span className="col-span-1 text-center text-slate-400">{progreso.tipoAprobacion ?? '—'}</span>
                 </>
+            ) : (
+                <div className="col-span-2" />
             )}
 
-            {!estadoSeleccionado.startsWith('Completada') && (
-                <div className="col-span-3" />
-            )}
-
-            <div className="col-span-1">
-                {editando && (
-                    <Button type="submit" size="sm" loading={isSaving}>Guardar</Button>
+            <div className="col-span-1 flex items-center justify-center gap-1">
+                <button
+                    type="button"
+                    onClick={() => setModalEdit(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                    title="Editar progreso"
+                >
+                    <Icon name="edit" className="w-4 h-4 text-slate-400 hover:text-white" />
+                </button>
+                {puedeResetear && (
+                    <button
+                        type="button"
+                        onClick={() => setModalReset(true)}
+                        className="p-1.5 rounded-lg hover:bg-neon-red/10 transition-colors"
+                        title="Reiniciar progreso"
+                    >
+                        <Icon name="delete" className="w-4 h-4 text-slate-500 hover:text-neon-red" />
+                    </button>
                 )}
             </div>
 
-            <CompletarMateriaModal
-                isOpen={mostrarModal}
-                onClose={handleCancelarModal}
+            <EditarProgresoModal
+                isOpen={modalEdit}
+                onClose={() => setModalEdit(false)}
                 materiaNombre={materia.nombre}
-                onConfirm={handleConfirmarCompletar}
+                estadoActual={progreso.estado.nombre}
+                notaActual={progreso.nota}
+                tipoActual={progreso.tipoAprobacion}
+                onSave={handleSave}
+                isSaving={isSaving}
             />
-        </form>
+
+            {modalReset && (
+                <div className="fixed inset-0 bg-base-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setModalReset(false)}>
+                    <div className="card rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-xl font-semibold mb-4">Reiniciar progreso</h2>
+                        <p className="text-slate-300 mb-6">
+                            ¿Reiniciar <strong>{materia.nombre}</strong> a estado Pendiente?
+                            {progreso.estado.nombre === 'Completada' && ' Se eliminará la nota y el tipo de aprobación.'}
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setModalReset(false)}>Cancelar</Button>
+                            <Button
+                                onClick={() => {
+                                    handleSave({ estado: 'Pendiente' });
+                                    setModalReset(false);
+                                }}
+                                loading={isSaving}
+                            >
+                                Confirmar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { progresoService } from '../services/progreso.service';
 import { useNotificationStore } from '../store/notification.store';
@@ -8,12 +8,28 @@ export function useProgreso(usuarioCarreraId: number | null) {
     const [filtroEstado, setFiltroEstado] = useState<string>('todas');
     const [busqueda, setBusqueda] = useState('');
     const queryClient = useQueryClient();
+    const initializedRef = useRef<Set<number>>(new Set());
 
     const { data: progresos, isLoading, error } = useQuery({
         queryKey: ['progreso', usuarioCarreraId],
         queryFn: () => progresoService.obtenerProgreso(usuarioCarreraId!),
         enabled: !!usuarioCarreraId,
     });
+
+    useEffect(() => {
+        if (!usuarioCarreraId) return;
+        if (isLoading || error) return;
+        if (!progresos) return;
+        if (progresos.length > 0) return;
+        if (initializedRef.current.has(usuarioCarreraId)) return;
+
+        initializedRef.current.add(usuarioCarreraId);
+
+        progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
+            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+        });
+    }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
     const addNotification = useNotificationStore((s) => s.addNotification);
 
@@ -27,6 +43,18 @@ export function useProgreso(usuarioCarreraId: number | null) {
         },
         onError: () => {
             addNotification('Error al actualizar el progreso', 'error');
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => progresoService.eliminarProgreso(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            addNotification('Registro eliminado', 'success');
+        },
+        onError: () => {
+            addNotification('Error al eliminar el registro', 'error');
         },
     });
 
@@ -56,7 +84,8 @@ export function useProgreso(usuarioCarreraId: number | null) {
         busqueda,
         setBusqueda,
         actualizar: (id: number, data: ActualizarProgresoDto) => mutation.mutate({ id, data }),
-        isLoading: isLoading || mutation.isPending,
+        eliminar: (id: number) => deleteMutation.mutate(id),
+        isLoading: isLoading || mutation.isPending || deleteMutation.isPending,
         error,
     };
 }

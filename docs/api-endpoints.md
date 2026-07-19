@@ -65,7 +65,7 @@ interface InscribirCarreraDto {
 | `GET` | `/carreras` | ❌ Público | — | `200`: Carreras[] |
 | `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | — | `200`: Carreras[] no inscriptas por el usuario |
 | `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada |
-| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con materias + correlativas (ordenado por `orden`) · `404`: No encontrada |
+| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | `?usuarioCarreraId=N` (opcional) | `200`: Plan con materias + correlativas + `estadoUsuario`/`nota`/`tipoAprobacion` si se provee `usuarioCarreraId` · `404`: No encontrada |
 | `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación |
 | `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Agregada · `400`: Ya existe · `404`: No encontrada |
 
@@ -120,10 +120,10 @@ interface AsignarCorrelativaDto {
 
 | Método | Ruta | Auth | Query | Body | Respuestas |
 |--------|------|------|-------|------|------------|
-| `GET` | `/progreso` | ✅ Bearer | `usuarioCarreraId` | — | `200`: Progreso[] |
+| `GET` | `/progreso` | ✅ Bearer | `usuarioCarreraId` | — | `200`: Progreso[] (incluye `anio`, `cuatrimestre`, `orden` del plan) |
 | `GET` | `/progreso/:id` | ✅ Bearer | — | — | `200`: Progreso · `404`: No encontrado |
 | `POST` | `/progreso/inicializar` | ✅ Bearer | — | `{ usuarioCarreraId }` | `201`: Inicializado · `404`: Inscripción no encontrada |
-| `PUT` | `/progreso/:id` | ✅ Bearer | — | `ActualizarProgresoDto` | `200`: Actualizado · `400`: Correlativas pendientes o validación · `404`: No encontrado |
+| `PATCH` | `/progreso/:id` | ✅ Bearer | — | `ActualizarProgresoDto` | `200`: Actualizado · `400`: Correlativas pendientes o validación · `404`: No encontrado |
 
 ### DTOs
 

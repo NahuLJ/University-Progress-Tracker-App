@@ -78,6 +78,9 @@ export interface MateriaPlanEstudios {
     anio: number;
     cuatrimestre: number;
     orden: number;
+    estadoUsuario: string | null;
+    nota: number | null;
+    tipoAprobacion: string | null;
     correlativas: Correlativa[];
 }
 

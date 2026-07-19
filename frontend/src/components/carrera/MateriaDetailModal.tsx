@@ -11,7 +11,7 @@ interface MateriaDetailModalProps {
 export function MateriaDetailModal({ isOpen, onClose, materia }: MateriaDetailModalProps) {
     if (!materia || !isOpen) return null;
 
-    const estado = materia.estadoUsuario?.nombre || 'Pendiente';
+    const estado = materia.estadoUsuario || 'Pendiente';
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={materia.nombre} size="lg">
@@ -23,6 +23,7 @@ export function MateriaDetailModal({ isOpen, onClose, materia }: MateriaDetailMo
                         <p className="text-sm text-slate-400">Carga horaria: <span className="font-medium text-white">{materia.cargaHoraria} horas</span></p>
                     </div>
                     <StatusBadge estado={estado} className="gap-1">
+                        {estado}
                         {materia.nota && <span>(Nota: {materia.nota})</span>}
                         {materia.tipoAprobacion && <span>({materia.tipoAprobacion})</span>}
                     </StatusBadge>

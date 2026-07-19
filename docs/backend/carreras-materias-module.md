@@ -25,10 +25,11 @@ Obtiene los detalles de una carrera específica.
 ### GET /api/carreras/:id/plan-estudios
 
 Retorna el plan de estudios completo de la carrera. Las materias vienen ordenadas por año y cuatrimestre, cada una con sus correlativas.
+Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia.
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ materiaId, nombre, codigo, creditos, anio, cuatrimestre, orden, correlativas: [{ materiaCorrelativaId, nombre }] }]` |
+| 200 | `[{ materiaId, nombre, codigo, creditos, anio, cuatrimestre, orden, correlativas, estadoUsuario?, nota?, tipoAprobacion? }]` |
 | 404 | Carrera no encontrada |
 
 ### POST /api/carreras
@@ -268,15 +269,29 @@ export class CarrerasService {
         return carrera;
     }
 
-    async obtenerPlanEstudios(carreraId: number): Promise<CarreraMateria[]> {
+    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<any> {
         const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
         if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
-        return this.carreraMateriaRepo.find({
+        const plan = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId } },
             relations: ['materia', 'materia.correlativasRequeridas', 'materia.correlativasRequeridas.materiaCorrelativa'],
             order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
         });
+
+        let progresoMap: Map<number, any> = new Map();
+        if (usuarioCarreraId) {
+            const progresos = await this.progresoRepo.find({
+                where: { usuarioCarrera: { usuarioCarreraId } },
+                relations: { materia: true, estado: true },
+            });
+            progresoMap = new Map(progresos.map((p) => [p.materia.materiaId, p]));
+        }
+
+        return {
+            carrera: { carreraId: carrera.carreraId, nombre: carrera.nombre, descripcion: carrera.descripcion, creditosTotales: carrera.creditosTotales },
+            anios: this.agruparPorAnio(plan, progresoMap),
+        };
     }
 
     async crear(dto: CrearCarreraDto): Promise<Carrera> {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { carrerasService } from '../services/carreras.service';
 import { useAuthStore } from '../store/auth.store';
@@ -114,7 +115,20 @@ export function useEliminarCarreraDefinitivamente() {
 
 export function useCarreraActiva() {
     const { data: carreras, isLoading } = useCarreras();
-    const activa = carreras?.find((c) => c.activo) ?? carreras?.[0] ?? null;
+    const storeId = useCarreraStore((s) => s.usuarioCarreraId);
+    const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
+
+    const activa = carreras?.find((c) => c.usuarioCarreraId === storeId)
+        ?? carreras?.find((c) => c.activo)
+        ?? carreras?.[0]
+        ?? null;
+
+    useEffect(() => {
+        if (!isLoading && carreras && carreras.length > 0 && !storeId) {
+            const primera = carreras.find((c) => c.activo) ?? carreras[0];
+            setUsuarioCarreraId(primera.usuarioCarreraId);
+        }
+    }, [isLoading, carreras, storeId, setUsuarioCarreraId]);
 
     return {
         carreraActiva: activa,

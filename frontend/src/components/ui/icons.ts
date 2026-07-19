@@ -18,6 +18,8 @@ import {
     PanelLeft,
     ChevronsLeft,
     Menu,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 
 export const Icons = {
@@ -40,6 +42,8 @@ export const Icons = {
     panel: PanelLeft,
     collapse: ChevronsLeft,
     menu: Menu,
+    edit: Pencil,
+    delete: Trash2,
 } as const;
 
 export type IconName = keyof typeof Icons;

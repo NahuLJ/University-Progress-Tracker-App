@@ -6,6 +6,7 @@ import { Carrera } from './entities/carrera.entity';
 import { CarreraMateria } from './entities/carrera-materia.entity';
 import { Materia } from '../materias/entities/materia.entity';
 import { UsuarioCarrera } from './entities/usuario-carrera.entity';
+import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UsuarioCarrera } from './entities/usuario-carrera.entity';
       CarreraMateria,
       Materia,
       UsuarioCarrera,
+      ProgresoMateria,
     ]),
   ],
   controllers: [CarrerasController],

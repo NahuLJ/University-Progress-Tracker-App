@@ -21,12 +21,12 @@ export function ProgresoGrid({ progresos, onSave, isSaving }: ProgresoGridProps)
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-12 gap-2 p-3 bg-base-700/60 rounded-lg text-sm font-medium text-slate-300">
-                <div className="col-span-3">Materia</div>
-                <div className="col-span-2">Código</div>
+                <div className="col-span-4 text-center">Materia</div>
+                <div className="col-span-2 text-center">Código</div>
                 <div className="col-span-1 text-center">Créditos</div>
-                <div className="col-span-2">Estado</div>
-                <div className="col-span-1">Nota</div>
-                <div className="col-span-2">Tipo</div>
+                <div className="col-span-2 text-center">Estado</div>
+                <div className="col-span-1 text-center">Nota</div>
+                <div className="col-span-1 text-center">Tipo</div>
                 <div className="col-span-1"></div>
             </div>
 

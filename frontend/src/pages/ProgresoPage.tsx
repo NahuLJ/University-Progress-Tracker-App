@@ -1,22 +1,21 @@
-import { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
 import { Link } from 'react-router-dom';
-import { ProgresoGrid, FiltroEstado, FiltroBusqueda, ProgresoStatsBar, CarrerasResumenList } from '../components/progreso';
+import { FiltroEstado, FiltroBusqueda, ProgresoStatsBar, CarrerasResumenList } from '../components/progreso';
+import { ProgresoTree } from '../components/progreso/ProgresoTree';
 import { useProgreso } from '../hooks/useProgreso';
 import { useCarreraActiva } from '../hooks/useCarreras';
 import { useCarrerasResumen } from '../hooks/useCarrerasResumen';
+import { useCarreraStore } from '../store/carrera.store';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function ProgresoPage() {
-    const { carreraActiva, usuarioCarreraId, isLoading: cargandoCarrera } = useCarreraActiva();
+    const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
+    const { usuarioCarreraId, isLoading: cargandoCarrera } = useCarreraActiva();
     const { data: resumenCarreras } = useCarrerasResumen();
-    const [carreraSeleccionada, setCarreraSeleccionada] = useState<number | null>(null);
     const queryClient = useQueryClient();
-
-    const idActivo = carreraSeleccionada ?? usuarioCarreraId;
 
     const {
         progresos,
@@ -28,9 +27,9 @@ export function ProgresoPage() {
         actualizar,
         isLoading,
         error,
-    } = useProgreso(idActivo);
+    } = useProgreso(usuarioCarreraId);
 
-    if (cargandoCarrera || (idActivo && isLoading)) {
+    if (cargandoCarrera || (usuarioCarreraId && isLoading)) {
         return <ProgresoSkeleton />;
     }
 
@@ -38,7 +37,7 @@ export function ProgresoPage() {
         return (
             <QueryError
                 error={error}
-                onRetry={() => queryClient.invalidateQueries({ queryKey: ['progreso', idActivo] })}
+                onRetry={() => queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] })}
             />
         );
     }
@@ -54,19 +53,13 @@ export function ProgresoPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Progreso Académico</h1>
-                <span className="text-sm text-slate-400">
-                    {carreraActiva?.carrera.nombre}
-                    {carreraActiva?.activo ? ' (Activa)' : ''}
-                </span>
-            </div>
+            <h1 className="text-2xl font-bold">Progreso Académico</h1>
 
             {resumenCarreras && resumenCarreras.length > 1 && (
                 <CarrerasResumenList
                     carreras={resumenCarreras}
-                    usuarioCarreraIdActivo={idActivo}
-                    onSeleccionar={setCarreraSeleccionada}
+                    usuarioCarreraIdActivo={usuarioCarreraId}
+                    onSeleccionar={setUsuarioCarreraId}
                 />
             )}
 
@@ -82,7 +75,7 @@ export function ProgresoPage() {
                 <FiltroBusqueda busqueda={busqueda} setBusqueda={setBusqueda} />
             </div>
 
-            <ProgresoGrid
+            <ProgresoTree
                 progresos={progresos}
                 onSave={actualizar}
                 isSaving={isLoading}
@@ -108,7 +101,7 @@ function ProgresoSkeleton() {
                 </div>
             </Card>
             <div className="flex flex-col sm:flex-row gap-4">
-                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-48" />
                 <Skeleton className="h-10 flex-1" />
             </div>
             <div className="space-y-4">

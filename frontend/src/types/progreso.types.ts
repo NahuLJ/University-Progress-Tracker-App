@@ -1,5 +1,5 @@
 export interface EstadoMateria {
-    estadoMateriaId: number;
+    estadoId: number;
     nombre: 'Pendiente' | 'En Proceso' | 'Completada';
 }
 
@@ -12,13 +12,14 @@ export interface Materia {
 
 export interface Progreso {
     progresoId: number;
-    usuarioCarreraId: number;
     materiaId: number;
-    estadoMateriaId: number;
-    estado: EstadoMateria;
     nota: number | null;
     tipoAprobacion: 'Final' | 'Promocion' | null;
+    estado: EstadoMateria;
     materia: Materia;
+    anio: number;
+    cuatrimestre: number;
+    orden: number;
 }
 
 export interface ActualizarProgresoDto {

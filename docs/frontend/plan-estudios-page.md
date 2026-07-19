@@ -5,8 +5,10 @@
 > Cada `CarreraCard` solo tiene el botón **Ver plan de estudios** que navega a `/carreras/:id`.
 > Las acciones de inscripción/desinscripción/eliminación están en `CarreraDetailPage`.
 > `CarreraDetailPage` muestra el plan vía `usePlanEstudios` (vista árbol/tabla, toggles en el header
-> de la card "Plan de estudios") y abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
-> una materia. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
+> de la card "Plan de estudios"). `usePlanEstudios` acepta `usuarioCarreraId` opcional para mergear
+> el progreso del usuario (estado, nota, tipo) en cada materia. Abre `MateriaDetailModal`
+> (info + `CorrelativasList`) al click en una materia. Sin datos mockeados. Snackbar global para
+> notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
 
@@ -77,7 +79,8 @@ Ruta /carreras/:id
     │   ├── Si desinscripto: "Volver a inscribirse" + "Eliminar definitivamente"
     │   └── Si no inscripto: "Inscribirse a esta carrera"
     ├── Plan de estudios (card con título + toggles Vista árbol/tabla en el header)
-    │   └── Vista tabla: columnas Nro | Código | Materia | Año | Cuatrimestre | Créditos
+    │   ├── Vista árbol: Accordion Año → Cuatrimestre → MateriaRow (con StatusBadge)
+    │   └── Vista tabla: columnas centradas Nro | Código | Materia | Año | Cuatrimestre | Créditos | Estado
     ├── InscribirCarreraModal
     ├── DesinscribirCarreraModal (confirmación simple)
     ├── Modal hard delete + Modal reactivar
@@ -116,10 +119,10 @@ export function useInscribirCarrera() {
 ### `usePlanEstudios` (`hooks/usePlanEstudios.ts`)
 
 ```typescript
-export function usePlanEstudios(carreraId: number | undefined) {
+export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?: number | null) {
     return useQuery({
-        queryKey: ['plan-estudios', carreraId],
-        queryFn: () => carrerasService.obtenerPlanEstudios(carreraId!),
+        queryKey: ['plan-estudios', carreraId, usuarioCarreraId],
+        queryFn: () => carrerasService.obtenerPlanEstudios(carreraId!, usuarioCarreraId),
         enabled: !!carreraId,
     });
 }
@@ -133,14 +136,15 @@ export function usePlanEstudios(carreraId: number | undefined) {
 
 Usa `Accordion` anidados: `AnioAccordion` (1° Año, 2° Año, …) → `CuatrimestreAccordion`
 (1° Cuatrimestre, …) → `MateriaRow`. Cada materia muestra orden, nombre, código y créditos, y un
-`Badge` de estado del usuario (`estadoUsuario.nombre`): 🟢 Completada (CP), 🟡 En Proceso (EP),
-🔴 Pendiente (PTE). Click en una materia abre `MateriaDetailModal`.
+`StatusBadge` con el estado del usuario (`estadoUsuario` como string directo). Click en una materia
+abre `MateriaDetailModal`.
 
 ### MateriaDetailModal — Detalle de Materia
 
-Muestra código, créditos, carga horaria, badge de estado (con nota/tipo si aplica), descripción y
-`CorrelativasList`. `CorrelativasList` renderiza dos secciones: "Correlativas (para cursar esta materia)"
-y "Es correlativa de", cada una con badge de estado de la materia relacionada.
+Muestra código, créditos, carga horaria, `StatusBadge` con el texto del estado (ej: "Pendiente",
+"Completada (Nota: 7) (Final)"), descripción y `CorrelativasList`. `CorrelativasList` renderiza dos
+secciones: "Correlativas (para cursar esta materia)" y "Es correlativa de", cada una con badge de
+estado de la materia relacionada.
 
 ### InscribirCarreraModal
 
@@ -153,13 +157,13 @@ cierra el modal.
 
 | Acción | Comportamiento |
 |---|---|
-| Click en materia | Abre `MateriaDetailModal` con info + correlativas |
+| Click en materia (árbol o tabla) | Abre `MateriaDetailModal` con info + correlativas |
 | Click "Inscribirse" | Abre `InscribirCarreraModal` → POST + invalidar queries + snackbar success |
 | Click "Desinscribirse" (detail) | Abre `DesinscribirCarreraModal` (confirmación simple) → DELETE + snackbar + reset store |
 | Click "Eliminar" (detail) | Abre modal de confirmación hard delete → DELETE definitivo + snackbar + reset store |
 | Click "Volver a inscribirse" | Abre modal de confirmación → PATCH reactivar + snackbar |
 | Cambio árbol/tabla | Switch visual (toggles en el header de "Plan de estudios") |
-| Click en materia en tabla | Abre `MateriaDetailModal` |
+| Columnas tabla | Centradas (tanto header como datos) |
 
 ### Estados
 

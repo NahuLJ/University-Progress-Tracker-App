@@ -8,7 +8,7 @@ interface MateriaRowProps {
 }
 
 function MateriaRow({ materia, onClick }: MateriaRowProps) {
-    const estado = materia.estadoUsuario?.nombre || 'Pendiente';
+    const estado = materia.estadoUsuario || 'Pendiente';
 
     return (
         <button

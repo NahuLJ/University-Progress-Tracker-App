@@ -13,6 +13,8 @@ import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../components/ui/Modal';
+import { useCarreraStore } from '../store/carrera.store';
+import { StatusBadge } from '../components/ui/StatusBadge';
 
 export function CarreraDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +30,7 @@ export function CarreraDetailPage() {
     const reactivarCarrera = useReactivarCarrera();
     const eliminarCarreraDefinitivamente = useEliminarCarreraDefinitivamente();
 
+    const usuarioCarreraId = useCarreraStore((s) => s.usuarioCarreraId);
     const inscripcionActual = usuarioCarrera.data?.find(c => c.carrera?.carreraId === parseInt(id!));
     const inscripto = inscripcionActual?.activo === true;
     const desinscripto = inscripcionActual?.activo === false;
@@ -37,7 +40,7 @@ export function CarreraDetailPage() {
         isLoading,
         error,
         refetch,
-    } = usePlanEstudios(parseInt(id!));
+    } = usePlanEstudios(parseInt(id!), usuarioCarreraId);
 
     const queryClient = useQueryClient();
 
@@ -234,13 +237,14 @@ export function CarreraDetailPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-3 px-4">Nro</th>
-                                    <th className="text-left py-3 px-4">Código</th>
-                                    <th className="text-left py-3 px-4">Materia</th>
-                                    <th className="text-left py-3 px-4">Año</th>
-                                    <th className="text-left py-3 px-4">Cuatrimestre</th>
-                                    <th className="text-left py-3 px-4">Créditos</th>
+                                <tr className="border-b border-base-600">
+                                    <th className="text-center py-3 px-4">Nro</th>
+                                    <th className="text-center py-3 px-4">Código</th>
+                                    <th className="text-center py-3 px-4">Materia</th>
+                                    <th className="text-center py-3 px-4">Año</th>
+                                    <th className="text-center py-3 px-4">Cuatrimestre</th>
+                                    <th className="text-center py-3 px-4">Créditos</th>
+                                    <th className="text-center py-3 px-4">Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -248,19 +252,22 @@ export function CarreraDetailPage() {
                                     anio.cuatrimestres.flatMap(cuatrimestre =>
                                         cuatrimestre.materias.map(materia => (
                                     <tr key={materia.materiaId} className="border-b border-base-600 hover:bg-base-700/50">
-                                        <td className="py-3 px-4 text-slate-300">{materia.orden}</td>
-                                        <td className="py-3 px-4 font-mono text-sm text-slate-300">{materia.codigo}</td>
-                                        <td className="py-3 px-4">
+                                        <td className="text-center py-3 px-4 text-slate-300">{materia.orden}</td>
+                                        <td className="text-center py-3 px-4 font-mono text-sm text-slate-300">{materia.codigo}</td>
+                                        <td className="text-center py-3 px-4">
                                                 <button
                                                     onClick={() => setMateriaSeleccionada(materia)}
-                                                    className="text-neon-cyan hover:text-cyan-300 font-medium text-left"
+                                                    className="text-neon-cyan hover:text-cyan-300 font-medium text-center"
                                                 >
                                                         {materia.nombre}
                                                     </button>
                                             </td>
-                                            <td className="py-3 px-4">{anio.anio}</td>
-                                            <td className="py-3 px-4">{cuatrimestre.cuatrimestre}</td>
-                                            <td className="py-3 px-4">{materia.creditos}</td>
+                                            <td className="text-center py-3 px-4">{anio.anio}</td>
+                                            <td className="text-center py-3 px-4">{cuatrimestre.cuatrimestre}</td>
+                                            <td className="text-center py-3 px-4">{materia.creditos}</td>
+                                            <td className="text-center py-3 px-4">
+                                                <StatusBadge estado={materia.estadoUsuario || 'Pendiente'} />
+                                            </td>
                                         </tr>
                                         ))
                                     )

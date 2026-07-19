@@ -7,11 +7,11 @@
 
 ### GET /api/progreso?usuarioCarreraId=:id
 
-Obtiene el progreso completo del usuario en todas las materias de una carrera específica.
+Obtiene el progreso completo del usuario en todas las materias de una carrera específica, ordenado por plan de estudios (año, cuatrimestre, orden). Incluye datos del plan (`anio`, `cuatrimestre`, `orden`) para renderizar vistas de árbol.
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ progresoId, materia: { id, nombre, codigo, creditos }, estado: { id, nombre }, nota, tipoAprobacion, fechaCompletado, fechaActualizacion }]` |
+| 200 | `[{ progresoId, materiaId, nota, tipoAprobacion, estado: { estadoId, nombre }, materia: { materiaId, nombre, codigo, creditos }, anio, cuatrimestre, orden }]` |
 
 ### GET /api/progreso/:id
 
@@ -22,7 +22,7 @@ Obtiene el progreso individual de una materia específica.
 | 200 | `{ progresoId, materiaId, estado, nota, tipoAprobacion, fechaCompletado }` |
 | 404 | Progreso no encontrado |
 
-### PUT /api/progreso/:id
+### PATCH /api/progreso/:id
 
 Actualiza el estado, nota y/o tipo de aprobación de una materia. Valida correlativas antes de permitir "En Proceso" o "Completada".
 
@@ -121,12 +121,47 @@ export class ProgresoService {
         private readonly estadoRepo: Repository<EstadoMateria>,
     ) {}
 
-    async obtenerPorCarrera(usuarioCarreraId: number): Promise<ProgresoMateria[]> {
-        return this.progresoRepo.find({
-            where: { usuarioCarrera: { usuarioCarreraId } },
-            relations: ['materia', 'estado'],
-            order: { materia: { nombre: 'ASC' } },
+    async obtenerPorCarrera(usuarioCarreraId: number): Promise<any[]> {
+        const inscripcion = await this.usuarioCarreraRepo.findOneOrFail({
+            where: { usuarioCarreraId },
+            relations: { carrera: true },
         });
+
+        const ordenPlan = await this.carreraMateriaRepo.find({
+            where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+            relations: { materia: true },
+            order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
+        });
+
+        const progresos = await this.progresoRepo.find({
+            where: { usuarioCarrera: { usuarioCarreraId } },
+            relations: { materia: true, estado: true },
+        });
+
+        const progresoMap = new Map(progresos.map((p) => [p.materia.materiaId, p]));
+
+        return ordenPlan
+            .map((cm) => {
+                const p = progresoMap.get(cm.materia.materiaId);
+                if (!p) return undefined;
+                return {
+                    progresoId: p.progresoId,
+                    materiaId: p.materia.materiaId,
+                    nota: p.nota,
+                    tipoAprobacion: p.tipoAprobacion,
+                    estado: { estadoId: p.estado.estadoId, nombre: p.estado.nombre },
+                    materia: {
+                        materiaId: p.materia.materiaId,
+                        nombre: p.materia.nombre,
+                        codigo: p.materia.codigo,
+                        creditos: p.materia.creditos,
+                    },
+                    anio: cm.anio,
+                    cuatrimestre: cm.cuatrimestre,
+                    orden: cm.orden,
+                };
+            })
+            .filter((p) => p !== undefined);
     }
 
     async obtenerPorId(id: number): Promise<ProgresoMateria> {
@@ -183,10 +218,25 @@ export class ProgresoService {
         });
         if (!progreso) throw new NotFoundException('Progreso no encontrado');
 
-        // Buscar el estado por nombre
         const estado = await this.estadoRepo.findOne({ where: { nombre: dto.estado } });
+        if (!estado) throw new NotFoundException('Estado no encontrado');
 
-        // Si pasa a "En Proceso" o "Completada", validar correlativas
+        if (dto.estado === 'Completada') {
+            if (dto.nota == null || !dto.tipoAprobacion) {
+                throw new BadRequestException(
+                    'Nota y tipo de aprobación son obligatorios para completar la materia',
+                );
+            }
+            const minNota = dto.tipoAprobacion === 'Promocion' ? 7 : 4;
+            if (dto.nota < minNota || dto.nota > 10) {
+                throw new BadRequestException(
+                    dto.tipoAprobacion === 'Promocion'
+                        ? 'Para Promoción la nota mínima es 7'
+                        : 'La nota debe estar entre 4 y 10',
+                );
+            }
+        }
+
         if (dto.estado === 'En Proceso' || dto.estado === 'Completada') {
             const correlativasCumplidas = await this.validarCorrelativas(
                 progreso.usuarioCarrera.usuarioCarreraId,

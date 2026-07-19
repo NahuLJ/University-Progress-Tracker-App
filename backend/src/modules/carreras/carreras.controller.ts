@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -45,8 +45,11 @@ export class CarrerasController {
     description: 'Plan de estudios con correlativas',
   })
   @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
-  async obtenerPlanEstudios(@Param('id') id: number) {
-    return this.carrerasService.obtenerPlanEstudios(id);
+  async obtenerPlanEstudios(
+    @Param('id') id: number,
+    @Query('usuarioCarreraId') usuarioCarreraId?: number,
+  ) {
+    return this.carrerasService.obtenerPlanEstudios(id, usuarioCarreraId);
   }
 
   @Post()

@@ -1,12 +1,14 @@
 import {
   Controller,
   Get,
-  Put,
+  Patch,
   Post,
+  Delete,
   Param,
   Query,
   Body,
   ParseIntPipe,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -48,7 +50,7 @@ export class ProgresoController {
     return this.progresoService.inicializar(dto);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Actualizar estado y nota de una materia' })
   @ApiResponse({ status: 200, description: 'Progreso actualizado' })
   @ApiResponse({
@@ -61,5 +63,14 @@ export class ProgresoController {
     @Body() dto: ActualizarProgresoDto,
   ) {
     return this.progresoService.actualizar(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Eliminar registro de progreso (hard delete)' })
+  @ApiResponse({ status: 204, description: 'Registro eliminado' })
+  @ApiResponse({ status: 404, description: 'Progreso no encontrado' })
+  async eliminar(@Param('id') id: number) {
+    await this.progresoService.eliminar(id);
   }
 }
