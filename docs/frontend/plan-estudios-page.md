@@ -9,7 +9,7 @@
 > Vista árbol/tabla: el toggle está **entre** la card de info de la carrera y la card "Plan de estudios"
 > (alineado a la derecha). En vista árbol, la card "Plan de estudios" tiene en su header los botones
 > **Expandir todo / Contraer todo**. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
-> una materia. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
+> una materia. **Las correlativas ahora muestran su estado real (Pendiente/En Proceso/Completada) con nota y tipo si corresponde**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
 
@@ -151,8 +151,10 @@ muestra orden, nombre, código y créditos, y un `StatusBadge` con el estado del
 
 Muestra código, créditos, carga horaria, `StatusBadge` con el texto del estado (ej: "Pendiente",
 "Completada (Nota: 7) (Final)"), descripción y `CorrelativasList`. `CorrelativasList` renderiza dos
-secciones: "Correlativas (para cursar esta materia)" y "Es correlativa de", cada una con badge de
-estado de la materia relacionada.
+secciones: "Correlativas (para cursar esta materia)" y "Es correlativa de", cada una con
+`StatusBadge` que muestra el **estado real del usuario** para esa materia correlativa (Pendiente /
+En Proceso / Completada con nota y tipo de aprobación). El backend ahora devuelve `estadoUsuario`,
+`nota` y `tipoAprobacion` para cada correlativa en `GET /carreras/:id/plan-estudios`.
 
 ### InscribirCarreraModal
 

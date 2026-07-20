@@ -25,11 +25,11 @@ Obtiene los detalles de una carrera específica.
 ### GET /api/carreras/:id/plan-estudios
 
 Retorna el plan de estudios completo de la carrera. Las materias vienen ordenadas por año y cuatrimestre, cada una con sus correlativas.
-Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia.
+Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia **y en cada correlativa**.
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ materiaId, nombre, codigo, creditos, anio, cuatrimestre, orden, correlativas, estadoUsuario?, nota?, tipoAprobacion? }]` |
+| 200 | `[{ materiaId, nombre, codigo, creditos, anio, cuatrimestre, orden, correlativas: [{ correlativaId, materiaCorrelativaId, materiaCorrelativa: { nombre, codigo }, estadoUsuario?, nota?, tipoAprobacion? }], estadoUsuario?, nota?, tipoAprobacion? }]` |
 | 404 | Carrera no encontrada |
 
 ### POST /api/carreras
@@ -269,28 +269,73 @@ export class CarrerasService {
         return carrera;
     }
 
-    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<any> {
+    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<...> {
         const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
         if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
-        const plan = await this.carreraMateriaRepo.find({
+        const entries = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId } },
-            relations: ['materia', 'materia.correlativasRequeridas', 'materia.correlativasRequeridas.materiaCorrelativa'],
-            order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
+            relations: {
+                materia: { correlativasRequeridas: { materiaCorrelativa: true } },
+            },
+            order: { orden: 'ASC' },
         });
 
-        let progresoMap: Map<number, any> = new Map();
+        const progresoMap = new Map<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>();
         if (usuarioCarreraId) {
             const progresos = await this.progresoRepo.find({
                 where: { usuarioCarrera: { usuarioCarreraId } },
                 relations: { materia: true, estado: true },
             });
-            progresoMap = new Map(progresos.map((p) => [p.materia.materiaId, p]));
+            for (const p of progresos) {
+                progresoMap.set(p.materia.materiaId, {
+                    estado: p.estado.nombre,
+                    nota: p.nota,
+                    tipoAprobacion: p.tipoAprobacion,
+                });
+            }
         }
+
+        // Mapea cada materia con su progreso y el progreso de sus correlativas
+        const materias = entries.map((e) => {
+            const prog = progresoMap.get(e.materia.materiaId);
+            const correlativasProgreso = (e.materia.correlativasRequeridas ?? []).map((c) => {
+                const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
+                return {
+                    correlativaId: c.correlativaId,
+                    materiaId: e.materia.materiaId,
+                    materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+                    materiaCorrelativa: {
+                        materiaId: c.materiaCorrelativa.materiaId,
+                        nombre: c.materiaCorrelativa.nombre,
+                        codigo: c.materiaCorrelativa.codigo,
+                    },
+                    estadoUsuario: corrProg?.estado ?? null,
+                    nota: corrProg?.nota ?? null,
+                    tipoAprobacion: corrProg?.tipoAprobacion ?? null,
+                };
+            });
+            return {
+                materiaId: e.materia.materiaId,
+                carreraMateriaId: e.carreraMateriaId,
+                nombre: e.materia.nombre,
+                codigo: e.materia.codigo,
+                descripcion: e.materia.descripcion,
+                cargaHoraria: e.materia.cargaHoraria,
+                creditos: e.materia.creditos,
+                anio: e.anio,
+                cuatrimestre: e.cuatrimestre,
+                orden: e.orden,
+                estadoUsuario: prog?.estado ?? null,
+                nota: prog?.nota ?? null,
+                tipoAprobacion: prog?.tipoAprobacion ?? null,
+                correlativas: correlativasProgreso,
+            };
+        });
 
         return {
             carrera: { carreraId: carrera.carreraId, nombre: carrera.nombre, descripcion: carrera.descripcion, creditosTotales: carrera.creditosTotales },
-            anios: this.agruparPorAnio(plan, progresoMap),
+            anios: this.agruparPorAnio(materias),
         };
     }
 

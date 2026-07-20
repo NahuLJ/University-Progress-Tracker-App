@@ -85,6 +85,9 @@ export class CarrerasService {
           nombre: string;
           codigo: string;
         };
+        estadoUsuario: string | null;
+        nota: number | null;
+        tipoAprobacion: string | null;
       }[];
     }[];
     anios: {
@@ -114,6 +117,9 @@ export class CarrerasService {
               nombre: string;
               codigo: string;
             };
+            estadoUsuario: string | null;
+            nota: number | null;
+            tipoAprobacion: string | null;
           }[];
         }[];
       }[];
@@ -150,6 +156,24 @@ export class CarrerasService {
 
     const materias = entries.map((e) => {
       const prog = progresoMap.get(e.materia.materiaId);
+      const correlativasProgreso = (e.materia.correlativasRequeridas ?? []).map(
+        (c) => {
+          const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
+          return {
+            correlativaId: c.correlativaId,
+            materiaId: e.materia.materiaId,
+            materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+            materiaCorrelativa: {
+              materiaId: c.materiaCorrelativa.materiaId,
+              nombre: c.materiaCorrelativa.nombre,
+              codigo: c.materiaCorrelativa.codigo,
+            },
+            estadoUsuario: corrProg?.estado ?? null,
+            nota: corrProg?.nota ?? null,
+            tipoAprobacion: corrProg?.tipoAprobacion ?? null,
+          };
+        },
+      );
       return {
         materiaId: e.materia.materiaId,
         carreraMateriaId: e.carreraMateriaId,
@@ -164,16 +188,7 @@ export class CarrerasService {
         estadoUsuario: prog?.estado ?? null,
         nota: prog?.nota ?? null,
         tipoAprobacion: prog?.tipoAprobacion ?? null,
-        correlativas: (e.materia.correlativasRequeridas ?? []).map((c) => ({
-          correlativaId: c.correlativaId,
-          materiaId: e.materia.materiaId,
-          materiaCorrelativaId: c.materiaCorrelativa.materiaId,
-          materiaCorrelativa: {
-            materiaId: c.materiaCorrelativa.materiaId,
-            nombre: c.materiaCorrelativa.nombre,
-            codigo: c.materiaCorrelativa.codigo,
-          },
-        })),
+        correlativas: correlativasProgreso,
       };
     });
 

@@ -13,7 +13,7 @@ export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraNo
             <div className="space-y-4">
                 <p className="text-sm text-slate-300">
                     Vas a desinscribirte de <strong className="text-white">{carreraNombre}</strong>.
-                    Perderás el progreso guardado y la fecha de inicio.
+                    Tu progreso guardado y fecha de inicio se mantendrán intactos si te reinscribís más adelante.
                 </p>
                 <div className="flex justify-end gap-2 pt-4">
                     <button

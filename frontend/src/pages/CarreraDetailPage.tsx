@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -25,6 +25,10 @@ export function CarreraDetailPage() {
     const [expandirSignal, setExpandirSignal] = useState(0);
     const [contraerSignal, setContraerSignal] = useState(0);
     const [confirmReactivar, setConfirmReactivar] = useState<{ usuarioCarreraId: number; carreraNombre: string } | null>(null);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [id]);
 
     const usuarioCarrera = useCarreras();
     const desinscribirCarrera = useDesinscribirCarrera();

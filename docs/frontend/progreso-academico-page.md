@@ -3,7 +3,8 @@
 > **Estado de implementación:** ✅ Completa. `ProgresoPage` resuelve la carrera activa con
 > `useCarreraActiva()`, muestra `CarrerasResumenList` (selector si hay >1), filtros con debounce,
 > y vista árbol (`ProgresoTree`) agrupada por año → cuatrimestre. Cada fila usa pencil para abrir
-> `EditarProgresoModal` (con validación 4/7 según tipo). Sin datos mockeados.
+> `EditarProgresoModal` (con validación 4/7 según tipo). **Si la carrera seleccionada está inactiva,
+> se muestra un aviso y se ocultan los controles de edición**. Sin datos mockeados.
 
 ## Estructura de Componentes (real)
 
@@ -48,11 +49,17 @@ MainLayout
     ├── CarrerasResumenList (si hay >1 carrera: tarjetas + selector de activa)
     ├── Card: Badges de totales (completadas / en proceso / pendientes)
     ├── Barra de filtros: FiltroEstado (pills) + FiltroBusqueda (input debounce)
-    └── ProgresoTree (única vista, árbol por año y cuatrimestre)
-        ├── Accordion "N° Año"
-        │   └── Accordion "N° Cuatrimestre"
-        │       ├── Header: Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones)
-        │       └── MateriaProgresoRow (por cada materia)
+    └── {carreraInactiva ? (
+            Card de aviso: "Carrera inactiva - No se pueden modificar progresos"
+          ) : (
+            <>
+                ProgresoTree (única vista, árbol por año y cuatrimestre)
+                    ├── Accordion "N° Año"
+                    │   └── Accordion "N° Cuatrimestre"
+                    │       ├── Header: Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones)
+                    │       └── MateriaProgresoRow (por cada materia)
+            </>
+          )}
 ```
 
 ---
@@ -156,3 +163,4 @@ cuatrimestres a la vez.
 | Sin resultados tras filtrar | `ProgresoTree` muestra "No hay materias para mostrar" |
 | Cambio de carrera | `useProgreso` refetch por `queryKey` + auto-init si es necesario |
 | Sin carrera activa | `EmptyState` con enlace a "Ver carreras" |
+| Carrera inactiva | Se muestra card de aviso (rojo) indicando que no se pueden editar progresos; botones Expandir/Contraer, filtros y `ProgresoTree` se ocultan |

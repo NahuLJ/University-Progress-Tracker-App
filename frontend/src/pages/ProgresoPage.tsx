@@ -10,10 +10,12 @@ import { useCarreraActiva } from '../hooks/useCarreras';
 import { useCarrerasResumen } from '../hooks/useCarrerasResumen';
 import { useCarreraStore } from '../store/carrera.store';
 import { useQueryClient } from '@tanstack/react-query';
+import { Card as CardUI } from '../components/ui/Card';
+import { Icon } from '../components/ui/Icon';
 
 export function ProgresoPage() {
     const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
-    const { usuarioCarreraId, isLoading: cargandoCarrera } = useCarreraActiva();
+    const { usuarioCarreraId, isLoading: cargandoCarrera, carreraActiva } = useCarreraActiva();
     const { data: resumenCarreras } = useCarrerasResumen();
     const queryClient = useQueryClient();
 
@@ -51,6 +53,8 @@ export function ProgresoPage() {
         />;
     }
 
+    const carreraInactiva = carreraActiva && !carreraActiva.activo;
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold">Progreso Académico</h1>
@@ -63,23 +67,42 @@ export function ProgresoPage() {
                 />
             )}
 
-            <Card>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h2 className="text-lg font-semibold">Distribución de Estados</h2>
-                    <ProgresoStatsBar totales={totales} />
-                </div>
-            </Card>
+            {carreraInactiva ? (
+                <CardUI className="border-neon-red/30 bg-neon-red/5">
+                    <div className="flex items-center gap-3 p-4">
+                        <div className="w-10 h-10 rounded-full bg-neon-red/20 flex items-center justify-center flex-shrink-0">
+                            <Icon name="warning" className="w-5 h-5 text-neon-red" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-neon-red">Carrera inactiva</h3>
+                            <p className="text-slate-300 mt-1">
+                                No se pueden realizar modificaciones en el progreso de carreras inactivas.
+                                Reactivá la carrera desde la sección de Carreras para volver a editar tu progreso.
+                            </p>
+                        </div>
+                    </div>
+                </CardUI>
+            ) : (
+                <>
+                    <Card>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <h2 className="text-lg font-semibold">Distribución de Estados</h2>
+                            <ProgresoStatsBar totales={totales} />
+                        </div>
+                    </Card>
 
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <FiltroEstado filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado} />
-                <FiltroBusqueda busqueda={busqueda} setBusqueda={setBusqueda} />
-            </div>
+                    <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <FiltroEstado filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado} />
+                        <FiltroBusqueda busqueda={busqueda} setBusqueda={setBusqueda} />
+                    </div>
 
-            <ProgresoTree
-                progresos={progresos}
-                onSave={actualizar}
-                isSaving={isLoading}
-            />
+                    <ProgresoTree
+                        progresos={progresos}
+                        onSave={actualizar}
+                        isSaving={isLoading}
+                    />
+                </>
+            )}
         </div>
     );
 }

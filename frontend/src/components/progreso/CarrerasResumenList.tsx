@@ -27,7 +27,9 @@ export function CarrerasResumenList({
                             onClick={onSeleccionar ? () => onSeleccionar(c.usuarioCarreraId) : undefined}
                         >
                             <h3 className="font-semibold text-white truncate">{c.carrera.nombre}</h3>
-                            {c.activo && <Badge variant="success">Activa</Badge>}
+                            <Badge variant={c.activo ? 'success' : 'default'}>
+                                {c.activo ? 'Activa' : 'Inactiva'}
+                            </Badge>
 
                         <div className="mt-3">
                             <div className="flex justify-between text-sm text-slate-300 mb-1">

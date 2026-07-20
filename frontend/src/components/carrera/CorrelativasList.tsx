@@ -1,4 +1,4 @@
-import { Badge } from '../ui/Badge';
+import { StatusBadge } from '../ui/StatusBadge';
 
 interface CorrelativasListProps {
     correlativas: any[];
@@ -19,12 +19,11 @@ export function CorrelativasList({ correlativas, esCorrelativaDe }: Correlativas
                                     <p className="text-sm text-slate-400">{corr.materiaCorrelativa?.codigo || corr.codigo} • {corr.materiaCorrelativa?.creditos || corr.creditos} créditos</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Badge variant={
-                                        corr.estado === 'Completada' ? 'success' :
-                                        corr.estado === 'En Proceso' ? 'warning' : 'danger'
-                                    }>
-                                        {corr.estado}
-                                    </Badge>
+                                    <StatusBadge estado={corr.estadoUsuario || 'Pendiente'} className="gap-1">
+                                        {corr.estadoUsuario || 'Pendiente'}
+                                        {corr.nota && <span>(Nota: {corr.nota})</span>}
+                                        {corr.tipoAprobacion && <span>({corr.tipoAprobacion})</span>}
+                                    </StatusBadge>
                                 </div>
                             </li>
                         ))}
@@ -42,12 +41,11 @@ export function CorrelativasList({ correlativas, esCorrelativaDe }: Correlativas
                                     <p className="font-medium text-slate-100">{materia.nombre}</p>
                                     <p className="text-sm text-slate-400">{materia.codigo} • {materia.creditos} créditos</p>
                                 </div>
-                                <Badge variant={
-                                    materia.estado === 'Completada' ? 'success' :
-                                    materia.estado === 'En Proceso' ? 'warning' : 'danger'
-                                }>
-                                    {materia.estado}
-                                </Badge>
+                                <StatusBadge estado={materia.estadoUsuario || 'Pendiente'} className="gap-1">
+                                    {materia.estadoUsuario || 'Pendiente'}
+                                    {materia.nota && <span>(Nota: {materia.nota})</span>}
+                                    {materia.tipoAprobacion && <span>({materia.tipoAprobacion})</span>}
+                                </StatusBadge>
                             </li>
                         ))}
                     </ul>
