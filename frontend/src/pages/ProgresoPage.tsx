@@ -28,6 +28,7 @@ export function ProgresoPage() {
         setBusqueda,
         actualizar,
         isLoading,
+        isSaving,
         error,
     } = useProgreso(usuarioCarreraId);
 
@@ -99,7 +100,8 @@ export function ProgresoPage() {
                     <ProgresoTree
                         progresos={progresos}
                         onSave={actualizar}
-                        isSaving={isLoading}
+                        isSaving={isSaving}
+                        carreraId={carreraActiva?.carrera?.carreraId}
                     />
                 </>
             )}

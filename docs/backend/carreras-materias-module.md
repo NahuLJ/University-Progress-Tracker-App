@@ -81,6 +81,7 @@ Lista todas las materias del catálogo global.
 ### GET /api/materias/:id
 
 Obtiene los detalles de una materia, incluyendo sus correlativas y las carreras donde se dicta.
+Acepta query param opcional `carreraId` para filtrar correlativas por carrera (si se omite, se incluyen todas).
 
 | Código | Descripción |
 |---|---|
@@ -114,9 +115,11 @@ Asigna una materia correlativa a otra. La materia `materiaCorrelativaId` debe se
 **Request Body:**
 ```json
 {
-    "materiaCorrelativaId": 3
+    "materiaCorrelativaId": 3,
+    "carreraId": 1
 }
 ```
+El campo `carreraId` es opcional. Si se provee, la correlativa se asigna solo a esa carrera.
 
 | Código | Descripción |
 |---|---|
@@ -126,7 +129,7 @@ Asigna una materia correlativa a otra. La materia `materiaCorrelativaId` debe se
 
 ### DELETE /api/materias/:id/correlativas/:correlativaId
 
-Elimina una correlativa existente.
+Elimina una correlativa existente. Acepta query param opcional `?carreraId=` para filtrar por carrera.
 
 | Código | Descripción |
 |---|---|
@@ -228,13 +231,18 @@ export class CrearMateriaDto {
 ### AsignarCorrelativaDto
 
 ```typescript
-import { IsInt } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AsignarCorrelativaDto {
     @ApiProperty({ example: 3, description: 'ID de la materia que actúa como correlativa (requisito)' })
     @IsInt()
     materiaCorrelativaId: number;
+
+    @ApiPropertyOptional({ example: 1, description: 'ID de la carrera (opcional). Si se provee, la correlativa aplica solo a esa carrera' })
+    @IsOptional()
+    @IsInt()
+    carreraId?: number;
 }
 ```
 
@@ -384,17 +392,26 @@ export class MateriasService {
         return this.materiaRepo.find({ order: { nombre: 'ASC' } });
     }
 
-    async obtenerConRelaciones(id: number): Promise<Materia> {
+    async obtenerConRelaciones(id: number, carreraId?: number): Promise<Materia> {
         const materia = await this.materiaRepo.findOne({
             where: { materiaId: id },
-            relations: [
-                'correlativasRequeridas',
-                'correlativasRequeridas.materiaCorrelativa',
-                'planEstudios',
-                'planEstudios.carrera',
-            ],
+            relations: {
+                correlativasRequeridas: { materiaCorrelativa: true },
+                esCorrelativaDe: { materia: true },
+                planEstudios: { carrera: true },
+            },
         });
         if (!materia) throw new NotFoundException('Materia no encontrada');
+
+        if (carreraId) {
+            materia.correlativasRequeridas = materia.correlativasRequeridas.filter(
+                (c) => !c.carrera || c.carrera.carreraId === carreraId,
+            );
+            materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
+                (c) => !c.carrera || c.carrera.carreraId === carreraId,
+            );
+        }
+
         return materia;
     }
 
@@ -421,22 +438,31 @@ export class MateriasService {
         const correlativa = await this.materiaRepo.findOne({ where: { materiaId: dto.materiaCorrelativaId } });
         if (!correlativa) throw new NotFoundException('Materia correlativa no encontrada');
 
-        const existente = await this.correlativaRepo.findOne({
-            where: { materia: { materiaId }, materiaCorrelativa: { materiaId: dto.materiaCorrelativaId } },
-        });
-        if (existente) throw new BadRequestException('Esta correlativa ya está asignada');
+        const whereClause: any = {
+            materia: { materiaId },
+            materiaCorrelativa: { materiaId: dto.materiaCorrelativaId },
+        };
+        if (dto.carreraId) {
+            whereClause.carrera = { carreraId: dto.carreraId };
+        }
+
+        const existente = await this.correlativaRepo.findOne({ where: whereClause });
+        if (existente) throw new BadRequestException('Esta correlativa ya está asignada en esta carrera');
 
         const entry = this.correlativaRepo.create({
             materia,
             materiaCorrelativa: correlativa,
+            ...(dto.carreraId ? { carrera: { carreraId: dto.carreraId } } : {}),
         });
         return this.correlativaRepo.save(entry);
     }
 
-    async eliminarCorrelativa(materiaId: number, correlativaId: number): Promise<void> {
-        const correlativa = await this.correlativaRepo.findOne({
-            where: { correlativaId, materia: { materiaId } },
-        });
+    async eliminarCorrelativa(materiaId: number, correlativaId: number, carreraId?: number): Promise<void> {
+        const whereClause: any = { correlativaId, materia: { materiaId } };
+        if (carreraId) {
+            whereClause.carrera = { carreraId };
+        }
+        const correlativa = await this.correlativaRepo.findOne({ where: whereClause });
         if (!correlativa) throw new NotFoundException('Correlativa no encontrada');
         await this.correlativaRepo.remove(correlativa);
     }
@@ -447,35 +473,47 @@ export class MateriasService {
 
 ## Validación de Correlatividades
 
-Función utilitaria para verificar que un usuario cumple con todas las correlativas antes de permitirle cambiar una materia a "En Proceso" o "Completada":
+Función utilitaria para verificar que un usuario cumple con todas las correlativas antes de permitirle cambiar una materia a "En Proceso" o "Completada". Soporta correlativas por carrera: si se provee `carreraId`, filtra solo las correlativas de esa carrera; si no encuentra, cae a correlativas globales (null carreraId):
 
 ```typescript
-async function validarCorrelativas(
+private async validarCorrelativas(
     usuarioCarreraId: number,
     materiaId: number,
-    progresoRepo: Repository<ProgresoMateria>,
-    correlativaRepo: Repository<Correlativa>,
+    carreraId?: number,
 ): Promise<boolean> {
-    const correlativas = await correlativaRepo.find({
-        where: { materia: { materiaId } },
-        relations: ['materiaCorrelativa'],
+    const whereClause: any = { materia: { materiaId } };
+    if (carreraId) {
+        whereClause.carrera = { carreraId };
+    }
+
+    const correlativas = await this.correlativaRepo.find({
+        where: whereClause,
+        relations: { materiaCorrelativa: true, carrera: true },
     });
 
-    if (correlativas.length === 0) return true; // No tiene correlativas
+    if (correlativas.length === 0) {
+        if (carreraId) {
+            return this.validarCorrelativas(usuarioCarreraId, materiaId); // fallback a globales
+        }
+        return true;
+    }
 
-    const progresos = await progresoRepo.find({
+    const idsCorrelativas = correlativas.map(
+        (c) => c.materiaCorrelativa.materiaId,
+    );
+
+    const progresos = await this.progresoRepo.find({
         where: {
             usuarioCarrera: { usuarioCarreraId },
-            materia: { materiaId: In(correlativas.map((c) => c.materiaCorrelativa.materiaId)) },
+            materia: { materiaId: In(idsCorrelativas) },
         },
-        relations: ['estado'],
+        relations: { estado: true },
     });
 
-    const correlativasAprobadas = progresos.filter(
+    const completadas = progresos.filter(
         (p) => p.estado.nombre === 'Completada',
-    ).length;
-
-    return correlativasAprobadas === correlativas.length;
+    );
+    return completadas.length === correlativas.length;
 }
 ```
 
@@ -540,7 +578,9 @@ export class CarreraMateria {
 
 ```typescript
 @Entity('correlativa')
-@Unique(['materia', 'materiaCorrelativa'])
+@Unique(['materia', 'materiaCorrelativa', 'carrera'])
+@Index('IDX_correlativa_materia_id', ['materia'])
+@Index('IDX_correlativa_materia_correlativa_id', ['materiaCorrelativa'])
 export class Correlativa {
     @PrimaryGeneratedColumn()
     correlativaId: number;
@@ -552,5 +592,9 @@ export class Correlativa {
     @ManyToOne(() => Materia, (m) => m.esCorrelativaDe)
     @JoinColumn({ name: 'materia_correlativa_id' })
     materiaCorrelativa: Materia;
+
+    @ManyToOne(() => Carrera, { nullable: true, onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'carrera_id' })
+    carrera?: Carrera;
 }
 ```

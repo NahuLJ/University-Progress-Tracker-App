@@ -36,8 +36,8 @@ export function useAdminMaterias() {
     });
 
     const eliminarCorrelativa = useMutation({
-        mutationFn: (params: { materiaId: number; correlativaId: number }) =>
-            materiasAdminService.eliminarCorrelativa(params.materiaId, params.correlativaId),
+        mutationFn: (params: { materiaId: number; correlativaId: number; carreraId?: number }) =>
+            materiasAdminService.eliminarCorrelativa(params.materiaId, params.correlativaId, params.carreraId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'catalogo'] });
             addNotification('Correlativa eliminada', 'success');

@@ -1,6 +1,7 @@
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
+import { cn } from '../../utils/cn';
 import type { CarreraResumen } from '../../types/estadisticas.types';
 
 interface CarrerasResumenListProps {
@@ -23,7 +24,10 @@ export function CarrerasResumenList({
                 return (
                         <Card
                             key={c.usuarioCarreraId}
-                            className={onSeleccionar ? 'cursor-pointer hover:shadow-neon-cyan transition-shadow' : ''}
+                            className={cn(
+                                onSeleccionar ? 'cursor-pointer hover:shadow-neon-cyan transition-shadow' : '',
+                                activa ? 'border-neon-cyan/70 shadow-neon-cyan/20 shadow-sm' : '',
+                            )}
                             onClick={onSeleccionar ? () => onSeleccionar(c.usuarioCarreraId) : undefined}
                         >
                             <h3 className="font-semibold text-white truncate">{c.carrera.nombre}</h3>

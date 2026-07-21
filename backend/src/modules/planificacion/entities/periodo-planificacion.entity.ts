@@ -27,8 +27,8 @@ export class PeriodoPlanificacion {
   })
   instancia: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  nombre: string | null;
+  @Column({ type: 'varchar', length: 100, nullable: false })
+  nombre: string;
 
   @OneToMany(() => MateriaPlanificada, (mp) => mp.periodo, { cascade: true })
   materiasPlanificadas: MateriaPlanificada[];

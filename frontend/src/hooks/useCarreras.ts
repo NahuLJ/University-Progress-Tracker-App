@@ -28,6 +28,7 @@ export function useInscribirCarrera() {
             carrerasService.inscribirCarrera(usuarioId!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             addNotification('Inscripción exitosa', 'success');
         },
         onError: () => {

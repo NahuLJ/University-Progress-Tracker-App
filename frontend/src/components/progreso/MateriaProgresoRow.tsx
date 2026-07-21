@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
 import { EditarProgresoModal } from './EditarProgresoModal';
+import { MateriaDetailModal } from '../carrera/MateriaDetailModal';
+import { materiasAdminService } from '../../services/carreras.service';
 
 interface MateriaProgresoRowProps {
     materia: any;
     progreso: any;
     onSave: (id: number, data: any) => void;
     isSaving: boolean;
+    carreraId?: number;
 }
 
 function chipClass(estado: string) {
@@ -26,9 +30,35 @@ function dotClass(estado: string) {
     return 'bg-neon-red';
 }
 
-export function MateriaProgresoRow({ materia, progreso, onSave, isSaving }: MateriaProgresoRowProps) {
+export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carreraId }: MateriaProgresoRowProps) {
     const [modalEdit, setModalEdit] = useState(false);
     const [modalReset, setModalReset] = useState(false);
+    const [modalDetalle, setModalDetalle] = useState(false);
+
+    const { data: materiaDetalle } = useQuery({
+        queryKey: ['materia-detalle', materia.materiaId, carreraId],
+        queryFn: () => materiasAdminService.obtenerMateria(materia.materiaId, carreraId) as Promise<any>,
+        enabled: modalDetalle,
+        staleTime: Infinity,
+    });
+
+    const materiaParaModal = useMemo(() => {
+        if (!materiaDetalle) return null;
+        return {
+            ...materiaDetalle,
+            estadoUsuario: progreso.estado.nombre,
+            nota: progreso.nota,
+            tipoAprobacion: progreso.tipoAprobacion,
+            correlativas: (materiaDetalle.correlativasRequeridas || []).map((c: any) => ({
+                ...c,
+                estadoUsuario: 'Pendiente',
+            })),
+            esCorrelativaDe: (materiaDetalle.esCorrelativaDe || []).map((c: any) => ({
+                ...c.materia,
+                estadoUsuario: 'Pendiente',
+            })),
+        };
+    }, [materiaDetalle, progreso]);
 
     const handleSave = (data: { estado: string; nota?: number; tipoAprobacion?: string }) => {
         onSave(progreso.progresoId, data);
@@ -39,7 +69,7 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving }: Mate
     return (
         <div className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-base-700/50">
             <span className="col-span-1 text-center text-slate-400 font-mono text-sm">{progreso.orden}</span>
-            <span className="col-span-3 text-center font-medium text-slate-100 truncate" title={materia.nombre}>{materia.nombre}</span>
+            <span className="col-span-3 text-center font-medium text-slate-100 truncate cursor-pointer hover:text-neon-cyan transition-colors" title={materia.nombre} onClick={() => setModalDetalle(true)}>{materia.nombre}</span>
             <span className="col-span-2 text-center text-slate-400 font-mono text-sm">{materia.codigo}</span>
             <span className="col-span-1 text-center text-slate-300 text-sm">{materia.creditos}</span>
 
@@ -79,6 +109,12 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving }: Mate
                     </button>
                 )}
             </div>
+
+            <MateriaDetailModal
+                isOpen={modalDetalle}
+                onClose={() => setModalDetalle(false)}
+                materia={materiaParaModal}
+            />
 
             <EditarProgresoModal
                 isOpen={modalEdit}

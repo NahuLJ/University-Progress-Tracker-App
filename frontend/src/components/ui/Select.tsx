@@ -31,7 +31,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                     aria-describedby={error ? `${selectId}-error` : undefined}
                     {...props}
                 >
-                    {placeholder && <option value="" className="bg-base-800">placeholder</option>}
+                    {placeholder && <option value="" className="bg-base-800">{placeholder}</option>}
                     {children}
                 </select>
                 {error && (

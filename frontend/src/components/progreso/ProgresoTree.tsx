@@ -6,9 +6,10 @@ interface ProgresoTreeProps {
     progresos: any[];
     onSave: (id: number, data: any) => void;
     isSaving: boolean;
+    carreraId?: number;
 }
 
-export function ProgresoTree({ progresos, onSave, isSaving }: ProgresoTreeProps) {
+export function ProgresoTree({ progresos, onSave, isSaving, carreraId }: ProgresoTreeProps) {
     const grouped = useMemo(() => {
         const map = new Map<number, Map<number, any[]>>();
         for (const p of progresos) {
@@ -104,6 +105,7 @@ export function ProgresoTree({ progresos, onSave, isSaving }: ProgresoTreeProps)
                                             progreso={progreso}
                                             onSave={onSave}
                                             isSaving={isSaving}
+                                            carreraId={carreraId}
                                         />
                                     ))}
                                 </div>

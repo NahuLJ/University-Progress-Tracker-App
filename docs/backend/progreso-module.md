@@ -214,7 +214,7 @@ export class ProgresoService {
     async actualizar(id: number, dto: ActualizarProgresoDto): Promise<ProgresoMateria> {
         const progreso = await this.progresoRepo.findOne({
             where: { progresoId: id },
-            relations: ['materia', 'usuarioCarrera'],
+            relations: { materia: true, usuarioCarrera: { carrera: true } },
         });
         if (!progreso) throw new NotFoundException('Progreso no encontrado');
 
@@ -241,6 +241,7 @@ export class ProgresoService {
             const correlativasCumplidas = await this.validarCorrelativas(
                 progreso.usuarioCarrera.usuarioCarreraId,
                 progreso.materia.materiaId,
+                progreso.usuarioCarrera.carrera.carreraId,
             );
             if (!correlativasCumplidas) {
                 throw new BadRequestException(
@@ -252,8 +253,8 @@ export class ProgresoService {
         progreso.estado = estado;
 
         if (dto.estado === 'Completada') {
-            progreso.nota = dto.nota;
-            progreso.tipoAprobacion = dto.tipoAprobacion;
+            progreso.nota = dto.nota ?? null;
+            progreso.tipoAprobacion = dto.tipoAprobacion ?? null;
             progreso.fechaCompletado = new Date().toISOString().split('T')[0];
         } else {
             progreso.nota = null;
@@ -264,13 +265,26 @@ export class ProgresoService {
         return this.progresoRepo.save(progreso);
     }
 
-    private async validarCorrelativas(usuarioCarreraId: number, materiaId: number): Promise<boolean> {
+    private async validarCorrelativas(
+        usuarioCarreraId: number,
+        materiaId: number,
+        carreraId?: number,
+    ): Promise<boolean> {
+        const whereClause: any = { materia: { materiaId } };
+        if (carreraId) {
+            whereClause.carrera = { carreraId };
+        }
         const correlativas = await this.correlativaRepo.find({
-            where: { materia: { materiaId } },
-            relations: ['materiaCorrelativa'],
+            where: whereClause,
+            relations: { materiaCorrelativa: true, carrera: true },
         });
 
-        if (correlativas.length === 0) return true;
+        if (correlativas.length === 0) {
+            if (carreraId) {
+                return this.validarCorrelativas(usuarioCarreraId, materiaId); // fallback a globales
+            }
+            return true;
+        }
 
         const idsCorrelativas = correlativas.map((c) => c.materiaCorrelativa.materiaId);
 
@@ -279,7 +293,7 @@ export class ProgresoService {
                 usuarioCarrera: { usuarioCarreraId },
                 materia: { materiaId: In(idsCorrelativas) },
             },
-            relations: ['estado'],
+            relations: { estado: true },
         });
 
         const completadas = progresos.filter((p) => p.estado.nombre === 'Completada');

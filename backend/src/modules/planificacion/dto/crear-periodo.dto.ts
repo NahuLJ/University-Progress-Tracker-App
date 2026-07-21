@@ -1,5 +1,5 @@
-import { IsInt, IsEnum, IsOptional, MaxLength } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsEnum, IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CrearPeriodoDto {
   @ApiProperty({ example: 1 })
@@ -14,8 +14,9 @@ export class CrearPeriodoDto {
   @IsEnum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre'])
   instancia: string;
 
-  @ApiPropertyOptional({ example: 'Variante A' })
-  @IsOptional()
+  @ApiProperty({ example: 'Variante A' })
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
-  nombre?: string;
+  nombre: string;
 }

@@ -70,6 +70,7 @@ MainLayout
 export function useProgreso(usuarioCarreraId: number | null) {
     const [filtroEstado, setFiltroEstado] = useState('todas');
     const [busqueda, setBusqueda] = useState('');
+    const queryClient = useQueryClient();
     const initializedRef = useRef<Set<number>>(new Set());
 
     const { data: progresos, isLoading, error } = useQuery({
@@ -86,10 +87,18 @@ export function useProgreso(usuarioCarreraId: number | null) {
         progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
         });
-    }, [usuarioCarreraId, progresos, isLoading, error]);
+    }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
     const mutation = useMutation({
         mutationFn: ({ id, data }) => progresoService.actualizarProgreso(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id) => progresoService.eliminarProgreso(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
@@ -110,14 +119,18 @@ export function useProgreso(usuarioCarreraId: number | null) {
     return { progresos: progresosFiltrados, totales, filtroEstado, setFiltroEstado,
              busqueda, setBusqueda, actualizar: (id, data) => mutation.mutate({ id, data }),
              eliminar: (id) => deleteMutation.mutate(id),
-             isLoading: isLoading || mutation.isPending };
+             isLoading, isSaving: mutation.isPending || deleteMutation.isPending, error };
 }
 ```
+
+`isLoading` refleja solo la carga inicial de datos (no incluye `mutation.isPending`), y `isSaving`
+se usa para deshabilitar botones durante la mutación sin mostrar el skeleton ni colapsar los acordeones.
 
 ### Fila Individual — `MateriaProgresoRow`
 
 Cada fila ya no edita en línea. Usa:
 - **Chip de estado** con color (verde/amarillo/rojo) y nombre
+- **Click en nombre de materia** → abre `MateriaDetailModal` con correlativas filtradas por `carreraId` (heredado desde `ProgresoPage` → `ProgresoTree` → `MateriaProgresoRow`)
 - **Pencil icon** → abre `EditarProgresoModal` para cambiar estado/nota/tipo
 - **Trash icon** (solo si no es Pendiente) → modal de confirmación para resetear a Pendiente
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -25,8 +25,11 @@ export class MateriasController {
   @ApiOperation({ summary: 'Obtener detalles de una materia' })
   @ApiResponse({ status: 200, description: 'Datos de la materia' })
   @ApiResponse({ status: 404, description: 'Materia no encontrada' })
-  async obtener(@Param('id') id: number) {
-    return this.materiasService.obtenerConRelaciones(id);
+  async obtener(
+    @Param('id') id: number,
+    @Query('carreraId') carreraId?: number,
+  ) {
+    return this.materiasService.obtenerConRelaciones(id, carreraId);
   }
 
   @Post()
@@ -62,8 +65,9 @@ export class MateriasController {
   async eliminarCorrelativa(
     @Param('id') id: number,
     @Param('correlativaId') correlativaId: number,
+    @Query('carreraId') carreraId?: number,
   ) {
-    await this.materiasService.eliminarCorrelativa(id, correlativaId);
+    await this.materiasService.eliminarCorrelativa(id, correlativaId, carreraId);
     return { message: 'Correlativa eliminada exitosamente' };
   }
 }

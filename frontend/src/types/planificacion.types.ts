@@ -9,7 +9,7 @@ export interface PeriodoPlanificacion {
     usuarioCarreraId: number;
     anio: number;
     instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
-    nombre: string | null;
+    nombre: string;
     creadoEn: string;
     materiasPlanificadas: MateriaPlanificada[];
 }
@@ -18,7 +18,7 @@ export interface CrearPeriodoDto {
     usuarioCarreraId: number;
     anio: number;
     instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
-    nombre?: string;
+    nombre: string;
 }
 
 export interface PlanificarMateriaDto {

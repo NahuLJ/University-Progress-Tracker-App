@@ -229,7 +229,9 @@ Se modela como una entidad independiente `Correlativa` con dos `ManyToOne` hacia
 ```typescript
 // correlativa.entity.ts
 @Entity('correlativa')
-@Unique(['materia', 'materiaCorrelativa'])
+@Unique(['materia', 'materiaCorrelativa', 'carrera'])
+@Index('IDX_correlativa_materia_id', ['materia'])
+@Index('IDX_correlativa_materia_correlativa_id', ['materiaCorrelativa'])
 export class Correlativa {
     @PrimaryGeneratedColumn()
     correlativaId: number;
@@ -241,6 +243,10 @@ export class Correlativa {
     @ManyToOne(() => Materia, (materia) => materia.esCorrelativaDe)
     @JoinColumn({ name: 'materia_correlativa_id' })
     materiaCorrelativa: Materia;          // Materia que actúa como requisito
+
+    @ManyToOne(() => Carrera, { nullable: true, onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'carrera_id' })
+    carrera?: Carrera;                    // Carrera específica (opcional). null = global
 }
 ```
 

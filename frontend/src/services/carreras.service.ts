@@ -72,8 +72,10 @@ export const materiasAdminService = {
         return response.data;
     },
 
-    async obtenerMateria(id: number): Promise<MateriaDetalle> {
-        const response = await api.get(`/materias/${id}`);
+    async obtenerMateria(id: number, carreraId?: number): Promise<MateriaDetalle> {
+        const response = await api.get(`/materias/${id}`, {
+            params: carreraId ? { carreraId } : undefined,
+        });
         return response.data;
     },
 
@@ -86,7 +88,9 @@ export const materiasAdminService = {
         await api.post(`/materias/${materiaId}/correlativas`, data);
     },
 
-    async eliminarCorrelativa(materiaId: number, correlativaId: number): Promise<void> {
-        await api.delete(`/materias/${materiaId}/correlativas/${correlativaId}`);
+    async eliminarCorrelativa(materiaId: number, correlativaId: number, carreraId?: number): Promise<void> {
+        await api.delete(`/materias/${materiaId}/correlativas/${correlativaId}`, {
+            params: carreraId ? { carreraId } : undefined,
+        });
     },
 };

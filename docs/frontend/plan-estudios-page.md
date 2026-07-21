@@ -114,9 +114,13 @@ export function useCarreras() {
 export function useInscribirCarrera() {
     const queryClient = useQueryClient();
     const usuario = useAuthStore((s) => s.usuario);
+    const usuarioId = usuario?.id ?? usuario?.usuarioId;
     return useMutation({
-        mutationFn: (data: InscribirCarreraDto) => carrerasService.inscribirCarrera(usuario!.id, data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['carreras', usuario!.id] }),
+        mutationFn: (data: InscribirCarreraDto) => carrerasService.inscribirCarrera(usuarioId!, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
+        },
     });
 }
 ```
@@ -160,8 +164,8 @@ En Proceso / Completada con nota y tipo de aprobación). El backend ahora devuel
 
 Formulario RHF + Zod (`carreraId`, `fechaInicio`). El `Select` de carrera se llena con las carreras
 disponibles reales vía `carrerasService.obtenerCarrerasDisponibles()` (filtra las ya inscriptas). El
-`onSubmit` invoca `useInscribirCarrera` (POST `/usuarios/:id/carreras`), invalida la query de carreras y
-cierra el modal.
+`onSubmit` invoca `useInscribirCarrera` (POST `/usuarios/:id/carreras`), invalida las queries de carreras
+y disponibles, y cierra el modal.
 
 ### Interacciones
 

@@ -1,5 +1,5 @@
-import { IsInt } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AsignarCorrelativaDto {
   @ApiProperty({
@@ -8,4 +8,12 @@ export class AsignarCorrelativaDto {
   })
   @IsInt()
   materiaCorrelativaId: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID de la carrera (opcional). Si se provee, la correlativa aplica solo a esa carrera',
+  })
+  @IsOptional()
+  @IsInt()
+  carreraId?: number;
 }

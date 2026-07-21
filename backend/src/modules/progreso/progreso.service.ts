@@ -133,7 +133,7 @@ export class ProgresoService {
   ): Promise<ProgresoMateria> {
     const progreso = await this.progresoRepo.findOne({
       where: { progresoId: id },
-      relations: { materia: true, usuarioCarrera: true },
+      relations: { materia: true, usuarioCarrera: { carrera: true } },
     });
     if (!progreso) throw new NotFoundException('Progreso no encontrado');
 
@@ -162,6 +162,7 @@ export class ProgresoService {
       const correlativasCumplidas = await this.validarCorrelativas(
         progreso.usuarioCarrera.usuarioCarreraId,
         progreso.materia.materiaId,
+        progreso.usuarioCarrera.carrera.carreraId,
       );
       if (!correlativasCumplidas) {
         throw new BadRequestException(
@@ -196,13 +197,23 @@ export class ProgresoService {
   private async validarCorrelativas(
     usuarioCarreraId: number,
     materiaId: number,
+    carreraId?: number,
   ): Promise<boolean> {
+    const whereClause: any = { materia: { materiaId } };
+    if (carreraId) {
+      whereClause.carrera = { carreraId };
+    }
     const correlativas = await this.correlativaRepo.find({
-      where: { materia: { materiaId } },
-      relations: { materiaCorrelativa: true },
+      where: whereClause,
+      relations: { materiaCorrelativa: true, carrera: true },
     });
 
-    if (correlativas.length === 0) return true;
+    if (correlativas.length === 0) {
+      if (carreraId) {
+        return this.validarCorrelativas(usuarioCarreraId, materiaId);
+      }
+      return true;
+    }
 
     const idsCorrelativas = correlativas.map(
       (c) => c.materiaCorrelativa.materiaId,

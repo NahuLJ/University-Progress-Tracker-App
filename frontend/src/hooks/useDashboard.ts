@@ -13,29 +13,38 @@ export function useDashboard() {
     const { data: carreras, isLoading: cargandoCarreras } = useCarreras();
 
     useEffect(() => {
-        if (!carreras || carreras.length === 0) return;
+        if (!carreras) return;
+        if (carreras.length === 0) {
+            if (usuarioCarreraId !== null) setUsuarioCarreraId(null);
+            return;
+        }
         if (!usuarioCarreraId || !carreras.some((c) => c.usuarioCarreraId === usuarioCarreraId)) {
             const activa = carreras.find((c) => c.activo) ?? carreras[0];
             if (activa) setUsuarioCarreraId(activa.usuarioCarreraId);
         }
     }, [carreras, usuarioCarreraId, setUsuarioCarreraId]);
 
+    const hayCarreras = !!carreras && carreras.length > 0;
+
     const { data: resumen, isLoading: cargandoResumen, error: errorResumen } = useQuery({
         queryKey: ['estadisticas', 'resumen', usuarioCarreraId],
         queryFn: () => estadisticasService.obtenerResumen(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
+        enabled: !!usuarioCarreraId && hayCarreras,
+        placeholderData: (prev) => prev,
     });
 
     const { data: distribucion, isLoading: cargandoDistribucion } = useQuery({
         queryKey: ['estadisticas', 'distribucion', usuarioCarreraId],
         queryFn: () => estadisticasService.obtenerDistribucionEstados(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
+        enabled: !!usuarioCarreraId && hayCarreras,
+        placeholderData: (prev) => prev,
     });
 
     const { data: evolucion, isLoading: cargandoEvolucion } = useQuery({
         queryKey: ['estadisticas', 'evolucion', usuarioCarreraId],
         queryFn: () => estadisticasService.obtenerEvolucion(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
+        enabled: !!usuarioCarreraId && hayCarreras,
+        placeholderData: (prev) => prev,
     });
 
     return {

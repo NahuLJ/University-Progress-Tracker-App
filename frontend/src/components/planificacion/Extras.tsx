@@ -61,7 +61,7 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
                         <div className="font-medium text-slate-100">{m.nombre}</div>
                         <div className="text-sm text-slate-400">{m.codigo} • {m.creditos} créditos</div>
                         <div className="text-xs text-slate-500 mt-1">
-                            {m.correlativas.length === 0
+                            {!m.correlativas || m.correlativas.length === 0
                                 ? 'Sin correlativas'
                                 : `${m.correlativas.filter((c: { estado: string }) => c.estado !== 'Completada').length} correlativas faltantes`}
                         </div>

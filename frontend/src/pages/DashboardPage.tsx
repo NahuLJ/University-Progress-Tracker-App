@@ -17,8 +17,11 @@ import { useDashboard } from '../hooks/useDashboard';
 import { useCarrerasResumen } from '../hooks/useCarrerasResumen';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useCarreraStore } from '../store/carrera.store';
 
 export function DashboardPage() {
+    const usuarioCarreraId = useCarreraStore((s) => s.usuarioCarreraId);
+    const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
     const {
         carreras,
         resumen, distribucion, evolucion, isLoading, error,
@@ -71,7 +74,11 @@ export function DashboardPage() {
 
             <div>
                 <h2 className="text-lg font-semibold mb-3">Mis carreras</h2>
-                <CarrerasResumenList carreras={resumenCarreras ?? []} />
+                <CarrerasResumenList
+                    carreras={resumenCarreras ?? []}
+                    usuarioCarreraIdActivo={usuarioCarreraId}
+                    onSeleccionar={setUsuarioCarreraId}
+                />
             </div>
         </div>
     );

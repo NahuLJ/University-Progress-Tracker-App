@@ -57,7 +57,7 @@ export class PlanificacionService {
       usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
       anio: dto.anio,
       instancia: dto.instancia,
-      nombre: dto.nombre || undefined,
+      nombre: dto.nombre,
     });
     return await this.periodoRepo.save(periodo);
   }
@@ -96,7 +96,7 @@ export class PlanificacionService {
   ): Promise<MateriaPlanificada> {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId },
-      relations: { usuarioCarrera: true },
+      relations: { usuarioCarrera: { carrera: true } },
     });
     if (!periodo) throw new NotFoundException('Período no encontrado');
 
@@ -138,6 +138,7 @@ export class PlanificacionService {
     const correlativasCumplidas = await this.validarCorrelativas(
       periodo.usuarioCarrera.usuarioCarreraId,
       dto.materiaId,
+      periodo.usuarioCarrera.carrera.carreraId,
     );
     if (!correlativasCumplidas) {
       throw new BadRequestException(
@@ -200,7 +201,7 @@ export class PlanificacionService {
       where: { carrera: { carreraId } },
       relations: {
         materia: {
-          correlativasRequeridas: { materiaCorrelativa: true },
+          correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
         },
       },
     });
@@ -215,7 +216,9 @@ export class PlanificacionService {
         continue;
       }
 
-      const correlativas = materia.correlativasRequeridas || [];
+      const correlativas = (materia.correlativasRequeridas || []).filter(
+        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+      );
       if (correlativas.length === 0) continue;
 
       const todasCumplidas = correlativas.every((c) =>
@@ -233,13 +236,23 @@ export class PlanificacionService {
   private async validarCorrelativas(
     usuarioCarreraId: number,
     materiaId: number,
+    carreraId?: number,
   ): Promise<boolean> {
+    const whereClause: any = { materia: { materiaId } };
+    if (carreraId) {
+      whereClause.carrera = { carreraId };
+    }
     const correlativas = await this.correlativaRepo.find({
-      where: { materia: { materiaId } },
-      relations: { materiaCorrelativa: true },
+      where: whereClause,
+      relations: { materiaCorrelativa: true, carrera: true },
     });
 
-    if (correlativas.length === 0) return true;
+    if (correlativas.length === 0) {
+      if (carreraId) {
+        return this.validarCorrelativas(usuarioCarreraId, materiaId);
+      }
+      return true;
+    }
 
     const idsCorrelativas = correlativas.map(
       (c) => c.materiaCorrelativa.materiaId,

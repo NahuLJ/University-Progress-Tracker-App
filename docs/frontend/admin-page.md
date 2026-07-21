@@ -18,7 +18,7 @@ components/admin/
 ├── CrearCarreraModal.tsx       # formulario CrearCarreraDto (RHF + Zod)
 ├── CrearMateriaModal.tsx       # formulario CrearMateriaDto (RHF + Zod)
 ├── PlanEstudiosAdmin.tsx       # seleccionar carrera → ver plan (árbol) → agregar materia
-└── MateriaCorrelativasAdmin.tsx# lista de materias → ver/asignar/quitar correlativas
+└── MateriaCorrelativasAdmin.tsx# selector de carrera + materia → ver/asignar/quitar correlativas (por carrera o global)
 
 components/ui/
 ├── Card.tsx · Modal.tsx · Select.tsx · Input.tsx · Button.tsx · Alert.tsx · Badge.tsx
@@ -47,8 +47,9 @@ MainLayout
     │                        ├── Card "Materias en el plan" (árbol Año→Cuatrimestre, con # corr.)
     │                        └── Card "Agregar materia al plan" (Select materia + año/cuatrimestre/orden)
     ├── [Tab Correlativas]  MateriaCorrelativasAdmin
-    │                        ├── Card "Seleccionar materia" (lista + correlativas actuales + quitar)
-    │                        └── Card "Agregar correlativa" (Select materia + botón asignar)
+    │                        ├── Card "Seleccionar carrera" (Select carrera, opcional, para filtrar correlativas)
+    │                        ├── Card "Seleccionar materia" (lista + correlativas actuales filtradas por carrera + quitar)
+    │                        └── Card "Agregar correlativa" (Select materia + botón asignar, opcionalmente por carrera)
     └── CrearCarreraModal · CrearMateriaModal
 ```
 
@@ -88,10 +89,13 @@ opcional). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['m
    `orden`, y llama `agregarMateriaAlPlan`. Al éxito, invalida la query del plan.
 
 ### MateriaCorrelativasAdmin
-1. `Select` de materia del catálogo.
-2. Muestra sus correlativas actuales (vía `obtenerMateria`) con botón "Quitar" (`eliminarCorrelativa`).
-3. `Select` de "materia correlativa" (filtra la propia y las ya asignadas) + botón "Asignar correlativa"
-   (`asignarCorrelativa`). Previene auto-referencia y duplicados (el backend también lo rechaza).
+1. `Select` de carrera (opcional). Si se selecciona, las correlativas se asignan/filtran por esa carrera.
+   Si se deja en "Global", las correlativas aplican a todas las carreras (`carrera_id = NULL`).
+2. `Select` de materia del catálogo.
+3. Muestra sus correlativas actuales (vía `obtenerMateria` con `carreraId` opcional) con botón "Quitar"
+   (`eliminarCorrelativa` con `carreraId` opcional).
+4. `Select` de "materia correlativa" (filtra la propia y las ya asignadas) + botón "Asignar correlativa"
+   (`asignarCorrelativa` con `carreraId` opcional). Previene auto-referencia y duplicados (el backend también lo rechaza).
 
 ### Validaciones del Lado del Cliente (Zod)
 

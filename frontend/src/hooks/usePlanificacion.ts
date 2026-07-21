@@ -49,6 +49,16 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
 
     const cargarPeriodo = useCallback(async (periodoId: number) => {
         try {
+            const periodo = periodos?.find((p) => p.periodoId === periodoId);
+            if (periodo) {
+                usePlanificacionStore.getState().setPeriodoActivo({
+                    periodoId: periodo.periodoId,
+                    anio: periodo.anio,
+                    instancia: periodo.instancia,
+                    nombre: periodo.nombre,
+                });
+            }
+
             const materias = await planificacionService.obtenerMateriasDelPeriodo(periodoId);
             const celdas: Record<string, MateriaEnCelda[]> = {};
             const planificadas: number[] = [];
@@ -74,14 +84,20 @@ export function usePlanificacion(usuarioCarreraId: number | null) {
         } catch (error) {
             console.error('Error al cargar período:', error);
         }
-    }, []);
+    }, [periodos]);
 
     const addNotification = useNotificationStore((s) => s.addNotification);
 
     const crearPeriodoMutation = useMutation({
         mutationFn: (data: CrearPeriodoDto) => planificacionService.crearPeriodo(data),
-        onSuccess: () => {
+        onSuccess: (nuevoPeriodo) => {
             queryClient.invalidateQueries({ queryKey: ['planificacion', 'periodos', usuarioCarreraId] });
+            usePlanificacionStore.getState().setPeriodoActivo({
+                periodoId: nuevoPeriodo.periodoId,
+                anio: nuevoPeriodo.anio,
+                instancia: nuevoPeriodo.instancia,
+                nombre: nuevoPeriodo.nombre,
+            });
             addNotification('Período creado', 'success');
         },
         onError: () => {

@@ -23,8 +23,8 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 | `POST` | `/api/carreras` | `CrearCarreraDto` | `201` carrera creada |
 | `POST` | `/api/materias` | `CrearMateriaDto` | `201` materia creada |
 | `POST` | `/api/carreras/:id/materias` | `AgregarMateriaPlanDto` | `201` materia en plan |
-| `POST` | `/api/materias/:id/correlativas` | `{ materiaCorrelativaId }` | `201` correlativa asignada |
-| `DELETE` | `/api/materias/:id/correlativas/:correlativaId` | — | `200` eliminada |
+| `POST` | `/api/materias/:id/correlativas` | `{ materiaCorrelativaId, carreraId? }` | `201` correlativa asignada |
+| `DELETE` | `/api/materias/:id/correlativas/:correlativaId` | `?carreraId=N` | `200` eliminada |
 | `GET` | `/api/materias` | — | catálogo global |
 | `GET` | `/api/carreras/:id/plan-estudios` | — | plan con correlativas |
 
@@ -38,7 +38,7 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 - `listarMaterias()`
 - `crearMateria(data: CrearMateriaDto)`
 - `asignarCorrelativa(materiaId, data: AsignarCorrelativaDto)`
-- `eliminarCorrelativa(materiaId, correlativaId)`
+- `eliminarCorrelativa(materiaId, correlativaId, carreraId?)`
 
 ## Tipos (ya en `frontend/src/types/`)
 
@@ -81,9 +81,9 @@ frontend/src/
 2. `PlanEstudiosAdmin` permite elegir una materia del catálogo + `anio`/`cuatrimestre`/`orden` y llama `agregarMateriaAlPlan`.
 
 ### Correlativas
-1. `MateriaCorrelativasAdmin` lista el catálogo; al seleccionar una materia muestra sus correlativas.
-2. Asignar: `asignarCorrelativa(materiaId, { materiaCorrelativaId })`.
-3. Quitar: `eliminarCorrelativa(materiaId, correlativaId)`.
+1. `MateriaCorrelativasAdmin` permite seleccionar una carrera (opcional) y una materia; muestra sus correlativas filtradas por carrera.
+2. Asignar: `asignarCorrelativa(materiaId, { materiaCorrelativaId, carreraId? })`. Si se provee `carreraId`, la correlativa aplica solo a esa carrera.
+3. Quitar: `eliminarCorrelativa(materiaId, correlativaId, carreraId?)`.
 
 ## Validaciones del lado del cliente (Zod)
 

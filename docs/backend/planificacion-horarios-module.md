@@ -156,9 +156,6 @@ export class PlanificarMateriaDto {
 
 ```typescript
 import { Repository, In } from 'typeorm';
-import { Correlativa } from '../materias/entities/correlativa.entity';
-import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
-import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
 
 @Injectable()
 export class PlanificacionService {
@@ -243,7 +240,6 @@ export class PlanificacionService {
         const bloque = await this.bloqueRepo.findOne({ where: { bloqueId: dto.bloqueId } });
         if (!bloque) throw new NotFoundException('Bloque horario no encontrado');
 
-        // Validar que no haya conflicto de horario (mismo período, mismo bloque, mismo día)
         const conflicto = await this.materiaPlanificadaRepo.findOne({
             where: {
                 periodo: { periodoId },
@@ -257,7 +253,6 @@ export class PlanificacionService {
             );
         }
 
-        // Validar que la materia no esté ya planificada en este período
         const yaPlanificada = await this.materiaPlanificadaRepo.findOne({
             where: {
                 periodo: { periodoId },
@@ -270,10 +265,10 @@ export class PlanificacionService {
             );
         }
 
-        // Validar que se cumplan las correlativas
         const correlativasCumplidas = await this.validarCorrelativas(
             periodo.usuarioCarrera.usuarioCarreraId,
             dto.materiaId,
+            periodo.usuarioCarrera.carrera.carreraId,
         );
         if (!correlativasCumplidas) {
             throw new BadRequestException(
@@ -324,7 +319,11 @@ export class PlanificacionService {
 
         const planEstudios = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId } },
-            relations: { materia: { correlativasRequeridas: { materiaCorrelativa: true } } },
+            relations: {
+                materia: {
+                    correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+                },
+            },
         });
 
         const desbloqueables: Materia[] = [];
@@ -335,7 +334,9 @@ export class PlanificacionService {
 
             if (idsCompletadas.has(materiaId) || idsPlanificadas.has(materiaId)) continue;
 
-            const correlativas = materia.correlativasRequeridas || [];
+            const correlativas = (materia.correlativasRequeridas || []).filter(
+                (c) => !c.carrera || c.carrera.carreraId === carreraId,
+            );
             if (correlativas.length === 0) continue;
 
             const todasCumplidas = correlativas.every((c) =>
@@ -351,13 +352,23 @@ export class PlanificacionService {
     private async validarCorrelativas(
         usuarioCarreraId: number,
         materiaId: number,
+        carreraId?: number,
     ): Promise<boolean> {
+        const whereClause: any = { materia: { materiaId } };
+        if (carreraId) {
+            whereClause.carrera = { carreraId };
+        }
         const correlativas = await this.correlativaRepo.find({
-            where: { materia: { materiaId } },
-            relations: { materiaCorrelativa: true },
+            where: whereClause,
+            relations: { materiaCorrelativa: true, carrera: true },
         });
 
-        if (correlativas.length === 0) return true;
+        if (correlativas.length === 0) {
+            if (carreraId) {
+                return this.validarCorrelativas(usuarioCarreraId, materiaId);
+            }
+            return true;
+        }
 
         const idsCorrelativas = correlativas.map(
             (c) => c.materiaCorrelativa.materiaId,

@@ -68,6 +68,7 @@ erDiagram
         int correlativa_id PK
         int materia_id FK
         int materia_correlativa_id FK
+        int carrera_id FK "NULLABLE — correlativa global (NULL) o de una carrera específica"
     }
 
     estado_materia {
@@ -192,15 +193,16 @@ Tabla pivote para la relación **Muchos a Muchos** entre `carrera` y `materia`. 
 
 ### 6. `correlativa`
 
-Tabla pivote para la relación **Muchos a Muchos** auto-referenciada sobre `materia`. Cada fila indica que una materia (`materia_id`) requiere haber aprobado otra materia (`materia_correlativa_id`) como correlativa previa.
+Tabla pivote para la relación **Muchos a Muchos** auto-referenciada sobre `materia`. Cada fila indica que una materia (`materia_id`) requiere haber aprobado otra materia (`materia_correlativa_id`) como correlativa previa. Opcionalmente puede asociarse a una carrera específica: si `carrera_id` es `NULL`, la correlativa es global (aplica a todas las carreras); si tiene un valor, solo aplica a esa carrera.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `correlativa_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
 | `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia que **requiere** la correlativa |
 | `materia_correlativa_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia que **es** la correlativa (requisito previo) |
+| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NULL` | Carrera específica (opcional). `NULL` = global |
 
-**Índice único:** `(materia_id, materia_correlativa_id)` — evita pares duplicados.
+**Índice único:** `(materia_id, materia_correlativa_id, carrera_id)` — evita pares duplicados para la misma carrera (o para global cuando carrera_id es NULL).
 
 ---
 

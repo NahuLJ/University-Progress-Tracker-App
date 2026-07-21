@@ -98,10 +98,10 @@ interface AgregarMateriaPlanDto {
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
 | `GET` | `/materias` | ❌ Público | — | `200`: Materias[] |
-| `GET` | `/materias/:id` | ❌ Público | — | `200`: Materia · `404`: No encontrada |
+| `GET` | `/materias/:id` | ❌ Público | `?carreraId=N` (opcional) | `200`: Materia (correlativas filtradas por carrera si se provee) · `404`: No encontrada |
 | `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Creada · `400`: Validación |
-| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `AsignarCorrelativaDto` | `201`: Asignada · `400`: Ya existe / auto-referencial · `404`: No encontrada |
-| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | — | `200`: Eliminada · `404`: No encontrada |
+| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `AsignarCorrelativaDto` (incluye `carreraId` opcional) | `201`: Asignada · `400`: Ya existe / auto-referencial · `404`: No encontrada |
+| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | `?carreraId=N` (opcional) | `200`: Eliminada · `404`: No encontrada |
 
 ### DTOs
 
@@ -116,6 +116,7 @@ interface CrearMateriaDto {
 
 interface AsignarCorrelativaDto {
   materiaCorrelativaId: number;
+  carreraId?: number; // opcional — si se provee, la correlativa aplica solo a esa carrera
 }
 ```
 
@@ -184,8 +185,8 @@ interface PlanificarMateriaDto {
 | `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Carrera creada · `400`: Validación |
 | `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Materia en plan · `400`: Ya existe · `404`: No encontrada |
 | `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Materia creada · `400`: Código duplicado |
-| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `{ materiaCorrelativaId }` | `201`: Asignada · `400`: Auto-ref / duplicada · `404`: No encontrada |
-| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | — | `200`: Eliminada · `404`: No encontrada |
+| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `{ materiaCorrelativaId, carreraId? }` | `201`: Asignada · `400`: Auto-ref / duplicada · `404`: No encontrada |
+| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | `?carreraId=N` | `200`: Eliminada · `404`: No encontrada |
 | `GET` | `/materias` | ❌ Público | — | `200`: Catálogo global |
 | `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con correlativas |
 

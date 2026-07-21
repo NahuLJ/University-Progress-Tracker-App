@@ -52,15 +52,6 @@ export function PlanificacionPage() {
         />;
     }
 
-    if (!periodos || periodos.length === 0) {
-        return <EmptyState
-            iconName="calendar"
-            title="No hay planificaciones"
-            description="Creá una planificación para comenzar a organizar tus horarios de clase."
-            action={<Button onClick={() => setMostrarNuevoPeriodo(true)}>Crear planificación</Button>}
-        />;
-    }
-
     const periodoActivo = store.periodoActivo;
 
     return (
@@ -70,62 +61,77 @@ export function PlanificacionPage() {
                 <Button onClick={() => setMostrarNuevoPeriodo(true)}>+ Nueva planificación</Button>
             </div>
 
-            <PlanificacionTabs
-                periodos={periodos}
-                periodoActivo={periodoActivo}
-                onSelect={cargarPeriodo}
-                onNuevo={() => setMostrarNuevoPeriodo(true)}
-            />
-
-            {periodoActivo && (
+            {!periodos || periodos.length === 0 ? (
+                <EmptyState
+                    iconName="calendar"
+                    title="No hay planificaciones"
+                    description="Creá una planificación para comenzar a organizar tus horarios de clase."
+                />
+            ) : (
                 <>
-                    <Card>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-lg font-semibold">
-                                    {periodoActivo.anio} {periodoActivo.instancia}
-                                    {periodoActivo.nombre && ` - ${periodoActivo.nombre}`}
-                                </h2>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            if (confirm('¿Descartar cambios sin guardar?')) {
-                                                store.limpiarStore();
-                                                cargarPeriodo(periodoActivo.periodoId!);
-                                            }
-                                        }}
-                                        disabled={!store.dirty}
-                                    >
-                                        Descartar cambios
-                                    </Button>
-                                    <Button
-                                        onClick={() => guardar.mutate(periodoActivo.periodoId!)}
-                                        loading={guardar.isPending}
-                                        disabled={!store.dirty}
-                                    >
-                                        Guardar planificación
-                                    </Button>
-                                </div>
-                            </div>
+                    <PlanificacionTabs
+                        periodos={periodos}
+                        periodoActivo={periodoActivo}
+                        onSelect={cargarPeriodo}
+                    />
 
-                            {store.dirty && (
-                                <div className="bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3">
-                                    <p className="text-sm text-neon-yellow">
-                                        ✅ Tenés cambios sin guardar
-                                    </p>
-                                </div>
-                            )}
+                    {!periodoActivo && (
+                        <div className="text-center py-16 text-slate-400">
+                            <p className="text-lg">Seleccioná una planificación para comenzar</p>
                         </div>
-                    </Card>
-
-                    <CalendarioSemanal />
-
-                    {materiasDesbloqueables.length > 0 && (
-                        <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
                     )}
 
-                    <LeyendaHorarios materias={Object.values(store.celdas).flat()} />
+                    {periodoActivo && (
+                        <>
+                            <Card>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-lg font-semibold">
+                                            {periodoActivo.anio} {periodoActivo.instancia}
+                                            {periodoActivo.nombre && ` - ${periodoActivo.nombre}`}
+                                        </h2>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (confirm('¿Descartar cambios sin guardar?')) {
+                                                        store.limpiarStore();
+                                                        cargarPeriodo(periodoActivo.periodoId!);
+                                                    }
+                                                }}
+                                                disabled={!store.dirty}
+                                            >
+                                                Descartar cambios
+                                            </Button>
+                                            <Button
+                                                onClick={() => guardar.mutate(periodoActivo.periodoId!)}
+                                                loading={guardar.isPending}
+                                                disabled={!store.dirty}
+                                            >
+                                                Guardar planificación
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {store.dirty && (
+                                        <div className="bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3">
+                                            <p className="text-sm text-neon-yellow">
+                                                ✅ Tenés cambios sin guardar
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            <CalendarioSemanal />
+
+                            {materiasDesbloqueables.length > 0 && (
+                                <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
+                            )}
+
+                            <LeyendaHorarios materias={Object.values(store.celdas).flat()} />
+                        </>
+                    )}
                 </>
             )}
 

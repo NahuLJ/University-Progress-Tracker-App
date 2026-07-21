@@ -9,7 +9,7 @@ import { Button } from '../ui/Button';
 const nuevoPeriodoSchema = z.object({
     anio: z.number().min(2020).max(2030),
     instancia: z.enum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre']),
-    nombre: z.string().max(100).optional(),
+    nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
 });
 
 type NuevoPeriodoFormData = z.infer<typeof nuevoPeriodoSchema>;
@@ -50,7 +50,6 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
 
                 <Select
                     label="Instancia"
-                    placeholder="Seleccioná una instancia"
                     error={form.formState.errors.instancia?.message}
                     {...form.register('instancia')}
                 >
@@ -60,7 +59,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
                 </Select>
 
                 <Input
-                    label="Nombre (opcional)"
+                    label="Nombre"
                     placeholder="Ej: Variante A, Intensiva, etc."
                     error={form.formState.errors.nombre?.message}
                     {...form.register('nombre')}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { materiasAdminService } from '../../services/carreras.service';
+import { materiasAdminService, carrerasService } from '../../services/carreras.service';
 import { useAdminMaterias } from '../../hooks/useAdminMaterias';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -14,12 +14,18 @@ export function MateriaCorrelativasAdmin() {
     const queryClient = useQueryClient();
     const [materiaId, setMateriaId] = useState<number>(0);
     const [correlativaId, setCorrelativaId] = useState<number>(0);
+    const [carreraId, setCarreraId] = useState<number>(0);
 
     const { listarMaterias, asignarCorrelativa, eliminarCorrelativa } = useAdminMaterias();
 
+    const carrerasQuery = useQuery({
+        queryKey: ['carreras', 'disponibles'],
+        queryFn: () => carrerasService.obtenerCarrerasDisponibles(),
+    });
+
     const detalle = useQuery({
-        queryKey: ['materia', materiaId],
-        queryFn: () => materiasAdminService.obtenerMateria(materiaId),
+        queryKey: ['materia', materiaId, carreraId],
+        queryFn: () => materiasAdminService.obtenerMateria(materiaId, carreraId || undefined),
         enabled: materiaId > 0,
     });
 
@@ -41,10 +47,10 @@ export function MateriaCorrelativasAdmin() {
     const onAsignar = () => {
         if (materiaId === 0 || correlativaId === 0) return;
         asignarCorrelativa.mutate(
-            { materiaId, data: { materiaCorrelativaId: correlativaId } },
+            { materiaId, data: { materiaCorrelativaId: correlativaId, ...(carreraId ? { carreraId } : {}) } },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ['materia', materiaId] });
+                    queryClient.invalidateQueries({ queryKey: ['materia', materiaId, carreraId] });
                     queryClient.invalidateQueries({ queryKey: ['materias', 'catalogo'] });
                     setCorrelativaId(0);
                 },
@@ -53,18 +59,37 @@ export function MateriaCorrelativasAdmin() {
     };
 
     const onEliminar = (cid: number) => {
+        const params: any = { materiaId, correlativaId: cid };
+        if (carreraId) params.carreraId = carreraId;
         eliminarCorrelativa.mutate(
-            { materiaId, correlativaId: cid },
+            params,
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ['materia', materiaId] });
+                    queryClient.invalidateQueries({ queryKey: ['materia', materiaId, carreraId] });
                 },
             },
         );
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+            <Card className="p-4">
+                <h3 className="font-semibold text-white mb-3">Seleccionar carrera</h3>
+                <Select
+                    label="Carrera"
+                    value={carreraId}
+                    onChange={(e) => setCarreraId(Number(e.target.value))}
+                >
+                    <option value={0}>Global (sin carrera específica)</option>
+                    {(carrerasQuery.data ?? []).map((c) => (
+                        <option key={c.carreraId} value={c.carreraId}>
+                            {c.nombre}
+                        </option>
+                    ))}
+                </Select>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-4">
                 <h3 className="font-semibold text-white mb-3">Seleccionar materia</h3>
                 <Select
@@ -168,6 +193,7 @@ export function MateriaCorrelativasAdmin() {
                     </div>
                 )}
             </Card>
+        </div>
         </div>
     );
 }

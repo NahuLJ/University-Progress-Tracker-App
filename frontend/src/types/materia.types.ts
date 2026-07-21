@@ -17,6 +17,7 @@ export interface CrearMateriaDto {
 
 export interface AsignarCorrelativaDto {
     materiaCorrelativaId: number;
+    carreraId?: number;
 }
 
 export interface Correlativa {

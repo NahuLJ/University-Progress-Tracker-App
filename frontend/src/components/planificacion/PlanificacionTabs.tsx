@@ -4,10 +4,9 @@ interface PlanificacionTabsProps {
     periodos: any[];
     periodoActivo: any;
     onSelect: (periodoId: number) => void;
-    onNuevo: () => void;
 }
 
-export function PlanificacionTabs({ periodos, periodoActivo, onSelect, onNuevo }: PlanificacionTabsProps) {
+export function PlanificacionTabs({ periodos, periodoActivo, onSelect }: PlanificacionTabsProps) {
     return (
         <div className="flex flex-wrap gap-2 mb-4">
             {periodos.map((periodo) => (
@@ -21,9 +20,7 @@ export function PlanificacionTabs({ periodos, periodoActivo, onSelect, onNuevo }
                     {periodo.nombre && ` - ${periodo.nombre}`}
                 </Button>
             ))}
-            <Button variant="ghost" size="sm" onClick={onNuevo}>
-                + Nueva
-            </Button>
+
         </div>
     );
 }

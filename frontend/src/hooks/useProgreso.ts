@@ -85,7 +85,8 @@ export function useProgreso(usuarioCarreraId: number | null) {
         setBusqueda,
         actualizar: (id: number, data: ActualizarProgresoDto) => mutation.mutate({ id, data }),
         eliminar: (id: number) => deleteMutation.mutate(id),
-        isLoading: isLoading || mutation.isPending || deleteMutation.isPending,
+        isLoading,
+        isSaving: mutation.isPending || deleteMutation.isPending,
         error,
     };
 }

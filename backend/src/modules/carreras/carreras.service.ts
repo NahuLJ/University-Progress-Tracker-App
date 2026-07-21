@@ -131,7 +131,7 @@ export class CarrerasService {
     const entries = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId } },
       relations: {
-        materia: { correlativasRequeridas: { materiaCorrelativa: true } },
+        materia: { correlativasRequeridas: { materiaCorrelativa: true, carrera: true } },
       },
       order: { orden: 'ASC' },
     });
@@ -156,7 +156,10 @@ export class CarrerasService {
 
     const materias = entries.map((e) => {
       const prog = progresoMap.get(e.materia.materiaId);
-      const correlativasProgreso = (e.materia.correlativasRequeridas ?? []).map(
+      const correlativasFiltradas = (e.materia.correlativasRequeridas ?? []).filter(
+        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+      );
+      const correlativasProgreso = correlativasFiltradas.map(
         (c) => {
           const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
           return {

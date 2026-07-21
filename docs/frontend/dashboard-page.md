@@ -77,30 +77,38 @@ export function useDashboard() {
     const usuarioCarreraId = useCarreraStore((s) => s.usuarioCarreraId);
     const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
 
-    const { data: carreras } = useCarreras();
+    const { data: carreras, isLoading: cargandoCarreras } = useCarreras();
+    const hayCarreras = !!carreras && carreras.length > 0;
 
     useEffect(() => {
-        if (!carreras?.length) return;
+        if (!carreras) return;
+        if (carreras.length === 0) {
+            if (usuarioCarreraId !== null) setUsuarioCarreraId(null);
+            return;
+        }
         if (!usuarioCarreraId || !carreras.some((c) => c.usuarioCarreraId === usuarioCarreraId)) {
             const activa = carreras.find((c) => c.activo) ?? carreras[0];
             if (activa) setUsuarioCarreraId(activa.usuarioCarreraId);
         }
     }, [carreras, usuarioCarreraId, setUsuarioCarreraId]);
 
-    const { data: resumen } = useQuery({
+    const { data: resumen, error: errorResumen } = useQuery({
         queryKey: ['estadisticas', 'resumen', usuarioCarreraId],
         queryFn: () => estadisticasService.obtenerResumen(usuarioCarreraId!),
-        enabled: !!usuarioCarreraId,
+        enabled: !!usuarioCarreraId && hayCarreras,
+        placeholderData: (prev) => prev,
     });
-    // distribucion → obtenerDistribucionEstados
-    // evolucion  → obtenerEvolucion
+    // distribucion → obtenerDistribucionEstados, enabled: !!usuarioCarreraId && hayCarreras
+    // evolucion  → obtenerEvolucion, enabled: !!usuarioCarreraId && hayCarreras
 }
 ```
 
 El selector de carrera se guarda en un store global (`useCarreraStore`) persistido en `localStorage`;
 al cambiar, las queries se re-ejecutan por su `queryKey`. El hook `useDashboard` lee el
-`usuarioCarreraId` del store y, si no hay ninguno válido, selecciona automáticamente la carrera
-activa (o la primera) en `useEffect`.
+`usuarioCarreraId` del store y:
+- Si no hay carreras, limpia `usuarioCarreraId` a `null` y las queries se deshabilitan (evita 404).
+- Si hay carreras pero ningún `usuarioCarreraId` válido, selecciona automáticamente la carrera activa
+  (o la primera) en `useEffect`.
 
 "Mis carreras" usa `useCarrerasResumen` → `estadisticas/carreras-resumen`, que devuelve para cada
 inscripción `materiasCompletadas`, `materiasTotales` y `progresoPorcentaje` reales (corrige el bug
