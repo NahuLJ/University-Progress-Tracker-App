@@ -34,7 +34,7 @@ const CARRERAS: {
       {
         codigo: 'ASIS1',
         nombre: 'Algoritmos y Estructuras de Datos I',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 1,
         cuatrimestre: 1,
@@ -42,7 +42,7 @@ const CARRERAS: {
       {
         codigo: 'ASIS2',
         nombre: 'Algoritmos y Estructuras de Datos II',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 1,
         cuatrimestre: 2,
@@ -51,7 +51,7 @@ const CARRERAS: {
       {
         codigo: 'MAT1',
         nombre: 'Análisis Matemático I',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 1,
         cuatrimestre: 1,
@@ -59,7 +59,7 @@ const CARRERAS: {
       {
         codigo: 'MAT2',
         nombre: 'Análisis Matemático II',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 1,
         cuatrimestre: 2,
@@ -68,7 +68,7 @@ const CARRERAS: {
       {
         codigo: 'POO',
         nombre: 'Programación Orientada a Objetos',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 2,
         cuatrimestre: 1,
@@ -77,7 +77,7 @@ const CARRERAS: {
       {
         codigo: 'BD1',
         nombre: 'Bases de Datos I',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 2,
         cuatrimestre: 1,
@@ -86,7 +86,7 @@ const CARRERAS: {
       {
         codigo: 'BD2',
         nombre: 'Bases de Datos II',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 2,
         cuatrimestre: 2,
@@ -95,7 +95,7 @@ const CARRERAS: {
       {
         codigo: 'SISOP',
         nombre: 'Sistemas Operativos',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 2,
         cuatrimestre: 2,
@@ -104,7 +104,7 @@ const CARRERAS: {
       {
         codigo: 'RED',
         nombre: 'Redes de Computadoras',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 3,
         cuatrimestre: 1,
@@ -113,7 +113,7 @@ const CARRERAS: {
       {
         codigo: 'INGSW',
         nombre: 'Ingeniería de Software',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 3,
         cuatrimestre: 1,
@@ -122,7 +122,7 @@ const CARRERAS: {
       {
         codigo: 'WEB',
         nombre: 'Desarrollo Web',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 3,
         cuatrimestre: 2,
@@ -131,7 +131,7 @@ const CARRERAS: {
       {
         codigo: 'IA',
         nombre: 'Inteligencia Artificial',
-        cargaHoraria: 120,
+        cargaHoraria: 8,
         creditos: 8,
         anio: 4,
         cuatrimestre: 1,
@@ -148,7 +148,7 @@ const CARRERAS: {
       {
         codigo: 'ADM1',
         nombre: 'Introducción a la Administración',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 1,
         cuatrimestre: 1,
@@ -156,7 +156,7 @@ const CARRERAS: {
       {
         codigo: 'ECON1',
         nombre: 'Economía I',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 1,
         cuatrimestre: 1,
@@ -164,7 +164,7 @@ const CARRERAS: {
       {
         codigo: 'ECON2',
         nombre: 'Economía II',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 1,
         cuatrimestre: 2,
@@ -173,7 +173,7 @@ const CARRERAS: {
       {
         codigo: 'CONT1',
         nombre: 'Contabilidad I',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 1,
         cuatrimestre: 2,
@@ -182,7 +182,7 @@ const CARRERAS: {
       {
         codigo: 'MKT',
         nombre: 'Marketing',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 2,
         cuatrimestre: 1,
@@ -191,7 +191,7 @@ const CARRERAS: {
       {
         codigo: 'FIN',
         nombre: 'Finanzas',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 2,
         cuatrimestre: 2,
@@ -200,7 +200,7 @@ const CARRERAS: {
       {
         codigo: 'RRHH',
         nombre: 'Gestión de Recursos Humanos',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 2,
         cuatrimestre: 2,
@@ -209,7 +209,7 @@ const CARRERAS: {
       {
         codigo: 'OP',
         nombre: 'Administración de Operaciones',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 3,
         cuatrimestre: 1,
@@ -218,7 +218,7 @@ const CARRERAS: {
       {
         codigo: 'STRAT',
         nombre: 'Estrategia Competitiva',
-        cargaHoraria: 90,
+        cargaHoraria: 6,
         creditos: 6,
         anio: 4,
         cuatrimestre: 1,

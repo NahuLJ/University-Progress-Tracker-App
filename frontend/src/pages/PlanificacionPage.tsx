@@ -1,6 +1,7 @@
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
+import { Modal } from '../components/ui/Modal';
 import { CalendarioSemanal } from '../components/planificacion/CalendarioSemanal';
 import { NuevoPeriodoModal } from '../components/planificacion/NuevoPeriodoModal';
 import { PlanificacionTabs } from '../components/planificacion/PlanificacionTabs';
@@ -11,10 +12,11 @@ import { QueryError } from '../components/common/QueryError';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { MateriasDesbloqueablesList, LeyendaHorarios } from '../components/planificacion/Extras';
+import { MateriasDesbloqueablesList } from '../components/planificacion/Extras';
 
 export function PlanificacionPage() {
-    const { usuarioCarreraId, isLoading: cargandoCarrera } = useCarreraActiva();
+    const { usuarioCarreraId, carreraActiva, isLoading: cargandoCarrera } = useCarreraActiva();
+    const carreraId = carreraActiva?.carreraId ?? null;
     const queryClient = useQueryClient();
 
     const {
@@ -26,9 +28,10 @@ export function PlanificacionPage() {
         cargarPeriodo,
         materiasDesbloqueables,
         store,
-    } = usePlanificacion(usuarioCarreraId);
+    } = usePlanificacion(usuarioCarreraId, carreraId);
 
     const [mostrarNuevoPeriodo, setMostrarNuevoPeriodo] = useState(false);
+    const [mostrarDescarte, setMostrarDescarte] = useState(false);
 
     if (cargandoCarrera || periodosLoading) {
         return <PlanificacionSkeleton />;
@@ -53,6 +56,7 @@ export function PlanificacionPage() {
     }
 
     const periodoActivo = store.periodoActivo;
+    const periodoId = periodoActivo?.periodoId;
 
     return (
         <div className="space-y-6">
@@ -76,9 +80,11 @@ export function PlanificacionPage() {
                     />
 
                     {!periodoActivo && (
-                        <div className="text-center py-16 text-slate-400">
-                            <p className="text-lg">Seleccioná una planificación para comenzar</p>
-                        </div>
+                        <EmptyState
+                            iconName="calendar"
+                            title="Seleccioná una planificación"
+                            description="Elegí un período de planificación de los tabs de arriba para comenzar a organizar tus horarios."
+                        />
                     )}
 
                     {periodoActivo && (
@@ -93,18 +99,13 @@ export function PlanificacionPage() {
                                         <div className="flex gap-2">
                                             <Button
                                                 variant="outline"
-                                                onClick={() => {
-                                                    if (confirm('¿Descartar cambios sin guardar?')) {
-                                                        store.limpiarStore();
-                                                        cargarPeriodo(periodoActivo.periodoId!);
-                                                    }
-                                                }}
+                                                onClick={() => setMostrarDescarte(true)}
                                                 disabled={!store.dirty}
                                             >
                                                 Descartar cambios
                                             </Button>
                                             <Button
-                                                onClick={() => guardar.mutate(periodoActivo.periodoId!)}
+                                                onClick={() => periodoId && guardar.mutate(periodoId)}
                                                 loading={guardar.isPending}
                                                 disabled={!store.dirty}
                                             >
@@ -128,12 +129,33 @@ export function PlanificacionPage() {
                             {materiasDesbloqueables.length > 0 && (
                                 <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
                             )}
-
-                            <LeyendaHorarios materias={Object.values(store.celdas).flat()} />
                         </>
                     )}
                 </>
             )}
+
+            <Modal
+                isOpen={mostrarDescarte}
+                onClose={() => setMostrarDescarte(false)}
+                title="Descartar cambios"
+                size="sm"
+            >
+                <p className="text-slate-300 mb-6">¿Descartar cambios sin guardar? Los cambios realizados se perderán.</p>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setMostrarDescarte(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setMostrarDescarte(false);
+                            store.resetCeldas();
+                            if (periodoId) cargarPeriodo(periodoId);
+                        }}
+                    >
+                        Descartar
+                    </Button>
+                </div>
+            </Modal>
 
             <NuevoPeriodoModal
                 isOpen={mostrarNuevoPeriodo}

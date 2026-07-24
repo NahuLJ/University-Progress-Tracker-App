@@ -81,12 +81,21 @@ Asigna una materia a un bloque horario y día específico dentro del período.
 
 ### GET /api/planificacion/periodos/:id/materias-desbloqueables
 
-Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias actualmente planificadas en el período.
+Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `id` (path) | `number` | ID del período |
+| `materiaIds` (query, opcional) | `string` | IDs de materias separados por coma. Si se provee, se usan estos IDs en lugar de las materias planificadas en DB. |
 
 | Código | Descripción |
 |---|---|
 | 200 | `[{ materiaId, nombre, codigo, creditos, ... }]` |
 | 404 | Período no encontrado |
+
+> Comportamiento: Si no se envía `materiaIds`, el cálculo usa las materias guardadas en DB para el período.
+> Si se envía, ignora las de DB y usa solo las indicadas. Esto permite al frontend calcular desbloqueables
+> según la selección actual en el calendario (no solo lo persistido).
 
 ### DELETE /api/planificacion/materias/:id
 
@@ -291,7 +300,10 @@ export class PlanificacionService {
         await this.materiaPlanificadaRepo.remove(planificacion);
     }
 
-    async obtenerMateriasDesbloqueables(periodoId: number): Promise<Materia[]> {
+    async obtenerMateriasDesbloqueables(
+        periodoId: number,
+        materiaIds?: number[],
+    ): Promise<Materia[]> {
         const periodo = await this.periodoRepo.findOne({
             where: { periodoId },
             relations: { usuarioCarrera: { carrera: true } },
@@ -301,11 +313,16 @@ export class PlanificacionService {
         const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
         const carreraId = periodo.usuarioCarrera.carrera.carreraId;
 
-        const planificadas = await this.materiaPlanificadaRepo.find({
-            where: { periodo: { periodoId } },
-            relations: { materia: true },
-        });
-        const idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
+        let idsPlanificadas: Set<number>;
+        if (materiaIds !== undefined) {
+            idsPlanificadas = new Set(materiaIds);
+        } else {
+            const planificadas = await this.materiaPlanificadaRepo.find({
+                where: { periodo: { periodoId } },
+                relations: { materia: true },
+            });
+            idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
+        }
 
         const progresos = await this.progresoRepo.find({
             where: { usuarioCarrera: { usuarioCarreraId } },

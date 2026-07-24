@@ -2,6 +2,7 @@ import api from './api';
 import type {
     PeriodoPlanificacion,
     MateriaPlanificada,
+    MateriaEnCelda,
     BloqueHorario,
     CrearPeriodoDto,
     PlanificarMateriaDto,
@@ -9,6 +10,20 @@ import type {
 } from '../types/planificacion.types';
 
 export const planificacionService = {
+    async obtenerMateriasDisponibles(usuarioCarreraId: number): Promise<MateriaEnCelda[]> {
+        const response = await api.get('/planificacion/disponibles', {
+            params: { usuarioCarreraId },
+        });
+        return response.data.map((m: any) => ({
+            planificacionId: 0,
+            materiaId: m.materiaId,
+            nombre: m.nombre,
+            codigo: m.codigo,
+            creditos: m.creditos,
+            cargaHoraria: m.cargaHoraria,
+        }));
+    },
+
     async listarPeriodos(usuarioCarreraId: number): Promise<PeriodoPlanificacion[]> {
         const response = await api.get('/planificacion/periodos', {
             params: { usuarioCarreraId },
@@ -40,8 +55,10 @@ export const planificacionService = {
         return response.data;
     },
 
-    async obtenerMateriasDesbloqueables(periodoId: number): Promise<MateriaDesbloqueable[]> {
-        const response = await api.get(`/planificacion/periodos/${periodoId}/materias-desbloqueables`);
+    async obtenerMateriasDesbloqueables(periodoId: number, materiaIds?: number[]): Promise<MateriaDesbloqueable[]> {
+        const response = await api.get(`/planificacion/periodos/${periodoId}/materias-desbloqueables`, {
+            params: materiaIds && materiaIds.length > 0 ? { materiaIds: materiaIds.join(',') } : undefined,
+        });
         return response.data;
     },
 

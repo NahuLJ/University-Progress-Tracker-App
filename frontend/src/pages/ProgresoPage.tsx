@@ -12,6 +12,7 @@ import { useCarreraStore } from '../store/carrera.store';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card as CardUI } from '../components/ui/Card';
 import { Icon } from '../components/ui/Icon';
+import type { Progreso } from '../types/progreso.types';
 
 export function ProgresoPage() {
     const setUsuarioCarreraId = useCarreraStore((s) => s.setUsuarioCarreraId);
@@ -102,6 +103,12 @@ export function ProgresoPage() {
                         onSave={actualizar}
                         isSaving={isSaving}
                         carreraId={carreraActiva?.carrera?.carreraId}
+                        progresoMap={Object.fromEntries(
+                            (progresos as Progreso[]).map((p) => [
+                                p.materia.materiaId,
+                                { estado: p.estado.nombre, nota: p.nota, tipoAprobacion: p.tipoAprobacion },
+                            ]),
+                        )}
                     />
                 </>
             )}

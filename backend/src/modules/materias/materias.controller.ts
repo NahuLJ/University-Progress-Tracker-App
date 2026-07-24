@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -67,7 +75,11 @@ export class MateriasController {
     @Param('correlativaId') correlativaId: number,
     @Query('carreraId') carreraId?: number,
   ) {
-    await this.materiasService.eliminarCorrelativa(id, correlativaId, carreraId);
+    await this.materiasService.eliminarCorrelativa(
+      id,
+      correlativaId,
+      carreraId,
+    );
     return { message: 'Correlativa eliminada exitosamente' };
   }
 }

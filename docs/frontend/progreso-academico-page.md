@@ -86,22 +86,27 @@ export function useProgreso(usuarioCarreraId: number | null) {
         initializedRef.current.add(usuarioCarreraId);
         progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
         });
     }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
     const mutation = useMutation({
-        mutationFn: ({ id, data }) => progresoService.actualizarProgreso(id, data),
+        mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) =>
+            progresoService.actualizarProgreso(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
         },
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => progresoService.eliminarProgreso(id),
+        mutationFn: (id: number) => progresoService.eliminarProgreso(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
         },
     });
 
@@ -130,7 +135,7 @@ se usa para deshabilitar botones durante la mutación sin mostrar el skeleton ni
 
 Cada fila ya no edita en línea. Usa:
 - **Chip de estado** con color (verde/amarillo/rojo) y nombre
-- **Click en nombre de materia** → abre `MateriaDetailModal` con correlativas filtradas por `carreraId` (heredado desde `ProgresoPage` → `ProgresoTree` → `MateriaProgresoRow`)
+- **Click en nombre de materia** → abre `MateriaDetailModal` con correlativas filtradas por `carreraId` (heredado desde `ProgresoPage` → `ProgresoTree` → `MateriaProgresoRow`). Las correlativas muestran su estado real (`estadoUsuario`) consultado desde el `progresoMap` (materiaId → estado) construido en `ProgresoPage`, en lugar del antiguo valor hardcodeado `'Pendiente'`.
 - **Pencil icon** → abre `EditarProgresoModal` para cambiar estado/nota/tipo
 - **Trash icon** (solo si no es Pendiente) → modal de confirmación para resetear a Pendiente
 
@@ -157,6 +162,10 @@ Nro | Materia | Código | Créd. | Estado | Nota | Tipo | (acciones). Los datos 
 con `anio`, `cuatrimestre` y `orden` incluidos en la respuesta de `GET /progreso`. En la parte superior
 derecha tiene los botones **Expandir todo / Contraer todo** que abren/cierran todos los años y
 cuatrimestres a la vez.
+
+> **Fix:** Los acordeones de cuatrimestre ahora usan clave compuesta `${anio}-${cuatrimestre}`
+> en lugar de solo el número de cuatrimestre, evitando que al abrir "1° Cuatrimestre" de un año
+> se abra también en otros años.
 
 ### Validaciones del Lado del Cliente
 

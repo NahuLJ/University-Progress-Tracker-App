@@ -20,7 +20,7 @@ export function MateriaDetailModal({ isOpen, onClose, materia }: MateriaDetailMo
                     <div>
                         <p className="text-sm text-slate-400">Código: <span className="font-mono font-medium text-white">{materia.codigo}</span></p>
                         <p className="text-sm text-slate-400">Créditos: <span className="font-medium text-white">{materia.creditos}</span></p>
-                        <p className="text-sm text-slate-400">Carga horaria: <span className="font-medium text-white">{materia.cargaHoraria} horas</span></p>
+                        <p className="text-sm text-slate-400">Carga horaria: <span className="font-medium text-white">{materia.cargaHoraria}h/semana</span></p>
                     </div>
                     <StatusBadge estado={estado} className="gap-1">
                         {estado}

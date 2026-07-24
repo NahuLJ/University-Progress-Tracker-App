@@ -11,7 +11,8 @@ export class AsignarCorrelativaDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'ID de la carrera (opcional). Si se provee, la correlativa aplica solo a esa carrera',
+    description:
+      'ID de la carrera (opcional). Si se provee, la correlativa aplica solo a esa carrera',
   })
   @IsOptional()
   @IsInt()

@@ -43,7 +43,14 @@ export interface MateriaEnCelda {
     nombre: string;
     codigo: string;
     creditos: number;
+    cargaHoraria: number;
 }
+
+export function bloquesRequeridos(cargaHoraria: number): number {
+    return Math.max(1, Math.ceil(cargaHoraria / 2));
+}
+
+export const MAX_BLOQUE_ID = 7;
 
 export interface MateriaDesbloqueable {
     materiaId: number;

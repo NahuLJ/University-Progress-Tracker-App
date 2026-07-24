@@ -28,6 +28,7 @@ export function useProgreso(usuarioCarreraId: number | null) {
         progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
         });
     }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
@@ -39,6 +40,7 @@ export function useProgreso(usuarioCarreraId: number | null) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
             addNotification('Progreso actualizado', 'success');
         },
         onError: () => {
@@ -51,6 +53,7 @@ export function useProgreso(usuarioCarreraId: number | null) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
             addNotification('Registro eliminado', 'success');
         },
         onError: () => {

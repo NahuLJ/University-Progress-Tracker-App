@@ -47,6 +47,23 @@ export class PlanificacionController {
     return { message: 'Período eliminado exitosamente' };
   }
 
+  @Get('disponibles')
+  @ApiOperation({
+    summary:
+      'Materias disponibles para planificar (no completadas, con correlativas cumplidas)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de materias disponibles',
+  })
+  async obtenerMateriasDisponibles(
+    @Query('usuarioCarreraId') usuarioCarreraId: number,
+  ) {
+    return this.planificacionService.obtenerMateriasDisponibles(
+      usuarioCarreraId,
+    );
+  }
+
   @Get('bloques')
   @ApiOperation({ summary: 'Listar bloques horarios' })
   @ApiResponse({ status: 200, description: 'Lista de bloques' })
@@ -84,8 +101,17 @@ export class PlanificacionController {
     description: 'Lista de materias desbloqueables',
   })
   @ApiResponse({ status: 404, description: 'Período no encontrado' })
-  async obtenerMateriasDesbloqueables(@Param('id') id: number) {
-    return this.planificacionService.obtenerMateriasDesbloqueables(id);
+  async obtenerMateriasDesbloqueables(
+    @Param('id') id: number,
+    @Query('materiaIds') materiaIds?: string,
+  ) {
+    const ids = materiaIds
+      ? materiaIds
+          .split(',')
+          .map(Number)
+          .filter((n) => !isNaN(n))
+      : undefined;
+    return this.planificacionService.obtenerMateriasDesbloqueables(id, ids);
   }
 
   @Delete('materias/:id')

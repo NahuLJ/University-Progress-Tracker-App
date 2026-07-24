@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { PeriodoPlanificacion } from './entities/periodo-planificacion.entity';
 import { MateriaPlanificada } from './entities/materia-planificada.entity';
 import { BloqueHorario } from './entities/bloque-horario.entity';
@@ -164,7 +164,67 @@ export class PlanificacionService {
     await this.materiaPlanificadaRepo.remove(planificacion);
   }
 
-  async obtenerMateriasDesbloqueables(periodoId: number): Promise<Materia[]> {
+  async obtenerMateriasDisponibles(
+    usuarioCarreraId: number,
+  ): Promise<Materia[]> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { carrera: true },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
+    const planEstudios = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+      relations: {
+        materia: {
+          correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+        },
+      },
+      order: { orden: 'ASC' },
+    });
+
+    const progresos = await this.progresoRepo.find({
+      where: { usuarioCarrera: { usuarioCarreraId } },
+      relations: { materia: true, estado: true },
+    });
+
+    const progresoMap = new Map(progresos.map((p) => [p.materia.materiaId, p]));
+
+    const disponibles: Materia[] = [];
+
+    for (const cm of planEstudios) {
+      const materia = cm.materia;
+      const prog = progresoMap.get(materia.materiaId);
+
+      if (prog?.estado.nombre === 'Completada') continue;
+
+      const correlativas = (materia.correlativasRequeridas || []).filter(
+        (c) =>
+          !c.carrera || c.carrera.carreraId === inscripcion.carrera.carreraId,
+      );
+
+      if (correlativas.length === 0) {
+        disponibles.push(materia);
+        continue;
+      }
+
+      const todasCumplidas = correlativas.every((c) => {
+        const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
+        return corrProg && corrProg.estado.nombre === 'Completada';
+      });
+
+      if (todasCumplidas) {
+        disponibles.push(materia);
+      }
+    }
+
+    return disponibles;
+  }
+
+  async obtenerMateriasDesbloqueables(
+    periodoId: number,
+    materiaIds?: number[],
+  ): Promise<Materia[]> {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId },
       relations: { usuarioCarrera: { carrera: true } },
@@ -181,6 +241,9 @@ export class PlanificacionService {
     const idsPlanificadas = new Set(
       planificadas.map((mp) => mp.materia.materiaId),
     );
+    if (materiaIds !== undefined) {
+      materiaIds.forEach((id) => idsPlanificadas.add(id));
+    }
 
     const progresos = await this.progresoRepo.find({
       where: { usuarioCarrera: { usuarioCarreraId } },
@@ -224,8 +287,11 @@ export class PlanificacionService {
       const todasCumplidas = correlativas.every((c) =>
         idsHipoteticamenteCompletadas.has(c.materiaCorrelativa.materiaId),
       );
+      const yaDisponibleSinPlanificar = correlativas.every((c) =>
+        idsCompletadas.has(c.materiaCorrelativa.materiaId),
+      );
 
-      if (todasCumplidas) {
+      if (todasCumplidas && !yaDisponibleSinPlanificar) {
         desbloqueables.push(materia);
       }
     }
@@ -238,7 +304,9 @@ export class PlanificacionService {
     materiaId: number,
     carreraId?: number,
   ): Promise<boolean> {
-    const whereClause: any = { materia: { materiaId } };
+    const whereClause: FindOptionsWhere<Correlativa> = {
+      materia: { materiaId },
+    };
     if (carreraId) {
       whereClause.carrera = { carreraId };
     }

@@ -13,29 +13,29 @@ const COLORES = [
 ];
 
 export function LeyendaHorarios({ materias }: { materias: MateriaEnCelda[] }) {
-    if (!materias || materias.length === 0) return null;
-
-    const materiasUnicas = materias.reduce((acc: MateriaEnCelda[], m: MateriaEnCelda) => {
-        if (!acc.find((x) => x.materiaId === m.materiaId)) {
-            acc.push(m);
-        }
-        return acc;
-    }, []);
-
     return (
-        <Card className="mt-4">
+        <Card>
             <h3 className="font-semibold mb-3">Leyenda</h3>
-            <div className="flex flex-wrap gap-2">
-                {materiasUnicas.map((m: any, i: number) => (
-                    <Badge
-                        key={m.materiaId}
-                        variant="default"
-                        className={COLORES[i % COLORES.length]}
-                    >
-                        {m.nombre} ({m.codigo})
-                    </Badge>
-                ))}
-            </div>
+            {(!materias || materias.length === 0) ? (
+                <p className="text-slate-400 text-sm">Añadí materias al cronograma para ver la leyenda</p>
+            ) : (
+                <div className="flex flex-wrap gap-2">
+                    {materias.reduce((acc: MateriaEnCelda[], m: MateriaEnCelda) => {
+                        if (!acc.find((x) => x.materiaId === m.materiaId)) {
+                            acc.push(m);
+                        }
+                        return acc;
+                    }, []).map((m: any, i: number) => (
+                        <Badge
+                            key={m.materiaId}
+                            variant="default"
+                            className={COLORES[i % COLORES.length]}
+                        >
+                            {m.nombre} ({m.codigo})
+                        </Badge>
+                    ))}
+                </div>
+            )}
         </Card>
     );
 }
@@ -55,7 +55,7 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
             <p className="text-sm text-slate-300 mb-4">
                 Al completar las materias planificadas, también podrás cursar:
             </p>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {materias.map((m: any) => (
                     <div key={m.materiaId} className="p-3 border border-base-600 rounded-lg">
                         <div className="font-medium text-slate-100">{m.nombre}</div>

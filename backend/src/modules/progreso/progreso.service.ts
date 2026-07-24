@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { ProgresoMateria } from './entities/progreso-materia.entity';
 import { EstadoMateria } from './entities/estado-materia.entity';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
@@ -199,7 +199,9 @@ export class ProgresoService {
     materiaId: number,
     carreraId?: number,
   ): Promise<boolean> {
-    const whereClause: any = { materia: { materiaId } };
+    const whereClause: FindOptionsWhere<Correlativa> = {
+      materia: { materiaId },
+    };
     if (carreraId) {
       whereClause.carrera = { carreraId };
     }

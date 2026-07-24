@@ -4,10 +4,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Materia } from './entities/materia.entity';
 import { Correlativa } from './entities/correlativa.entity';
-import { Carrera } from '../carreras/entities/carrera.entity';
 import { CrearMateriaDto } from './dto/crear-materia.dto';
 import { AsignarCorrelativaDto } from './dto/asignar-correlativa.dto';
 
@@ -24,28 +23,28 @@ export class MateriasService {
     return this.materiaRepo.find({ order: { nombre: 'ASC' } });
   }
 
-    async obtenerConRelaciones(id: number, carreraId?: number): Promise<Materia> {
-        const materia = await this.materiaRepo.findOne({
-            where: { materiaId: id },
-            relations: {
-                correlativasRequeridas: { materiaCorrelativa: true },
-                esCorrelativaDe: { materia: true },
-                planEstudios: { carrera: true },
-            },
-        });
-        if (!materia) throw new NotFoundException('Materia no encontrada');
+  async obtenerConRelaciones(id: number, carreraId?: number): Promise<Materia> {
+    const materia = await this.materiaRepo.findOne({
+      where: { materiaId: id },
+      relations: {
+        correlativasRequeridas: { materiaCorrelativa: true },
+        esCorrelativaDe: { materia: true },
+        planEstudios: { carrera: true },
+      },
+    });
+    if (!materia) throw new NotFoundException('Materia no encontrada');
 
-        if (carreraId) {
-            materia.correlativasRequeridas = materia.correlativasRequeridas.filter(
-                (c) => !c.carrera || c.carrera.carreraId === carreraId,
-            );
-            materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
-                (c) => !c.carrera || c.carrera.carreraId === carreraId,
-            );
-        }
-
-        return materia;
+    if (carreraId) {
+      materia.correlativasRequeridas = materia.correlativasRequeridas.filter(
+        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+      );
+      materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
+        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+      );
     }
+
+    return materia;
+  }
 
   async crear(dto: CrearMateriaDto): Promise<Materia> {
     const materia = this.materiaRepo.create(dto);
@@ -83,7 +82,7 @@ export class MateriasService {
     if (!correlativa)
       throw new NotFoundException('Materia correlativa no encontrada');
 
-    const whereClause: any = {
+    const whereClause: FindOptionsWhere<Correlativa> = {
       materia: { materiaId },
       materiaCorrelativa: { materiaId: dto.materiaCorrelativaId },
     };
@@ -95,7 +94,9 @@ export class MateriasService {
       where: whereClause,
     });
     if (existente)
-      throw new BadRequestException('Esta correlativa ya está asignada en esta carrera');
+      throw new BadRequestException(
+        'Esta correlativa ya está asignada en esta carrera',
+      );
 
     const entry = this.correlativaRepo.create({
       materia,
@@ -110,7 +111,10 @@ export class MateriasService {
     correlativaId: number,
     carreraId?: number,
   ): Promise<void> {
-    const whereClause: any = { correlativaId, materia: { materiaId } };
+    const whereClause: FindOptionsWhere<Correlativa> = {
+      correlativaId,
+      materia: { materiaId },
+    };
     if (carreraId) {
       whereClause.carrera = { carreraId };
     }

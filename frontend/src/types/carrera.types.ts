@@ -65,6 +65,9 @@ export interface Correlativa {
         nombre: string;
         codigo: string;
     };
+    estadoUsuario: string | null;
+    nota: number | null;
+    tipoAprobacion: string | null;
 }
 
 export interface MateriaPlanEstudios {

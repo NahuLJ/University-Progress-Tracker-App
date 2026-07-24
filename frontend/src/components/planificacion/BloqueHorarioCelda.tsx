@@ -1,64 +1,83 @@
 import React from 'react';
 import { usePlanificacionStore } from '../../store/planificacion.store';
 import { MateriaPlanificadaChip } from './MateriaPlanificadaChip';
+import type { CSSProperties } from 'react';
 
 interface BloqueHorarioCeldaProps {
     bloqueId: number;
     dia: string;
     onDrop: (bloqueId: number, dia: string, materiaId: number) => void;
+    style?: CSSProperties;
+    ocupado?: boolean;
+    isPreview?: boolean;
 }
 
-export function BloqueHorarioCelda({ bloqueId, dia, onDrop }: BloqueHorarioCeldaProps) {
+export function BloqueHorarioCelda({ bloqueId, dia, onDrop, style, ocupado, isPreview }: BloqueHorarioCeldaProps) {
     const celdas = usePlanificacionStore((s) => s.celdas);
     const quitarMateria = usePlanificacionStore((s) => s.quitarMateria);
 
     const key = `${bloqueId}-${dia}`;
-    const materiasEnCelda = celdas[key] || [];
-    const [isDraggingOver, setIsDraggingOver] = React.useState(false);
+    const materia = celdas[key] ?? null;
 
-    const handleDragOver = (e: React.DragEvent) => {
+    const handleDragEnter = (e: React.DragEvent) => {
         e.preventDefault();
-        setIsDraggingOver(true);
-    };
-
-    const handleDragLeave = () => {
-        setIsDraggingOver(false);
+        usePlanificacionStore.getState().setHoveredCell({ bloqueId, dia });
     };
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        setIsDraggingOver(false);
-        const materiaId = e.dataTransfer.getData('materiaId');
-        if (materiaId) {
-            onDrop(bloqueId, dia, parseInt(materiaId));
+        usePlanificacionStore.getState().setHoveredCell(null);
+        const draggedId = usePlanificacionStore.getState().draggedMateriaId;
+        if (draggedId !== null) {
+            onDrop(bloqueId, dia, draggedId);
         }
     };
 
-    const handleQuitar = (planificacionId: number) => {
-        quitarMateria(bloqueId, dia, planificacionId);
+    const handleQuitar = () => {
+        quitarMateria(bloqueId, dia);
     };
+
+    if (ocupado) {
+        return (
+            <div
+                data-bloque={bloqueId}
+                data-dia={dia}
+                style={style}
+                className={`rounded-lg min-h-[48px] border transition-colors ${
+                    isPreview ? 'border-neon-cyan bg-neon-cyan/15' : 'bg-base-700/40 border-base-600'
+                }`}
+            />
+        );
+    }
+
+    if (materia) {
+        return (
+            <MateriaPlanificadaChip
+                materia={materia}
+                onQuitar={handleQuitar}
+                style={style}
+                bloqueId={bloqueId}
+                dia={dia}
+                isPreview={isPreview}
+            />
+        );
+    }
 
     return (
         <div
-            className={`min-h-[60px] p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-                isDraggingOver ? 'border-neon-cyan bg-neon-cyan/10' : 'border-base-500 hover:border-neon-cyan/60'
+            data-bloque={bloqueId}
+            data-dia={dia}
+            style={style}
+            className={`min-h-[48px] p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
+                isPreview ? 'border-neon-cyan bg-neon-cyan/10' : 'border-base-500 hover:border-neon-cyan/60'
             }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDragEnter={handleDragEnter}
+            onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
         >
-            {materiasEnCelda.map((materia) => (
-                <MateriaPlanificadaChip
-                    key={materia.planificacionId}
-                    materia={materia}
-                    onQuitar={() => handleQuitar(materia.planificacionId)}
-                />
-            ))}
-            {materiasEnCelda.length === 0 && (
-                <div className="h-full flex items-center justify-center text-slate-500 text-xs">
-                    Vacío
-                </div>
-            )}
+            <div className="h-full flex items-center justify-center text-slate-500 text-xs">
+                Vacío
+            </div>
         </div>
     );
 }

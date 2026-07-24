@@ -12,6 +12,7 @@ interface MateriaProgresoRowProps {
     onSave: (id: number, data: any) => void;
     isSaving: boolean;
     carreraId?: number;
+    progresoMap?: Record<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>;
 }
 
 function chipClass(estado: string) {
@@ -30,7 +31,7 @@ function dotClass(estado: string) {
     return 'bg-neon-red';
 }
 
-export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carreraId }: MateriaProgresoRowProps) {
+export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carreraId, progresoMap }: MateriaProgresoRowProps) {
     const [modalEdit, setModalEdit] = useState(false);
     const [modalReset, setModalReset] = useState(false);
     const [modalDetalle, setModalDetalle] = useState(false);
@@ -44,6 +45,7 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
 
     const materiaParaModal = useMemo(() => {
         if (!materiaDetalle) return null;
+        const lookupEstado = (materiaId: number) => progresoMap?.[materiaId]?.estado ?? 'Pendiente';
         return {
             ...materiaDetalle,
             estadoUsuario: progreso.estado.nombre,
@@ -51,14 +53,14 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
             tipoAprobacion: progreso.tipoAprobacion,
             correlativas: (materiaDetalle.correlativasRequeridas || []).map((c: any) => ({
                 ...c,
-                estadoUsuario: 'Pendiente',
+                estadoUsuario: lookupEstado(c.materiaCorrelativa?.materiaId ?? c.materiaCorrelativaId),
             })),
             esCorrelativaDe: (materiaDetalle.esCorrelativaDe || []).map((c: any) => ({
                 ...c.materia,
-                estadoUsuario: 'Pendiente',
+                estadoUsuario: lookupEstado(c.materia?.materiaId ?? c.materiaCorrelativaId),
             })),
         };
-    }, [materiaDetalle, progreso]);
+    }, [materiaDetalle, progreso, progresoMap]);
 
     const handleSave = (data: { estado: string; nota?: number; tipoAprobacion?: string }) => {
         onSave(progreso.progresoId, data);

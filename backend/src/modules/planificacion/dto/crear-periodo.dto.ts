@@ -1,4 +1,10 @@
-import { IsInt, IsEnum, IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsEnum,
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CrearPeriodoDto {

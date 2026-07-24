@@ -13,6 +13,44 @@ import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
 
+export interface MateriaPlanItem {
+  materiaId: number;
+  carreraMateriaId: number;
+  nombre: string;
+  codigo: string;
+  descripcion: string | null;
+  cargaHoraria: number;
+  creditos: number;
+  anio: number;
+  cuatrimestre: number;
+  orden: number;
+  estadoUsuario: string | null;
+  nota: number | null;
+  tipoAprobacion: string | null;
+  correlativas: {
+    correlativaId: number;
+    materiaId: number;
+    materiaCorrelativaId: number;
+    materiaCorrelativa: {
+      materiaId: number;
+      nombre: string;
+      codigo: string;
+    };
+    estadoUsuario: string | null;
+    nota: number | null;
+    tipoAprobacion: string | null;
+  }[];
+  esCorrelativaDe: {
+    materiaId: number;
+    nombre: string;
+    codigo: string;
+    creditos: number;
+    estadoUsuario: string | null;
+    nota: number | null;
+    tipoAprobacion: string | null;
+  }[];
+}
+
 @Injectable()
 export class CarrerasService {
   constructor(
@@ -62,66 +100,12 @@ export class CarrerasService {
     usuarioCarreraId?: number,
   ): Promise<{
     carrera: Carrera;
-    materias: {
-      materiaId: number;
-      carreraMateriaId: number;
-      nombre: string;
-      codigo: string;
-      descripcion: string | null;
-      cargaHoraria: number;
-      creditos: number;
-      anio: number;
-      cuatrimestre: number;
-      orden: number;
-      estadoUsuario: string | null;
-      nota: number | null;
-      tipoAprobacion: string | null;
-      correlativas: {
-        correlativaId: number;
-        materiaId: number;
-        materiaCorrelativaId: number;
-        materiaCorrelativa: {
-          materiaId: number;
-          nombre: string;
-          codigo: string;
-        };
-        estadoUsuario: string | null;
-        nota: number | null;
-        tipoAprobacion: string | null;
-      }[];
-    }[];
+    materias: MateriaPlanItem[];
     anios: {
       anio: number;
       cuatrimestres: {
         cuatrimestre: number;
-        materias: {
-          materiaId: number;
-          carreraMateriaId: number;
-          nombre: string;
-          codigo: string;
-          descripcion: string | null;
-          cargaHoraria: number;
-          creditos: number;
-          anio: number;
-          cuatrimestre: number;
-          orden: number;
-          estadoUsuario: string | null;
-          nota: number | null;
-          tipoAprobacion: string | null;
-          correlativas: {
-            correlativaId: number;
-            materiaId: number;
-            materiaCorrelativaId: number;
-            materiaCorrelativa: {
-              materiaId: number;
-              nombre: string;
-              codigo: string;
-            };
-            estadoUsuario: string | null;
-            nota: number | null;
-            tipoAprobacion: string | null;
-          }[];
-        }[];
+        materias: MateriaPlanItem[];
       }[];
     }[];
   }> {
@@ -131,7 +115,10 @@ export class CarrerasService {
     const entries = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId } },
       relations: {
-        materia: { correlativasRequeridas: { materiaCorrelativa: true, carrera: true } },
+        materia: {
+          correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+          esCorrelativaDe: { materia: true, carrera: true },
+        },
       },
       order: { orden: 'ASC' },
     });
@@ -156,27 +143,40 @@ export class CarrerasService {
 
     const materias = entries.map((e) => {
       const prog = progresoMap.get(e.materia.materiaId);
-      const correlativasFiltradas = (e.materia.correlativasRequeridas ?? []).filter(
+      const correlativasFiltradas = (
+        e.materia.correlativasRequeridas ?? []
+      ).filter((c) => !c.carrera || c.carrera.carreraId === carreraId);
+      const correlativasProgreso = correlativasFiltradas.map((c) => {
+        const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
+        return {
+          correlativaId: c.correlativaId,
+          materiaId: e.materia.materiaId,
+          materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+          materiaCorrelativa: {
+            materiaId: c.materiaCorrelativa.materiaId,
+            nombre: c.materiaCorrelativa.nombre,
+            codigo: c.materiaCorrelativa.codigo,
+          },
+          estadoUsuario: corrProg?.estado ?? null,
+          nota: corrProg?.nota ?? null,
+          tipoAprobacion: corrProg?.tipoAprobacion ?? null,
+        };
+      });
+      const esCorrelativaFiltradas = (e.materia.esCorrelativaDe ?? []).filter(
         (c) => !c.carrera || c.carrera.carreraId === carreraId,
       );
-      const correlativasProgreso = correlativasFiltradas.map(
-        (c) => {
-          const corrProg = progresoMap.get(c.materiaCorrelativa.materiaId);
-          return {
-            correlativaId: c.correlativaId,
-            materiaId: e.materia.materiaId,
-            materiaCorrelativaId: c.materiaCorrelativa.materiaId,
-            materiaCorrelativa: {
-              materiaId: c.materiaCorrelativa.materiaId,
-              nombre: c.materiaCorrelativa.nombre,
-              codigo: c.materiaCorrelativa.codigo,
-            },
-            estadoUsuario: corrProg?.estado ?? null,
-            nota: corrProg?.nota ?? null,
-            tipoAprobacion: corrProg?.tipoAprobacion ?? null,
-          };
-        },
-      );
+      const esCorrelativaDeMaterias = esCorrelativaFiltradas.map((c) => {
+        const prog = progresoMap.get(c.materia.materiaId);
+        return {
+          materiaId: c.materia.materiaId,
+          nombre: c.materia.nombre,
+          codigo: c.materia.codigo,
+          creditos: c.materia.creditos,
+          estadoUsuario: prog?.estado ?? null,
+          nota: prog?.nota ?? null,
+          tipoAprobacion: prog?.tipoAprobacion ?? null,
+        };
+      });
       return {
         materiaId: e.materia.materiaId,
         carreraMateriaId: e.carreraMateriaId,
@@ -192,6 +192,7 @@ export class CarrerasService {
         nota: prog?.nota ?? null,
         tipoAprobacion: prog?.tipoAprobacion ?? null,
         correlativas: correlativasProgreso,
+        esCorrelativaDe: esCorrelativaDeMaterias,
       };
     });
 

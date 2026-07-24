@@ -7,9 +7,10 @@ interface ProgresoTreeProps {
     onSave: (id: number, data: any) => void;
     isSaving: boolean;
     carreraId?: number;
+    progresoMap?: Record<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>;
 }
 
-export function ProgresoTree({ progresos, onSave, isSaving, carreraId }: ProgresoTreeProps) {
+export function ProgresoTree({ progresos, onSave, isSaving, carreraId, progresoMap }: ProgresoTreeProps) {
     const grouped = useMemo(() => {
         const map = new Map<number, Map<number, any[]>>();
         for (const p of progresos) {
@@ -30,16 +31,18 @@ export function ProgresoTree({ progresos, onSave, isSaving, carreraId }: Progres
         return result;
     }, [progresos]);
 
+    const cuatKey = (anio: number, cuatrimestre: number) => `${anio}-${cuatrimestre}`;
+
     const [aniosOpen, setAniosOpen] = useState<Record<number, boolean>>({});
-    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<number, boolean>>({});
+    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<string, boolean>>({});
 
     const expandirTodo = () => {
         const newAnios: Record<number, boolean> = {};
-        const newCuatrimestres: Record<number, boolean> = {};
+        const newCuatrimestres: Record<string, boolean> = {};
         grouped.forEach((anio) => {
             newAnios[anio.anio] = true;
             anio.cuatrimestres.forEach((cuat) => {
-                newCuatrimestres[cuat.cuatrimestre] = true;
+                newCuatrimestres[cuatKey(anio.anio, cuat.cuatrimestre)] = true;
             });
         });
         setAniosOpen(newAnios);
@@ -82,10 +85,10 @@ export function ProgresoTree({ progresos, onSave, isSaving, carreraId }: Progres
                     <div className="space-y-2">
                         {anio.cuatrimestres.map((cuat) => (
                             <Accordion
-                                key={cuat.cuatrimestre}
+                                key={cuatKey(anio.anio, cuat.cuatrimestre)}
                                 title={`${cuat.cuatrimestre}° Cuatrimestre`}
-                                open={cuatrimestresOpen[cuat.cuatrimestre] ?? false}
-                                onOpenChange={(open) => setCuatrimestresOpen((prev) => ({ ...prev, [cuat.cuatrimestre]: open }))}
+                                open={cuatrimestresOpen[cuatKey(anio.anio, cuat.cuatrimestre)] ?? false}
+                                onOpenChange={(open) => setCuatrimestresOpen((prev) => ({ ...prev, [cuatKey(anio.anio, cuat.cuatrimestre)]: open }))}
                             >
                                 <div className="space-y-1 pl-2">
                                     <div className="grid grid-cols-12 gap-2 p-3 text-sm font-medium text-slate-400">
@@ -106,6 +109,7 @@ export function ProgresoTree({ progresos, onSave, isSaving, carreraId }: Progres
                                             onSave={onSave}
                                             isSaving={isSaving}
                                             carreraId={carreraId}
+                                            progresoMap={progresoMap}
                                         />
                                     ))}
                                 </div>
