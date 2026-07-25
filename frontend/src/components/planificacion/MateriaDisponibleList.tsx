@@ -1,12 +1,21 @@
+import { useMemo } from 'react';
 import { Card } from '../ui/Card';
 import { usePlanificacionStore } from '../../store/planificacion.store';
+import { horasAsignadas, HORAS_POR_BLOQUE } from '../../types/planificacion.types';
+import type { MateriaEnCelda } from '../../types/planificacion.types';
 
 interface MateriaDisponibleListProps {
-    materias: any[];
+    materias: MateriaEnCelda[];
 }
 
 export function MateriaDisponibleList({ materias }: MateriaDisponibleListProps) {
-    if (materias.length === 0) {
+    const celdas = usePlanificacionStore((s) => s.celdas);
+    const ordenadas = useMemo(
+        () => [...materias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+        [materias],
+    );
+
+    if (ordenadas.length === 0) {
         return (
             <Card className="h-full">
                 <h3 className="font-semibold mb-3">Materias disponibles</h3>
@@ -19,24 +28,35 @@ export function MateriaDisponibleList({ materias }: MateriaDisponibleListProps) 
         <Card className="h-full">
             <h3 className="font-semibold mb-3">Materias disponibles</h3>
             <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
-                {materias.map((materia) => (
-                    <div
-                        key={materia.materiaId}
-                        className="p-3 border border-base-600 rounded-lg cursor-grab active:cursor-grabbing hover:bg-base-700/50 transition-colors"
-                        draggable
-                        onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', materia.materiaId.toString());
-                            e.dataTransfer.effectAllowed = 'move';
-                            usePlanificacionStore.getState().setDraggedMateriaId(materia.materiaId);
-                        }}
-                        onDragEnd={() => {
-                            usePlanificacionStore.getState().setDraggedMateriaId(null);
-                        }}
-                    >
-                        <div className="font-medium text-sm text-slate-100">{materia.nombre}</div>
-                        <div className="text-xs text-slate-400">{materia.codigo} • {materia.creditos} créditos • {materia.cargaHoraria}h/sem</div>
-                    </div>
-                ))}
+                {ordenadas.map((materia) => {
+                    const yaAsignadas = horasAsignadas(materia.materiaId, celdas);
+                    const restan = materia.cargaHoraria - yaAsignadas;
+                    const bloquesRestantes = Math.ceil(restan / HORAS_POR_BLOQUE);
+                    return (
+                        <div
+                            key={materia.materiaId}
+                            className="p-3 border border-base-600 rounded-lg cursor-grab active:cursor-grabbing hover:bg-base-700/50 transition-colors"
+                            draggable
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', materia.materiaId.toString());
+                                e.dataTransfer.effectAllowed = 'move';
+                                usePlanificacionStore.getState().setDraggedMateriaId(materia.materiaId);
+                            }}
+                            onDragEnd={() => {
+                                usePlanificacionStore.getState().setDraggedMateriaId(null);
+                                usePlanificacionStore.getState().setDraggedFromKey(null);
+                            }}
+                        >
+                            <div className="font-medium text-sm text-slate-100">{materia.nombre}</div>
+                            <div className="text-xs text-slate-400">
+                                {materia.codigo} &bull; {materia.creditos} créditos &bull; {materia.cargaHoraria}h/sem
+                                {yaAsignadas > 0 && (
+                                    <span className="text-neon-yellow"> &bull; {yaAsignadas}h asignadas, restan {restan}h ({bloquesRestantes} bloques)</span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </Card>
     );

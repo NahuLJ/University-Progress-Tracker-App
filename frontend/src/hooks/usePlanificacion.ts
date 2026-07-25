@@ -5,6 +5,7 @@ import { usePlanificacionStore } from '../store/planificacion.store';
 import { useNotificationStore } from '../store/notification.store';
 import { useProgreso } from './useProgreso';
 import type { CrearPeriodoDto, MateriaEnCelda } from '../types/planificacion.types';
+import { horasAsignadas } from '../types/planificacion.types';
 
 export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: number | null) {
     const queryClient = useQueryClient();
@@ -34,13 +35,10 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
         if (!materiasDisponiblesData) return;
         const state = usePlanificacionStore.getState();
         if (state.periodoActivo) {
-            const planificadas = new Set(
-                Object.values(state.celdas)
-                    .filter((m): m is MateriaEnCelda => m !== null)
-                    .map((m) => m.materiaId),
-            );
             state.setMateriasDisponibles(
-                materiasDisponiblesData.filter((m) => !planificadas.has(m.materiaId)),
+                materiasDisponiblesData.filter((m) =>
+                    horasAsignadas(m.materiaId, state.celdas) < m.cargaHoraria,
+                ),
             );
         } else {
             state.setMateriasDisponibles(materiasDisponiblesData);
@@ -63,19 +61,11 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
             if (!store.periodoActivo?.periodoId) return [];
             return planificacionService.obtenerMateriasDesbloqueables(
                 store.periodoActivo.periodoId,
-                idsSeleccionados.length > 0 ? idsSeleccionados : undefined,
+                idsSeleccionados,
             );
         },
         enabled: !!store.periodoActivo?.periodoId,
     });
-
-    useEffect(() => {
-        if (store.periodoActivo?.periodoId) {
-            queryClient.invalidateQueries({
-                queryKey: ['planificacion', 'materias-desbloqueables', store.periodoActivo.periodoId],
-            });
-        }
-    }, [store.celdas, store.periodoActivo?.periodoId, queryClient]);
 
     const idsDisponibles = useMemo(() => new Set(store.materiasDisponibles.map((m) => m.materiaId)), [store.materiasDisponibles]);
 
@@ -105,7 +95,6 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
 
             const materias = await planificacionService.obtenerMateriasDelPeriodo(periodoId);
             const celdas: Record<string, MateriaEnCelda | null> = {};
-            const planificadas: number[] = [];
 
             for (const mp of materias) {
                 const key = `${mp.bloque.bloqueId}-${mp.diaSemana}`;
@@ -117,13 +106,13 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
                     creditos: mp.materia.creditos,
                     cargaHoraria: mp.materia.cargaHoraria,
                 };
-                planificadas.push(mp.materia.materiaId);
             }
 
             usePlanificacionStore.getState().setCeldas(celdas);
 
-            const disponibles = usePlanificacionStore.getState().materiasDisponibles.filter(
-                (m: MateriaEnCelda) => !planificadas.includes(m.materiaId),
+            const state = usePlanificacionStore.getState();
+            const disponibles = state.materiasDisponibles.filter((m) =>
+                horasAsignadas(m.materiaId, state.celdas) < m.cargaHoraria,
             );
             usePlanificacionStore.getState().setMateriasDisponibles(disponibles);
         } catch (error) {
@@ -153,6 +142,7 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
     const guardarMutation = useMutation({
         mutationFn: async (periodoId: number) => {
             const state = usePlanificacionStore.getState();
+
             const asignaciones = Object.entries(state.celdas).flatMap(([key, materia]) => {
                 if (!materia || materia.planificacionId !== 0) return [];
                 const [bloqueId, diaSemana] = key.split('-');
@@ -162,14 +152,28 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
                     diaSemana: diaSemana as 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado',
                 }];
             });
-            await Promise.all(
-                asignaciones.map((asignacion) =>
-                    planificacionService.planificarMateria(periodoId, asignacion),
-                ),
-            );
+
+            const idsPorCelda: Record<string, number> = {};
+
+            for (const id of state.removidas) {
+                await planificacionService.eliminarMateriaPlanificada(id);
+            }
+            for (const a of asignaciones) {
+                const resultado = await planificacionService.planificarMateria(periodoId, a);
+                idsPorCelda[`${a.bloqueId}-${a.diaSemana}`] = resultado.planificacionId;
+            }
+
+            return idsPorCelda;
         },
-        onSuccess: () => {
-            store.marcarGuardado();
+        onSuccess: (idsPorCelda) => {
+            const currentState = usePlanificacionStore.getState();
+            const celdas = { ...currentState.celdas };
+            for (const [key, planificacionId] of Object.entries(idsPorCelda)) {
+                if (celdas[key]) {
+                    celdas[key] = { ...celdas[key]!, planificacionId };
+                }
+            }
+            currentState.setCeldas(celdas);
             queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Planificación guardada', 'success');
         },

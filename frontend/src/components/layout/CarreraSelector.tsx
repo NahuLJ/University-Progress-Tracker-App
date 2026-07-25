@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { useCarreras } from '../../hooks/useCarreras';
 import { useCarreraStore } from '../../store/carrera.store';
+import { usePlanificacionStore } from '../../store/planificacion.store';
 
 interface CarreraSelectorProps {
     collapsed?: boolean;
@@ -62,6 +63,7 @@ export function CarreraSelector({ collapsed = false }: CarreraSelectorProps) {
                                     type="button"
                                     onClick={() => {
                                         setUsuarioCarreraId(c.usuarioCarreraId);
+                                        usePlanificacionStore.getState().limpiarStore();
                                         setAbierto(false);
                                     }}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all truncate ${
@@ -117,6 +119,7 @@ export function CarreraSelector({ collapsed = false }: CarreraSelectorProps) {
                                 type="button"
                                 onClick={() => {
                                     setUsuarioCarreraId(c.usuarioCarreraId);
+                                    usePlanificacionStore.getState().limpiarStore();
                                     setAbierto(false);
                                 }}
                                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all truncate ${

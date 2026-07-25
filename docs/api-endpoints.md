@@ -153,7 +153,7 @@ interface ActualizarProgresoDto {
 | `GET` | `/planificacion/bloques` | ✅ Bearer | — | — | `200`: Bloques[] (7 bloques 08-10 a 20-22) |
 | `GET` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | — | `200`: Materias planificadas · `404`: No encontrado |
 | `POST` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | `PlanificarMateriaDto` | `201`: Planificada · `400`: Conflicto / Correlativas pendientes · `404`: No encontrado |
-| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (opcional, comma-separated IDs) | — | `200`: Materias[] que se desbloquearían · `404`: No encontrado |
+| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs, `""` = vacío, omisión = usa DB) | — | `200`: Materias[] que se desbloquearían · `404`: No encontrado |
 | `DELETE` | `/planificacion/materias/:id` | ✅ Bearer | — | — | `200`: Removida · `404`: No encontrada |
 
 ### DTOs

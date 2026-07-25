@@ -205,9 +205,9 @@ interface AuthState {
 
 #### zustand — Planificación en Edición (`store/planificacion.store.ts`)
 
-Usa el middleware `devtools`. Mantiene el período activo, un mapa de celdas (`"BLOQUE_ID-DIA" → MateriaEnCelda[]`),
-la lista de materias disponibles y el flag `dirty` (cambios sin guardar). Ver detalle en
-`docs/frontend/planificador-horarios-page.md`.
+Usa el middleware `devtools`. Mantiene el período activo, un mapa de celdas (`"BLOQUE_ID-DIA" → MateriaEnCelda | null`),
+la lista de materias disponibles, el flag `dirty` (cambios sin guardar), y un array `removidas` con
+IDs a eliminar. Ver detalle en `docs/frontend/planificador-horarios-page.md`.
 
 #### React Query — Datos del Servidor
 
@@ -269,7 +269,7 @@ las especificaciones originales pero **no existen** en `src/`:
 - `components/ui/Tabs.tsx`, `ScrollArea.tsx`, `ConfirmDialog.tsx` → no existen; se usan `Button`/`Modal`/HTML nativo.
 - `components/carrera/CarreraList.tsx`, `PlanEstudiosTable.tsx`, `MateriaBadge.tsx` → no existen; el árbol usa `Accordion` + `Badge`.
 - `components/progreso/ProgresoStatsBar.tsx`, `ConfirmarCambioModal.tsx`, `ProgresoBulkActions.tsx` → no existen.
-- `components/planificacion/MateriaDisponibleItem.tsx`, `VistaSemanalHeader.tsx`, `VistaHorariosHeader.tsx` → `VistaSemanalHeader`/`VistaHorariosHeader` fueron eliminados (código muerto); el header está embebido en `CalendarioSemanal` y `Extras.tsx` solo tiene `LeyendaHorarios` + `MateriasDesbloqueablesList`.
+- `components/planificacion/MateriaDisponibleItem.tsx`, `VistaSemanalHeader.tsx`, `VistaHorariosHeader.tsx` → `VistaSemanalHeader`/`VistaHorariosHeader` fueron eliminados (código muerto); el header está embebido en `CalendarioSemanal` y `Extras.tsx` solo tiene `MateriasDesbloqueablesList`.
 
 ### Notas de implementación actual
 

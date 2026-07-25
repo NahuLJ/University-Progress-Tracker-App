@@ -123,15 +123,16 @@ export class PlanificacionService {
       );
     }
 
-    const yaPlanificada = await this.materiaPlanificadaRepo.findOne({
+    const bloquesAsignados = await this.materiaPlanificadaRepo.count({
       where: {
         periodo: { periodoId },
         materia: { materiaId: dto.materiaId },
       },
     });
-    if (yaPlanificada) {
+    const maxBloques = Math.ceil(materia.cargaHoraria / 2);
+    if (bloquesAsignados + 1 > maxBloques) {
       throw new BadRequestException(
-        'La materia ya fue planificada en este período',
+        'La materia ya tiene todas sus horas planificadas en este período',
       );
     }
 
@@ -234,15 +235,15 @@ export class PlanificacionService {
     const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
     const carreraId = periodo.usuarioCarrera.carrera.carreraId;
 
-    const planificadas = await this.materiaPlanificadaRepo.find({
-      where: { periodo: { periodoId } },
-      relations: { materia: true },
-    });
-    const idsPlanificadas = new Set(
-      planificadas.map((mp) => mp.materia.materiaId),
-    );
+    let idsPlanificadas: Set<number>;
     if (materiaIds !== undefined) {
-      materiaIds.forEach((id) => idsPlanificadas.add(id));
+      idsPlanificadas = new Set(materiaIds);
+    } else {
+      const planificadas = await this.materiaPlanificadaRepo.find({
+        where: { periodo: { periodoId } },
+        relations: { materia: true },
+      });
+      idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
     }
 
     const progresos = await this.progresoRepo.find({

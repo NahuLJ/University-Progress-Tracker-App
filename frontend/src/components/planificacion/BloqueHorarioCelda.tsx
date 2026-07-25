@@ -2,22 +2,21 @@ import React from 'react';
 import { usePlanificacionStore } from '../../store/planificacion.store';
 import { MateriaPlanificadaChip } from './MateriaPlanificadaChip';
 import type { CSSProperties } from 'react';
+import type { MateriaEnCelda } from '../../types/planificacion.types';
 
 interface BloqueHorarioCeldaProps {
     bloqueId: number;
     dia: string;
+    materia?: MateriaEnCelda | null;
     onDrop: (bloqueId: number, dia: string, materiaId: number) => void;
+    onMoveDrop: (bloqueId: number, dia: string, sourceKey: string) => void;
     style?: CSSProperties;
-    ocupado?: boolean;
-    isPreview?: boolean;
 }
 
-export function BloqueHorarioCelda({ bloqueId, dia, onDrop, style, ocupado, isPreview }: BloqueHorarioCeldaProps) {
-    const celdas = usePlanificacionStore((s) => s.celdas);
-    const quitarMateria = usePlanificacionStore((s) => s.quitarMateria);
-
-    const key = `${bloqueId}-${dia}`;
-    const materia = celdas[key] ?? null;
+export function BloqueHorarioCelda({ bloqueId, dia, materia, onDrop, onMoveDrop, style }: BloqueHorarioCeldaProps) {
+    const draggedMateriaId = usePlanificacionStore((s) => s.draggedMateriaId);
+    const hoveredCell = usePlanificacionStore((s) => s.hoveredCell);
+    const isPreview = hoveredCell?.bloqueId === bloqueId && hoveredCell?.dia === dia && draggedMateriaId !== null;
 
     const handleDragEnter = (e: React.DragEvent) => {
         e.preventDefault();
@@ -27,38 +26,32 @@ export function BloqueHorarioCelda({ bloqueId, dia, onDrop, style, ocupado, isPr
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         usePlanificacionStore.getState().setHoveredCell(null);
-        const draggedId = usePlanificacionStore.getState().draggedMateriaId;
+        const state = usePlanificacionStore.getState();
+        const draggedFromKey = state.draggedFromKey;
+        const destKey = `${bloqueId}-${dia}`;
+        if (draggedFromKey !== null && draggedFromKey !== destKey && state.celdas[draggedFromKey]) {
+            onMoveDrop(bloqueId, dia, draggedFromKey);
+            return;
+        }
+        usePlanificacionStore.getState().setDraggedFromKey(null);
+        const draggedId = state.draggedMateriaId;
         if (draggedId !== null) {
             onDrop(bloqueId, dia, draggedId);
         }
     };
 
     const handleQuitar = () => {
-        quitarMateria(bloqueId, dia);
+        usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
     };
-
-    if (ocupado) {
-        return (
-            <div
-                data-bloque={bloqueId}
-                data-dia={dia}
-                style={style}
-                className={`rounded-lg min-h-[48px] border transition-colors ${
-                    isPreview ? 'border-neon-cyan bg-neon-cyan/15' : 'bg-base-700/40 border-base-600'
-                }`}
-            />
-        );
-    }
 
     if (materia) {
         return (
             <MateriaPlanificadaChip
                 materia={materia}
                 onQuitar={handleQuitar}
-                style={style}
+                style={{ ...style, gridColumn: undefined, gridRow: undefined }}
                 bloqueId={bloqueId}
                 dia={dia}
-                isPreview={isPreview}
             />
         );
     }
@@ -68,7 +61,7 @@ export function BloqueHorarioCelda({ bloqueId, dia, onDrop, style, ocupado, isPr
             data-bloque={bloqueId}
             data-dia={dia}
             style={style}
-            className={`min-h-[48px] p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
+            className={`h-12 p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
                 isPreview ? 'border-neon-cyan bg-neon-cyan/10' : 'border-base-500 hover:border-neon-cyan/60'
             }`}
             onDragEnter={handleDragEnter}

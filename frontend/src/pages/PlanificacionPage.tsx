@@ -114,13 +114,11 @@ export function PlanificacionPage() {
                                         </div>
                                     </div>
 
-                                    {store.dirty && (
-                                        <div className="bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3">
-                                            <p className="text-sm text-neon-yellow">
-                                                ✅ Tenés cambios sin guardar
-                                            </p>
-                                        </div>
-                                    )}
+                                    <div className={`bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3 transition-opacity ${store.dirty ? 'opacity-100' : 'opacity-0'}`}>
+                                        <p className="text-sm text-neon-yellow">
+                                            ✅ Tenés cambios sin guardar
+                                        </p>
+                                    </div>
                                 </div>
                             </Card>
 

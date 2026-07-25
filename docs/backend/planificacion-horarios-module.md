@@ -73,29 +73,40 @@ Asigna una materia a un bloque horario y día específico dentro del período.
 ```
 
 | Código | Descripción |
-|---|---|
+|---|---|---|
 | 201 | Materia planificada exitosamente |
 | 400 | Conflicto de horario (el bloque ya está ocupado en ese día) |
+| 400 | La materia ya tiene todas sus horas planificadas (excede `cargaHoraria`) |
 | 400 | Correlativas pendientes de aprobación |
 | 404 | Período o materia no encontrada |
 
+### GET /api/planificacion/disponibles?usuarioCarreraId=:id
+
+Materias que el usuario puede planificar (no completadas, con correlativas cumplidas). Devueltas ordenadas alfabéticamente por `nombre`.
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ materiaId, nombre, codigo, creditos, cargaHoraria, ... }]` |
+| 404 | Inscripción no encontrada |
+
 ### GET /api/planificacion/periodos/:id/materias-desbloqueables
 
-Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas.
+Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas. Devueltas ordenadas alfabéticamente por `nombre`.
 
 | Parámetro | Tipo | Descripción |
 |---|---|---|
 | `id` (path) | `number` | ID del período |
-| `materiaIds` (query, opcional) | `string` | IDs de materias separados por coma. Si se provee, se usan estos IDs en lugar de las materias planificadas en DB. |
+| `materiaIds` (query, opcional) | `string` | IDs de materias separados por coma. |
 
 | Código | Descripción |
 |---|---|
 | 200 | `[{ materiaId, nombre, codigo, creditos, ... }]` |
 | 404 | Período no encontrado |
 
-> Comportamiento: Si no se envía `materiaIds`, el cálculo usa las materias guardadas en DB para el período.
-> Si se envía, ignora las de DB y usa solo las indicadas. Esto permite al frontend calcular desbloqueables
-> según la selección actual en el calendario (no solo lo persistido).
+> Comportamiento: Si se envía `materiaIds`, reemplaza **completamente** el conjunto de materias
+> planificadas (ignora las guardadas en DB). Si no se envía, usa las materias persistidas en DB.
+> Esto permite al frontend calcular desbloqueables según la selección actual del calendario,
+> incluso cuando se sacan materias ya guardadas.
 
 ### DELETE /api/planificacion/materias/:id
 
@@ -262,15 +273,16 @@ export class PlanificacionService {
             );
         }
 
-        const yaPlanificada = await this.materiaPlanificadaRepo.findOne({
+        const bloquesAsignados = await this.materiaPlanificadaRepo.count({
             where: {
                 periodo: { periodoId },
                 materia: { materiaId: dto.materiaId },
             },
         });
-        if (yaPlanificada) {
+        const maxBloques = Math.ceil(materia.cargaHoraria / 2);
+        if (bloquesAsignados + 1 > maxBloques) {
             throw new BadRequestException(
-                'La materia ya fue planificada en este período',
+                'La materia ya tiene todas sus horas planificadas en este período',
             );
         }
 
@@ -489,7 +501,7 @@ export class MateriaPlanificada {
 | Regla | Dónde se aplica |
 |---|---|
 | No puede haber dos materias en el mismo bloque, día y período | Índice único + validación explícita en el Service |
-| Una materia no puede planificarse dos veces en el mismo período | Validación explícita en el Service |
+| Una materia puede ocupar múltiples bloques en distintos días, pero no exceder su `cargaHoraria` semanal | Validación explícita en el Service (cuenta bloques asignados vs `Math.ceil(cargaHoraria / 2)`) |
 | No se puede planificar una materia si no se cumplen sus correlativas | Validación explícita en el Service (`validarCorrelativas`) |
 | Las materias que se desbloquearían al completar la planificación se calculan en `GET /periodos/:id/materias-desbloqueables` | Endpoint dedicado que compara planificadas + completadas vs. correlativas del plan |
 | Solo existen 7 bloques fijos: 08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22 | Catálogo predefinido en base de datos (seed) |

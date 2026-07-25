@@ -57,7 +57,7 @@ export const planificacionService = {
 
     async obtenerMateriasDesbloqueables(periodoId: number, materiaIds?: number[]): Promise<MateriaDesbloqueable[]> {
         const response = await api.get(`/planificacion/periodos/${periodoId}/materias-desbloqueables`, {
-            params: materiaIds && materiaIds.length > 0 ? { materiaIds: materiaIds.join(',') } : undefined,
+            params: materiaIds !== undefined ? { materiaIds: materiaIds.join(',') } : undefined,
         });
         return response.data;
     },

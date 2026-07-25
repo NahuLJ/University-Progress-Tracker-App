@@ -1,11 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { usePlanificacionStore } from '../../store/planificacion.store';
 import { BloqueHorarioCelda } from './BloqueHorarioCelda';
 import { MateriaDisponibleList } from './MateriaDisponibleList';
-import { LeyendaHorarios } from './Extras';
-import { MateriaPlanificadaChip } from './MateriaPlanificadaChip';
-import { bloquesRequeridos, MAX_BLOQUE_ID } from '../../types/planificacion.types';
-import type { MateriaEnCelda } from '../../types/planificacion.types';
+import { horasAsignadas } from '../../types/planificacion.types';
 
 const DIAS = [
     { id: 'Lunes', corto: 'Lun' },
@@ -26,76 +23,20 @@ const BLOQUES = [
     { id: 7, label: '20-22' },
 ];
 
-function getOccupiedCells(celdas: Record<string, MateriaEnCelda | null>): Set<string> {
-    const occupied = new Set<string>();
-    for (const [key, materia] of Object.entries(celdas)) {
-        if (!materia) continue;
-        const [bloqueIdStr, dia] = key.split('-');
-        const bloqueId = parseInt(bloqueIdStr);
-        const span = bloquesRequeridos(materia.cargaHoraria);
-        for (let i = 0; i < span; i++) {
-            occupied.add(`${bloqueId + i}-${dia}`);
-        }
-    }
-    return occupied;
-}
-
 export function CalendarioSemanal() {
     const celdas = usePlanificacionStore((s) => s.celdas);
     const materiasDisponibles = usePlanificacionStore((s) => s.materiasDisponibles);
-    const asignarMateria = usePlanificacionStore((s) => s.asignarMateria);
-
-    const [previewCells, setPreviewCells] = useState<string[]>([]);
-
-    const draggedMateriaId = usePlanificacionStore((s) => s.draggedMateriaId);
-    const hoveredCell = usePlanificacionStore((s) => s.hoveredCell);
-
-    const idsPlanificados = useMemo(() => {
-        const ids = new Set<number>();
-        for (const materia of Object.values(celdas)) {
-            if (materia) ids.add(materia.materiaId);
-        }
-        return ids;
-    }, [celdas]);
 
     const materiasDisponiblesFiltradas = useMemo(() => {
-        return materiasDisponibles.filter((m) => !idsPlanificados.has(m.materiaId));
-    }, [materiasDisponibles, idsPlanificados]);
-
-    useEffect(() => {
-        if (draggedMateriaId === null || hoveredCell === null) {
-            setPreviewCells([]);
-            return;
-        }
-        const materia = materiasDisponiblesFiltradas.find((m) => m.materiaId === draggedMateriaId);
-        if (!materia) {
-            setPreviewCells([]);
-            return;
-        }
-        const span = bloquesRequeridos(materia.cargaHoraria);
-        const cells: string[] = [];
-        for (let i = 0; i < span && hoveredCell.bloqueId + i <= MAX_BLOQUE_ID; i++) {
-            cells.push(`${hoveredCell.bloqueId + i}-${hoveredCell.dia}`);
-        }
-        setPreviewCells(cells);
-    }, [draggedMateriaId, hoveredCell, materiasDisponiblesFiltradas]);
-
-    const materiasEnCalendario = useMemo(() => {
-        return Object.values(celdas).filter((m): m is MateriaEnCelda => m !== null);
-    }, [celdas]);
-
-    const occupiedCells = useMemo(() => getOccupiedCells(celdas), [celdas]);
-
-    const spanStarts = useMemo(() => {
-        const starts = new Set<string>();
-        for (const [key, materia] of Object.entries(celdas)) {
-            if (materia) starts.add(key);
-        }
-        return starts;
-    }, [celdas]);
+        return materiasDisponibles.filter((m) => horasAsignadas(m.materiaId, celdas) < m.cargaHoraria);
+    }, [materiasDisponibles, celdas]);
 
     const handleDrop = (bloqueId: number, dia: string, materiaId: number) => {
-        asignarMateria(bloqueId, dia, materiaId);
+        usePlanificacionStore.getState().asignarMateria(bloqueId, dia, materiaId);
+    };
+
+    const handleMoveDrop = (bloqueId: number, dia: string, sourceKey: string) => {
+        usePlanificacionStore.getState().moverMateria(sourceKey, bloqueId, dia);
     };
 
     const handleGridDragLeave = (e: React.DragEvent) => {
@@ -122,11 +63,9 @@ export function CalendarioSemanal() {
         );
     });
 
-    const previewSet = useMemo(() => new Set(previewCells), [previewCells]);
-
     BLOQUES.forEach((bloque) => {
         gridItems.push(
-            <div key={`time-${bloque.id}`} className="p-2 text-sm text-slate-400 font-medium" style={{ gridColumn: 1, gridRow: bloque.id + 1 }}>
+            <div key={`time-${bloque.id}`} className="px-2 h-12 text-sm text-slate-400 font-medium flex items-center" style={{ gridColumn: 1, gridRow: bloque.id + 1 }}>
                 {bloque.label}
             </div>,
         );
@@ -134,50 +73,18 @@ export function CalendarioSemanal() {
         DIAS.forEach((dia, i) => {
             const key = `${bloque.id}-${dia.id}`;
             const materia = celdas[key] ?? null;
-            const isSpanStart = spanStarts.has(key) && materia !== null;
-            const isInSpan = occupiedCells.has(key) && !isSpanStart;
-            const inPreview = previewSet.has(key);
 
-            if (isSpanStart && materia) {
-                const span = bloquesRequeridos(materia.cargaHoraria);
-                gridItems.push(
-                    <MateriaPlanificadaChip
-                        key={key}
-                        materia={materia}
-                        onQuitar={() => {
-                            const store = usePlanificacionStore.getState();
-                            store.quitarMateria(bloque.id, dia.id);
-                        }}
-                        style={{ gridColumn: i + 2, gridRow: `${bloque.id + 1} / span ${span}` }}
-                        bloqueId={bloque.id}
-                        dia={dia.id}
-                        isPreview={inPreview}
-                    />,
-                );
-            } else if (isInSpan && inPreview) {
-                gridItems.push(
-                    <BloqueHorarioCelda
-                        key={key}
-                        bloqueId={bloque.id}
-                        dia={dia.id}
-                        onDrop={handleDrop}
-                        style={{ gridColumn: i + 2, gridRow: bloque.id + 1 }}
-                        ocupado
-                        isPreview
-                    />,
-                );
-            } else if (!isInSpan) {
-                gridItems.push(
-                    <BloqueHorarioCelda
-                        key={key}
-                        bloqueId={bloque.id}
-                        dia={dia.id}
-                        onDrop={handleDrop}
-                        style={{ gridColumn: i + 2, gridRow: bloque.id + 1 }}
-                        isPreview={inPreview}
-                    />,
-                );
-            }
+            gridItems.push(
+                <BloqueHorarioCelda
+                    key={key}
+                    bloqueId={bloque.id}
+                    dia={dia.id}
+                    materia={materia}
+                    onDrop={handleDrop}
+                    onMoveDrop={handleMoveDrop}
+                    style={{ gridColumn: i + 2, gridRow: bloque.id + 1 }}
+                />,
+            );
         });
     });
 
@@ -187,8 +94,7 @@ export function CalendarioSemanal() {
                 <MateriaDisponibleList materias={materiasDisponiblesFiltradas} />
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col gap-3">
-                <LeyendaHorarios materias={materiasEnCalendario} />
+            <div className="flex-1 min-w-0 flex flex-col">
                 <div className="flex-1 overflow-x-auto">
                     <div
                         className="grid grid-cols-[auto_repeat(6,1fr)] gap-1 min-w-[600px]"

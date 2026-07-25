@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import type { MateriaEnCelda, MateriaDesbloqueable } from '../../types/planificacion.types';
@@ -41,7 +42,12 @@ export function LeyendaHorarios({ materias }: { materias: MateriaEnCelda[] }) {
 }
 
 export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesbloqueable[] }) {
-    if (!materias || materias.length === 0) {
+    const ordenadas = useMemo(
+        () => [...materias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+        [materias],
+    );
+
+    if (ordenadas.length === 0) {
         return (
             <div className="text-center py-8 text-slate-400">
                 No hay materias nuevas por desbloquear
@@ -56,7 +62,7 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
                 Al completar las materias planificadas, también podrás cursar:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {materias.map((m: any) => (
+                {ordenadas.map((m: any) => (
                     <div key={m.materiaId} className="p-3 border border-base-600 rounded-lg">
                         <div className="font-medium text-slate-100">{m.nombre}</div>
                         <div className="text-sm text-slate-400">{m.codigo} • {m.creditos} créditos</div>

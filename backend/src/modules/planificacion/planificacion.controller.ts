@@ -105,12 +105,15 @@ export class PlanificacionController {
     @Param('id') id: number,
     @Query('materiaIds') materiaIds?: string,
   ) {
-    const ids = materiaIds
-      ? materiaIds
-          .split(',')
-          .map(Number)
-          .filter((n) => !isNaN(n))
-      : undefined;
+    const ids =
+      materiaIds !== undefined
+        ? materiaIds === ''
+          ? []
+          : materiaIds
+              .split(',')
+              .map(Number)
+              .filter((n) => !isNaN(n))
+        : undefined;
     return this.planificacionService.obtenerMateriasDesbloqueables(id, ids);
   }
 

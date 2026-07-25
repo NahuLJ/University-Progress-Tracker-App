@@ -46,11 +46,15 @@ export interface MateriaEnCelda {
     cargaHoraria: number;
 }
 
-export function bloquesRequeridos(cargaHoraria: number): number {
-    return Math.max(1, Math.ceil(cargaHoraria / 2));
-}
+export const HORAS_POR_BLOQUE = 2;
 
-export const MAX_BLOQUE_ID = 7;
+export function horasAsignadas(materiaId: number, celdas: Record<string, MateriaEnCelda | null>): number {
+    let total = 0;
+    for (const m of Object.values(celdas)) {
+        if (m?.materiaId === materiaId) total += HORAS_POR_BLOQUE;
+    }
+    return total;
+}
 
 export interface MateriaDesbloqueable {
     materiaId: number;
