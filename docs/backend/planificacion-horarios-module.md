@@ -42,6 +42,8 @@ Elimina un período de planificación y todas sus materias asignadas.
 | 200 | Período eliminado |
 | 404 | Período no encontrado |
 
+> **Nota de implementación frontend:** Al eliminar un período, el frontend **limpia primero `periodoActivo` (set null)** y **cancela/elimina las queries de `materias-desbloqueables` para ese período ANTES de invalidar queries**, evitando que el hook `usePlanificacion` intente hacer fetch de materias desbloqueables para un período que ya no existe (lo que causaba 404).
+
 ### PATCH /api/planificacion/periodos/:id
 
 Actualiza un período de planificación (año, instancia, nombre).

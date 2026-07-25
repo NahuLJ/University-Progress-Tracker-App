@@ -198,6 +198,12 @@ export function PlanificacionPage() {
                         onClick={() => {
                             if (!periodoId) return;
                             setMostrarDescarte(false);
+                            // First clear the active period so the desbloqueables query won't refetch
+                            usePlanificacionStore.getState().setPeriodoActivo(null);
+                            // Cancel and remove any pending/running queries for this period
+                            queryClient.cancelQueries({ queryKey: ['planificacion', 'materias-desbloqueables', periodoId], exact: false });
+                            queryClient.removeQueries({ queryKey: ['planificacion', 'materias-desbloqueables', periodoId], exact: false });
+                            // Delete the period
                             void planificacionService.eliminarPeriodo(periodoId).then(() => {
                                 queryClient.invalidateQueries({ queryKey: ['planificacion'] });
                                 addNotification('Período eliminado', 'success');

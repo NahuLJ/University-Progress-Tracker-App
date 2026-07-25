@@ -180,11 +180,12 @@ alfabéticamente por `nombre` via `useMemo`. Si está vacía muestra "No hay mat
 ### Validaciones / Estados
 
 | Regla | Comportamiento |
-|---|---|---|
+|---|---|
 | Asignación por bloque de 2h | Cada drop asigna 1 bloque (2h). La materia sigue en disponibles hasta completar su `cargaHoraria`. Distribución libre entre días |
 | Reemplazo en celda ocupada | Si se suelta una materia sobre una celda ocupada por otra distinta, la reemplaza (evicción con devolución a disponibles) |
 | Movimiento de chips existentes | Los chips del calendario son draggables; `moverMateria` los reubica entre celdas. Si el origen no existe (stale), se trata como drop nuevo |
 | Cambios sin guardar (`dirty`) | Botones "Descartar"/"Guardar" habilitados; banner de aviso con opacidad (siempre presente, no desplaza layout) |
+| **Modales separados** | "Descartar cambios" y "Eliminar período" usan modales **separados** con sus propios estados y mensajes |
 | Guardar secuencial | Primero DELETE de `removidas`, luego POST de nuevas; actualiza `planificacionId` en celdas para evitar re-POST |
 | Materias desbloqueables dinámicas | Se envían todos los `idsSeleccionados` al backend (reemplazan DB). Refleja tanto altas como bajas |
 | Persistencia de `planificacionId` tras guardar | Las celdas nuevas reciben el ID real devuelto por el backend. Guardados posteriores no las re-POSTean |
@@ -192,4 +193,5 @@ alfabéticamente por `nombre` via `useMemo`. Si está vacía muestra "No hay mat
 | Limpieza al cambiar carrera | `CarreraSelector` llama `limpiarStore()` al seleccionar otra carrera, reseteando `periodoActivo`, `celdas`, `materiasDisponibles`, `dirty` y `removidas` |
 | Sin períodos | `EmptyState` "No hay planificaciones" + botón crear |
 | Sin período seleccionado | `EmptyState` "Seleccioná una planificación" |
+| **Eliminar período** | Al eliminar, se **limpia primero `periodoActivo` (set null)** y se cancelan/eliminan las queries de materias desbloqueables **antes** de invalidar queries, evitando fetch 404 para período borrado |
 | Cargando | `Skeleton` del calendario |
