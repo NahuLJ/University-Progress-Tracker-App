@@ -146,7 +146,8 @@ frontend/
     ├── services/
     │   ├── api.ts                # instancia Axios + interceptor JWT
     │   ├── auth.service.ts       # login, register, obtenerPerfil
-    │   ├── carreras.service.ts   # carreras del usuario, activas, disponibles, plan, inscribir,
+    │   ├── carreras.service.ts   # carreras del usuario (con y sin paginación), activas (paginado),
+    │   │                        #   inactivas (paginado), disponibles (paginado), plan, inscribir,
     │   │                        #   desinscribir, reactivar, eliminar definitivamente
     │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan
     │   │                        #   + materiasAdminService: listar, obtenerMateria, crear,
@@ -280,7 +281,9 @@ las especificaciones originales pero **no existen** en `src/`:
   cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
 - **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useDashboard`.
 - **Inscripción/desinscripción:** `CarrerasPage` lista inscripciones (activas e inactivas) y disponibles.
-Cada `CarreraCard` solo tiene "Ver plan de estudios". Las acciones de inscribir/desinscribir/reactivar/
+Cada `CarreraCard` solo tiene "Ver plan de estudios". Las listas de activas, inactivas y disponibles
+usan `useInfiniteQuery` con botón "Ver más" para paginación.
+Las acciones de inscribir/desinscribir/reactivar/
 eliminar están en `CarreraDetailPage`. `DesinscribirCarreraModal` es confirmación simple (sin escribir texto).
 Toda mutación muestra snackbar de éxito/error y resetea la carrera activa del store si corresponde.
 - **Progreso:** grilla editable en línea (`MateriaProgresoRow` + RHF/Zod), `CompletarMateriaModal` y

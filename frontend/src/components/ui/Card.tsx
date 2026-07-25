@@ -11,7 +11,7 @@ interface CardProps {
 export function Card({ children, className, title, subtitle, onClick }: CardProps) {
     return (
         <div
-            className={cn('card', className, onClick && 'cursor-pointer hover:border-neon-cyan/60 hover:shadow-neon-cyan transition-all')}
+            className={cn('card flex flex-col', className, onClick && 'cursor-pointer hover:border-neon-cyan/60 hover:shadow-neon-cyan transition-all')}
             onClick={onClick}
         >
             {(title || subtitle) && (
@@ -20,7 +20,7 @@ export function Card({ children, className, title, subtitle, onClick }: CardProp
                     {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
                 </div>
             )}
-            <div className="p-6">{children}</div>
+            <div className="p-6 flex-1">{children}</div>
         </div>
     );
 }

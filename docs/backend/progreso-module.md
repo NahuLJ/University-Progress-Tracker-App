@@ -245,7 +245,7 @@ export class ProgresoService {
             );
             if (!correlativasCumplidas) {
                 throw new BadRequestException(
-                    'No se puede avanzar: existen correlativas pendientes de aprobación',
+                    'Existen correlativas pendientes de aprobación',
                 );
             }
         }

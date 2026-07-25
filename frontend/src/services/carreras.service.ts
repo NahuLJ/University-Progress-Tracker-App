@@ -8,15 +8,37 @@ import type {
     AgregarMateriaPlanDto,
 } from '../types/carrera.types';
 import type { Materia, CrearMateriaDto, AsignarCorrelativaDto, MateriaDetalle } from '../types/materia.types';
+import type { PaginatedResponse } from '../types/api.types';
 
 export const carrerasService = {
     async obtenerCarrerasDelUsuario(usuarioId: number): Promise<UsuarioCarrera[]> {
         const response = await api.get(`/usuarios/${usuarioId}/carreras`);
+        return response.data.data;
+    },
+
+    async obtenerCarrerasDelUsuarioPaginado(usuarioId: number, page: number = 1, limit: number = 12): Promise<PaginatedResponse<UsuarioCarrera>> {
+        const response = await api.get(`/usuarios/${usuarioId}/carreras`, {
+            params: { page, limit },
+        });
         return response.data;
     },
 
     async obtenerCarrerasActivasDelUsuario(usuarioId: number): Promise<UsuarioCarrera[]> {
         const response = await api.get(`/usuarios/${usuarioId}/carreras-activas`);
+        return response.data.data;
+    },
+
+    async obtenerCarrerasActivasDelUsuarioPaginado(usuarioId: number, page: number = 1, limit: number = 12): Promise<PaginatedResponse<UsuarioCarrera>> {
+        const response = await api.get(`/usuarios/${usuarioId}/carreras-activas`, {
+            params: { page, limit },
+        });
+        return response.data;
+    },
+
+    async obtenerCarrerasInactivasDelUsuarioPaginado(usuarioId: number, page: number = 1, limit: number = 12): Promise<PaginatedResponse<UsuarioCarrera>> {
+        const response = await api.get(`/usuarios/${usuarioId}/carreras-inactivas`, {
+            params: { page, limit },
+        });
         return response.data;
     },
 
@@ -25,8 +47,10 @@ export const carrerasService = {
         return response.data;
     },
 
-    async obtenerCarrerasDisponiblesParaUsuario(usuarioId: number): Promise<CarreraDisponible[]> {
-        const response = await api.get(`/carreras/disponibles/${usuarioId}`);
+    async obtenerCarrerasDisponiblesParaUsuario(usuarioId: number, page: number = 1, limit: number = 12): Promise<PaginatedResponse<CarreraDisponible>> {
+        const response = await api.get(`/carreras/disponibles/${usuarioId}`, {
+            params: { page, limit },
+        });
         return response.data;
     },
 

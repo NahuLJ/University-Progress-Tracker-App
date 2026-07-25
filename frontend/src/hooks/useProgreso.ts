@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { progresoService } from '../services/progreso.service';
 import { useNotificationStore } from '../store/notification.store';
 import type { ActualizarProgresoDto } from '../types/progreso.types';
+import type { AxiosError } from 'axios';
 
 export function useProgreso(usuarioCarreraId: number | null) {
     const [filtroEstado, setFiltroEstado] = useState<string>('todas');
@@ -43,8 +44,9 @@ export function useProgreso(usuarioCarreraId: number | null) {
             queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
             addNotification('Progreso actualizado', 'success');
         },
-        onError: () => {
-            addNotification('Error al actualizar el progreso', 'error');
+        onError: (error: AxiosError<{ message: string }>) => {
+            const mensaje = error.response?.data?.message ?? 'Error al actualizar el progreso';
+            addNotification(mensaje, 'error');
         },
     });
 

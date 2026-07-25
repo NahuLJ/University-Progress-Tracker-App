@@ -249,15 +249,17 @@ redirige. Usa el `api` del paso 3.1.
 
 **Abrir y aplicar:**
 
-- **`docs/frontend/plan-estudios-page.md`** — `CarrerasPage` (componente en `components/carrera/`, delegado desde `pages/CarrerasPage.tsx`) con lista + inscripción, `CarreraDetailPage` (en `pages/`) con `PlanEstudiosTree` (acordeones Año → Cuatrimestre → Materias), `MateriaDetailModal` con correlativas, hooks `useCarreras`, `usePlanEstudios`, `useInscribirCarrera`.
+- **`docs/frontend/plan-estudios-page.md`** — `CarrerasPage` (componente en `components/carrera/`, delegado desde `pages/CarrerasPage.tsx`) con listas paginadas (activas, inactivas, disponibles) usando `useInfiniteQuery` y botones "Ver más". `CarreraDetailPage` (en `pages/`) con `PlanEstudiosTree` (acordeones Año → Cuatrimestre → Materias — ahora muestra carga horaria), vista tabla reemplazada por **grid** agrupado por Año/Cuatrimestre con columna Carga Horaria, y botón "Volver a carreras". `MateriaDetailModal` con correlativas. Hooks `useInscribirCarrera`, `useDesinscribirCarrera`, `usePlanEstudios`. `Card.tsx` ahora usa `flex flex-col` con `flex-1` para que las cards sean consistentes en altura. `icons.ts` agregó `ArrowLeft`.
 - **`docs/frontend-guide.md`** → sección "Estructura de Archivos" — Componentes bajo `components/carrera/` y `components/ui/`.
 
 **Conexión con el paso anterior:** Requiere autenticación (PrivateRoute del paso 3.2). Consume
-`GET /carreras/:id/plan-estudios` y las carreras del usuario vía `GET /usuarios/:id/carreras`.
+`GET /carreras/:id/plan-estudios` y las carreras del usuario vía `GET /usuarios/:id/carreras` (paginado: `obtenerCarrerasActivasDelUsuarioPaginado`, `obtenerCarrerasInactivasDelUsuarioPaginado`, `obtenerCarrerasDisponiblesParaUsuario` con paginación).
 
-> **Nota:** `InscribirCarreraModal` obtiene las carreras disponibles con `carrerasService.obtenerCarrerasDisponibles()`
-> (filtra las ya inscriptas) e invoca `useInscribirCarrera`. En `CarrerasPage`, "Desinscribirse" usa
-> `useDesinscribirCarrera` (con `confirm()` de confirmación).
+> **Nota:** `InscribirCarreraModal` obtiene las carreras disponibles con `carrerasService.obtenerCarrerasDisponiblesParaUsuario()`
+> (paginado, filtra las ya inscriptas) e invoca `useInscribirCarrera`. En `CarrerasPage`, las mutaciones
+> invalidan las queries `['carreras', 'activas', ...]`, `['carreras', 'inactivas', ...]` y
+> `['carreras', 'disponibles', ...]`. `useProgreso` ahora captura `AxiosError` para mostrar mensajes
+> de error del backend.
 
 ### 3.5 Progreso Académico (Roadmap #5)
 

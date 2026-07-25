@@ -28,6 +28,8 @@ export function useInscribirCarrera() {
             carrerasService.inscribirCarrera(usuarioId!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'activas', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'inactivas', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             addNotification('Inscripción exitosa', 'success');
         },
@@ -49,16 +51,18 @@ export function useDesinscribirCarrera() {
             carrerasService.desinscribirCarrera(usuarioId!, usuarioCarreraId),
         onSuccess: async () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'activas', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'inactivas', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
             addNotification('Inscripción desactivada', 'success');
 
-            const activas = await queryClient.fetchQuery({
-                queryKey: ['carreras', 'activas', usuarioId],
+            const activasList = await queryClient.fetchQuery({
+                queryKey: ['carreras', 'activas-list', usuarioId],
                 queryFn: () => carrerasService.obtenerCarrerasActivasDelUsuario(usuarioId!),
             });
-            setUsuarioCarreraId(activas[0]?.usuarioCarreraId ?? null);
+            setUsuarioCarreraId(activasList[0]?.usuarioCarreraId ?? null);
         },
         onError: () => {
             addNotification('Error al desinscribirse', 'error');
@@ -77,6 +81,8 @@ export function useReactivarCarrera() {
             carrerasService.reactivarCarrera(usuarioId!, usuarioCarreraId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'activas', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'inactivas', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
@@ -100,16 +106,18 @@ export function useEliminarCarreraDefinitivamente() {
             carrerasService.eliminarCarreraDefinitivamente(usuarioId!, usuarioCarreraId),
         onSuccess: async () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'activas', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'inactivas', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas', 'carreras-resumen', usuarioId] });
             addNotification('Inscripción eliminada definitivamente', 'success');
 
-            const activas = await queryClient.fetchQuery({
-                queryKey: ['carreras', 'activas', usuarioId],
+            const activasList = await queryClient.fetchQuery({
+                queryKey: ['carreras', 'activas-list', usuarioId],
                 queryFn: () => carrerasService.obtenerCarrerasActivasDelUsuario(usuarioId!),
             });
-            setUsuarioCarreraId(activas[0]?.usuarioCarreraId ?? null);
+            setUsuarioCarreraId(activasList[0]?.usuarioCarreraId ?? null);
         },
         onError: () => {
             addNotification('Error al eliminar la inscripción', 'error');

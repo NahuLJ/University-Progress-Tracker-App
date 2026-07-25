@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -14,9 +14,11 @@ import { QueryError } from '../components/common/QueryError';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../components/ui/Modal';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { Icon } from '../components/ui/Icon';
 
 export function CarreraDetailPage() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [vistaActiva, setVistaActiva] = useState<'arbol' | 'tabla'>('arbol');
     const [mostrarInscribirModal, setMostrarInscribirModal] = useState(false);
     const [mostrarDesinscribirModal, setMostrarDesinscribirModal] = useState(false);
@@ -120,6 +122,14 @@ export function CarreraDetailPage() {
 
     return (
         <div className="space-y-6">
+            <button
+                type="button"
+                onClick={() => navigate('/carreras')}
+                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            >
+                <Icon name="arrowLeft" className="w-5 h-5" />
+                <span>Volver a carreras</span>
+            </button>
             <Card>
                 <div className="flex justify-between items-start mb-4">
                     <div>
@@ -260,46 +270,50 @@ export function CarreraDetailPage() {
                         contraerSignal={contraerSignal}
                     />
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-base-600">
-                                    <th className="text-center py-3 px-4">Nro</th>
-                                    <th className="text-center py-3 px-4">Código</th>
-                                    <th className="text-center py-3 px-4">Materia</th>
-                                    <th className="text-center py-3 px-4">Año</th>
-                                    <th className="text-center py-3 px-4">Cuatrimestre</th>
-                                    <th className="text-center py-3 px-4">Créditos</th>
-                                    <th className="text-center py-3 px-4">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {planEstudios.anios.flatMap(anio =>
-                                    anio.cuatrimestres.flatMap(cuatrimestre =>
-                                        cuatrimestre.materias.map(materia => (
-                                    <tr key={materia.materiaId} className="border-b border-base-600 hover:bg-base-700/50">
-                                        <td className="text-center py-3 px-4 text-slate-300">{materia.orden}</td>
-                                        <td className="text-center py-3 px-4 font-mono text-sm text-slate-300">{materia.codigo}</td>
-                                        <td className="text-center py-3 px-4">
-                                                <button
-                                                    onClick={() => setMateriaSeleccionada(materia)}
-                                                    className="text-neon-cyan hover:text-cyan-300 font-medium text-center"
-                                                >
-                                                        {materia.nombre}
-                                                    </button>
-                                            </td>
-                                            <td className="text-center py-3 px-4">{anio.anio}</td>
-                                            <td className="text-center py-3 px-4">{cuatrimestre.cuatrimestre}</td>
-                                            <td className="text-center py-3 px-4">{materia.creditos}</td>
-                                            <td className="text-center py-3 px-4">
-                                                <StatusBadge estado={materia.estadoUsuario || 'Pendiente'} />
-                                            </td>
-                                        </tr>
-                                        ))
-                                    )
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="divide-y divide-base-600">
+                        {planEstudios.anios.map(anio => (
+                            <div key={anio.anio}>
+                                <div className="px-6 py-3 bg-base-700/50">
+                                    <h4 className="text-lg font-semibold text-white">{anio.anio}° Año</h4>
+                                </div>
+                                {anio.cuatrimestres.map(cuatrimestre => (
+                                    <div key={cuatrimestre.cuatrimestre}>
+                                        <div className="px-6 py-2 bg-base-800/50 border-b border-base-600">
+                                            <span className="text-sm font-medium text-slate-300">{cuatrimestre.cuatrimestre}° Cuatrimestre</span>
+                                        </div>
+                                        <div>
+                                            <div className="grid grid-cols-12 gap-2 px-6 py-2 text-sm font-medium text-slate-400 border-b border-base-600">
+                                                <div className="col-span-1 text-center">Nro</div>
+                                                <div className="col-span-2 text-center">Código</div>
+                                                <div className="col-span-3 text-center">Materia</div>
+                                                <div className="col-span-2 text-center">Créditos</div>
+                                                <div className="col-span-2 text-center">Carga Horaria</div>
+                                                <div className="col-span-2 text-center">Estado</div>
+                                            </div>
+                                            {cuatrimestre.materias.map(materia => (
+                                                <div key={materia.materiaId} className="grid grid-cols-12 gap-2 px-6 py-3 items-center hover:bg-base-700/50 border-b border-base-600">
+                                                    <span className="col-span-1 text-center text-slate-300 text-sm">{materia.orden}</span>
+                                                    <span className="col-span-2 text-center font-mono text-sm text-slate-300">{materia.codigo}</span>
+                                                    <span className="col-span-3 text-center">
+                                                        <button
+                                                            onClick={() => setMateriaSeleccionada(materia)}
+                                                            className="text-neon-cyan hover:text-cyan-300 font-medium"
+                                                        >
+                                                            {materia.nombre}
+                                                        </button>
+                                                    </span>
+                                                    <span className="col-span-2 text-center text-slate-300 text-sm">{materia.creditos}</span>
+                                                    <span className="col-span-2 text-center text-slate-300 text-sm">{materia.cargaHoraria}h/sem</span>
+                                                    <span className="col-span-2 flex justify-center">
+                                                        <StatusBadge estado={materia.estadoUsuario || 'Pendiente'} />
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
                     </div>
                 )}
             </Card>

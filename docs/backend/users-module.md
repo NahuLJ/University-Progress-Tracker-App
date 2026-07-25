@@ -34,20 +34,44 @@ Actualiza parcialmente los datos del perfil del usuario autenticado. Solo el pro
 
 ### GET /api/usuarios/:id/carreras
 
-Retorna todas las carreras asociadas al usuario (inscripciones activas e inactivas).
+Retorna todas las carreras asociadas al usuario (inscripciones activas e inactivas). Con paginación.
+
+| Query Param | Tipo | Default | Descripción |
+|---|---|---|---|
+| `page` | number | 1 | Número de página |
+| `limit` | number | 12 | Cantidad por página |
 
 | Código | Descripción |
 |---|---|
-| 200 | `{ carreras: [{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo }] }` |
+| 200 | `{ data: [{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo }], total, page, limit, totalPages }` |
 | 404 | Usuario no encontrado |
 
 ### GET /api/usuarios/:id/carreras-activas
 
-Retorna solo las inscripciones activas del usuario (excluye soft delete).
+Retorna solo las inscripciones activas del usuario (excluye soft delete). Con paginación.
+
+| Query Param | Tipo | Default | Descripción |
+|---|---|---|---|
+| `page` | number | 1 | Número de página |
+| `limit` | number | 12 | Cantidad por página |
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo: true }]` |
+| 200 | `{ data: [{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo: true }], total, page, limit, totalPages }` |
+| 404 | Usuario no encontrado |
+
+### GET /api/usuarios/:id/carreras-inactivas
+
+Retorna solo las inscripciones desactivadas (soft delete) del usuario. Con paginación.
+
+| Query Param | Tipo | Default | Descripción |
+|---|---|---|---|
+| `page` | number | 1 | Número de página |
+| `limit` | number | 12 | Cantidad por página |
+
+| Código | Descripción |
+|---|---|
+| 200 | `{ data: [{ usuarioCarreraId, carrera: { id, nombre }, fechaInicio, activo: false }], total, page, limit, totalPages }` |
 | 404 | Usuario no encontrado |
 
 ### POST /api/usuarios/:id/carreras
@@ -199,12 +223,25 @@ export class UsuariosService {
         return this.usuarioRepo.save(usuario);
     }
 
-    async obtenerCarreras(id: number): Promise<UsuarioCarrera[]> {
-        return this.usuarioCarreraRepo.find({
+    async obtenerCarreras(
+        id: number,
+        page: number = 1,
+        limit: number = 12,
+    ): Promise<{
+        data: UsuarioCarrera[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }> {
+        const [data, total] = await this.usuarioCarreraRepo.findAndCount({
             where: { usuario: { usuarioId: id } },
-            relations: ['carrera'],
+            relations: { carrera: true },
             order: { fechaInicio: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
         });
+        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
     async inscribirCarrera(usuarioId: number, dto: InscribirCarreraDto): Promise<UsuarioCarrera> {
@@ -241,12 +278,46 @@ export class UsuariosService {
         await this.usuarioCarreraRepo.save(inscripcion);
     }
 
-    async obtenerCarrerasActivas(id: number): Promise<UsuarioCarrera[]> {
-        return this.usuarioCarreraRepo.find({
+    async obtenerCarrerasActivas(
+        id: number,
+        page: number = 1,
+        limit: number = 12,
+    ): Promise<{
+        data: UsuarioCarrera[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }> {
+        const [data, total] = await this.usuarioCarreraRepo.findAndCount({
             where: { usuario: { usuarioId: id }, activo: true },
             relations: { carrera: true },
             order: { fechaInicio: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
         });
+        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    }
+
+    async obtenerCarrerasInactivas(
+        id: number,
+        page: number = 1,
+        limit: number = 12,
+    ): Promise<{
+        data: UsuarioCarrera[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }> {
+        const [data, total] = await this.usuarioCarreraRepo.findAndCount({
+            where: { usuario: { usuarioId: id }, activo: false },
+            relations: { carrera: true },
+            order: { fechaInicio: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
     async reactivarCarrera(usuarioId: number, usuarioCarreraId: number): Promise<UsuarioCarrera> {

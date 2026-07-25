@@ -55,20 +55,70 @@ export class UsuariosService {
     return this.usuarioRepo.save(usuario);
   }
 
-  async obtenerCarreras(id: number): Promise<UsuarioCarrera[]> {
-    return this.usuarioCarreraRepo.find({
+  async obtenerCarreras(
+    id: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: UsuarioCarrera[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
       where: { usuario: { usuarioId: id } },
       relations: { carrera: true },
       order: { fechaInicio: 'DESC' as const },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
   }
 
-  async obtenerCarrerasActivas(id: number): Promise<UsuarioCarrera[]> {
-    return this.usuarioCarreraRepo.find({
+  async obtenerCarrerasActivas(
+    id: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: UsuarioCarrera[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
       where: { usuario: { usuarioId: id }, activo: true },
       relations: { carrera: true },
       order: { fechaInicio: 'DESC' as const },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
+  }
+
+  async obtenerCarrerasInactivas(
+    id: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: UsuarioCarrera[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
+      where: { usuario: { usuarioId: id }, activo: false },
+      relations: { carrera: true },
+      order: { fechaInicio: 'DESC' as const },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
   }
 
   async inscribirCarrera(

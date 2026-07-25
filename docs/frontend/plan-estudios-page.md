@@ -1,14 +1,17 @@
 # Página Plan de Estudios — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. `CarrerasPage` delega a `components/carrera/CarrerasPage`,
-> que lista las inscripciones del usuario (activas e inactivas) y las carreras disponibles del catálogo.
+> que lista las inscripciones del usuario (activas e inactivas por separado, cada una con `useInfiniteQuery`
+> y botón "Ver más") y las carreras disponibles del catálogo (también paginadas con "Ver más").
 > Cada `CarreraCard` solo tiene el botón **Ver plan de estudios** que navega a `/carreras/:id`.
 > Las acciones de inscripción/desinscripción/eliminación están en `CarreraDetailPage`.
 > `CarreraDetailPage` muestra el plan vía `usePlanEstudios`. El progreso del usuario (estado, nota, tipo)
 > se mergea por la **inscripción de la carrera que está en la URL**, no por la carrera activa del navbar.
 > Vista árbol/tabla: el toggle está **entre** la card de info de la carrera y la card "Plan de estudios"
 > (alineado a la derecha). En vista árbol, la card "Plan de estudios" tiene en su header los botones
-> **Expandir todo / Contraer todo**. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
+> **Expandir todo / Contraer todo**. En vista tabla, se muestra como **grid** agrupado por Año → Cuatrimestre,
+> con columnas Nro | Código | Materia | Créditos | Carga Horaria | Estado.
+> Incluye botón **Volver a carreras** arriba del todo. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
 > una materia. **Las correlativas ahora muestran su estado real (Pendiente/En Proceso/Completada) con nota y tipo si corresponde**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
@@ -40,10 +43,12 @@ hooks/
 │                               #   + useCarreraActiva()
 └── usePlanEstudios.ts          # useQuery del plan de una carrera
 
-services/carreras.service.ts    # obtenerCarrerasDelUsuario, obtenerCarrerasActivasDelUsuario,
-                                # obtenerCarrerasDisponibles, obtenerPlanEstudios,
-                                # inscribirCarrera, desinscribirCarrera, reactivarCarrera,
-                                # eliminarCarreraDefinitivamente
+services/carreras.service.ts    # obtenerCarrerasDelUsuario, obtenerCarrerasDelUsuarioPaginado,
+                                # obtenerCarrerasActivasDelUsuario, obtenerCarrerasActivasDelUsuarioPaginado,
+                                # obtenerCarrerasInactivasDelUsuarioPaginado,
+                                # obtenerCarrerasDisponiblesParaUsuario (paginado),
+                                # obtenerPlanEstudios, inscribirCarrera, desinscribirCarrera,
+                                # reactivarCarrera, eliminarCarreraDefinitivamente
 
 store/
 ├── auth.store.ts               # sesión del usuario
@@ -54,6 +59,9 @@ store/
 ```
 
 > **Estado:** Las cards en `CarrerasPage` solo tienen el botón "Ver plan de estudios".
+> Las listas de activas, inactivas y disponibles cargan con `useInfiniteQuery` paginado (12 por página)
+> y muestran un botón **"Ver más"** / **"Ver más activas"** / **"Ver más desinscriptas"** al final
+> cuando hay más páginas.
 > Las inactivas (soft delete) muestran badge "Desinscripto" pero sin botones de acción.
 > En `CarreraDetailPage`, si el usuario está inscripto se muestran dos botones:
 > "Desinscribirse" (abre `DesinscribirCarreraModal` simplificado, sin escribir texto) y
@@ -73,11 +81,15 @@ Ruta /carreras
     ├── Header "Carreras"
     ├── Mis carreras
     │   ├── Activas → CarreraCard (badge "Inscripto" + "Ver plan de estudios")
+    │   │   └── [si hay más] "Ver más activas"
     │   └── Desinscriptas → CarreraCard (badge "Desinscripto" + "Ver plan de estudios")
+    │       └── [si hay más] "Ver más desinscriptas"
     └── Carreras disponibles → CarreraCard (solo "Ver plan de estudios")
+        └── [si hay más] "Ver más"
 
  Ruta /carreras/:id
 └── CarreraDetailPage
+    ├── Botón "Volver a carreras" (Icon arrowLeft)
     ├── Header: nombre + descripción + badge Inscripto/Desinscripto
     │   ├── Si inscripto: "Desinscribirse" + "Eliminar" (abre modales)
     │   ├── Si desinscripto: "Volver a inscribirse" + "Eliminar definitivamente"
@@ -85,7 +97,7 @@ Ruta /carreras
     ├── Toggle Vista árbol / Vista tabla (entre cards, alineado a la derecha)
     ├── Plan de estudios (card con título + botones Expandir todo / Contraer todo en el header, solo vista árbol)
     │   ├── Vista árbol: Accordion Año → Cuatrimestre → MateriaRow (con StatusBadge)
-    │   └── Vista tabla: columnas centradas Nro | Código | Materia | Año | Cuatrimestre | Créditos | Estado
+    │   └── Vista tabla: grid agrupado por Año → Cuatrimestre. Columnas: Nro | Código | Materia | Créditos | Carga Horaria | Estado
     ├── InscribirCarreraModal
     ├── DesinscribirCarreraModal (confirmación simple)
     ├── Modal hard delete + Modal reactivar
@@ -101,16 +113,10 @@ Global
 
 ### `useCarreras` (`hooks/useCarreras.ts`)
 
-```typescript
-export function useCarreras() {
-    const usuario = useAuthStore((s) => s.usuario);
-    return useQuery({
-        queryKey: ['carreras', usuario?.id],
-        queryFn: () => carrerasService.obtenerCarrerasDelUsuario(usuario!.id),
-        enabled: !!usuario,
-    });
-}
+`CarrerasPage` usa `useInfiniteQuery` directamente (tres queries separadas para activas, inactivas y disponibles).
+El hook `useCarreras` ya no existe como query; los hooks exportados son mutaciones:
 
+```typescript
 export function useInscribirCarrera() {
     const queryClient = useQueryClient();
     const usuario = useAuthStore((s) => s.usuario);
@@ -118,11 +124,24 @@ export function useInscribirCarrera() {
     return useMutation({
         mutationFn: (data: InscribirCarreraDto) => carrerasService.inscribirCarrera(usuarioId!, data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['carreras', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'activas', usuarioId] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'inactivas', usuarioId] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'disponibles', usuarioId] });
         },
     });
 }
+```
+
+Cada lista en CarrerasPage se maneja con `useInfiniteQuery`:
+
+```typescript
+const activas = useInfiniteQuery({
+    queryKey: ['carreras', 'activas', usuarioId],
+    queryFn: ({ pageParam }) => carrerasService.obtenerCarrerasActivasDelUsuarioPaginado(usuarioId!, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+    enabled: !!usuarioId,
+});
 ```
 
 ### `usePlanEstudios` (`hooks/usePlanEstudios.ts`)
@@ -145,7 +164,7 @@ export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?
 
 Usa `Accordion` anidados (controlados vía props `open`/`onOpenChange`): `AnioAccordion`
 (1° Año, 2° Año, …) → `CuatrimestreAccordion` (1° Cuatrimestre, …) → `MateriaRow`. Cada materia
-muestra orden, nombre, código y créditos, y un `StatusBadge` con el estado del usuario
+muestra orden, nombre, código, créditos y carga horaria, y un `StatusBadge` con el estado del usuario
 (`estadoUsuario` como string directo). El componente recibe `expandirSignal` / `contraerSignal`
 (números) que disparan expandir/contraer todo vía `useEffect`. Click en una materia abre
 `MateriaDetailModal`. Los botones "Expandir todo / Contraer todo" viven en el header de la card
@@ -176,9 +195,11 @@ y disponibles, y cierra el modal.
 | Click "Desinscribirse" (detail) | Abre `DesinscribirCarreraModal` (confirmación simple) → DELETE + snackbar + reset store |
 | Click "Eliminar" (detail) | Abre modal de confirmación hard delete → DELETE definitivo + snackbar + reset store |
 | Click "Volver a inscribirse" | Abre modal de confirmación → PATCH reactivar + snackbar |
+| Click "Volver a carreras" | `navigate('/carreras')` desde CarreraDetailPage |
 | Cambio árbol/tabla | Switch visual (toggle entre cards, a la derecha) |
 | Expandir/Contraer todo | Botones en el header de "Plan de estudios" (solo vista árbol) |
-| Columnas tabla | Centradas (tanto header como datos) |
+| "Ver más" en CarrerasPage | `fetchNextPage()` de `useInfiniteQuery`, carga siguiente página |
+| Vista tabla | Grid (no `<table>`) agrupado por Año → Cuatrimestre, columnas centradas |
 
 ### Estados
 

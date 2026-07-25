@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CarrerasService } from './carreras.service';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
@@ -25,9 +35,18 @@ export class CarrerasController {
   @ApiOperation({
     summary: 'Carreras disponibles para un usuario (no inscriptas)',
   })
-  @ApiResponse({ status: 200, description: 'Lista de carreras disponibles' })
-  async obtenerDisponibles(@Param('usuarioId') usuarioId: number) {
-    return this.carrerasService.obtenerDisponibles(usuarioId);
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 12 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de carreras disponibles',
+  })
+  async obtenerDisponibles(
+    @Param('usuarioId', ParseIntPipe) usuarioId: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+  ) {
+    return this.carrerasService.obtenerDisponibles(usuarioId, page, limit);
   }
 
   @Get(':id')

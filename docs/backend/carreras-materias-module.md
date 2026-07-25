@@ -32,6 +32,19 @@ Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usua
 | 200 | `[{ materiaId, nombre, codigo, creditos, anio, cuatrimestre, orden, correlativas: [{ correlativaId, materiaCorrelativaId, materiaCorrelativa: { nombre, codigo }, estadoUsuario?, nota?, tipoAprobacion? }], estadoUsuario?, nota?, tipoAprobacion? }]` |
 | 404 | Carrera no encontrada |
 
+### GET /api/carreras/disponibles/:usuarioId
+
+Retorna las carreras disponibles para un usuario (excluye aquellas en las que ya está inscripto). Con paginación.
+
+| Query Param | Tipo | Default | Descripción |
+|---|---|---|---|
+| `page` | number | 1 | Número de página |
+| `limit` | number | 12 | Cantidad por página |
+
+| Código | Descripción |
+|---|---|
+| 200 | `{ data: [{ carreraId, nombre, descripcion, duracionAnios, creditosTotales }], total, page, limit, totalPages }` |
+
 ### POST /api/carreras
 
 Crea una nueva carrera (solo administradores).

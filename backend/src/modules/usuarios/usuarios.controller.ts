@@ -6,12 +6,16 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { UsuariosService } from './usuarios.service';
@@ -47,18 +51,51 @@ export class UsuariosController {
 
   @Get(':id/carreras')
   @ApiOperation({ summary: 'Obtener carreras del usuario' })
-  @ApiResponse({ status: 200, description: 'Lista de carreras' })
-  async obtenerCarreras(@Param('id') id: number) {
-    return this.usuariosService.obtenerCarreras(id);
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 12 })
+  @ApiResponse({ status: 200, description: 'Lista paginada de carreras' })
+  async obtenerCarreras(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+  ) {
+    return this.usuariosService.obtenerCarreras(id, page, limit);
   }
 
   @Get(':id/carreras-activas')
   @ApiOperation({
     summary: 'Obtener carreras activas del usuario (sin soft delete)',
   })
-  @ApiResponse({ status: 200, description: 'Lista de carreras activas' })
-  async obtenerCarrerasActivas(@Param('id') id: number) {
-    return this.usuariosService.obtenerCarrerasActivas(id);
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 12 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de carreras activas',
+  })
+  async obtenerCarrerasActivas(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+  ) {
+    return this.usuariosService.obtenerCarrerasActivas(id, page, limit);
+  }
+
+  @Get(':id/carreras-inactivas')
+  @ApiOperation({
+    summary: 'Obtener carreras inactivas (desinscriptas) del usuario',
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 12 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de carreras inactivas',
+  })
+  async obtenerCarrerasInactivas(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+  ) {
+    return this.usuariosService.obtenerCarrerasInactivas(id, page, limit);
   }
 
   @Post(':id/carreras')

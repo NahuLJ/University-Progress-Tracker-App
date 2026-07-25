@@ -98,6 +98,11 @@ export function useProgreso(usuarioCarreraId: number | null) {
             queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
             queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            addNotification('Progreso actualizado', 'success');
+        },
+        onError: (error) => {
+            const mensaje = error.response?.data?.message ?? 'Error al actualizar el progreso';
+            addNotification(mensaje, 'error');
         },
     });
 
@@ -174,7 +179,7 @@ cuatrimestres a la vez.
 | Promoción con nota < 7 | Error en el modal (borde rojo) |
 | Final con nota < 4 | Error en el modal (borde rojo) |
 | Resetear materia | Modal de confirmación; llama a `onSave({ estado: 'Pendiente' })` |
-| Error de correlativas del backend | El backend rechaza; el error se propaga vía React Query |
+| Error de correlativas del backend | El backend rechaza; el snackbar muestra el mensaje exacto del error |
 | Búsqueda | `Filtros.FiltroBusqueda` aplica debounce de 300ms y filtra el árbol |
 
 ### Estados de la Página

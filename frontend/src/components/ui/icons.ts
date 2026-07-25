@@ -20,6 +20,7 @@ import {
     Menu,
     Pencil,
     Trash2,
+    ArrowLeft,
 } from 'lucide-react';
 
 export const Icons = {
@@ -44,6 +45,7 @@ export const Icons = {
     menu: Menu,
     edit: Pencil,
     delete: Trash2,
+    arrowLeft: ArrowLeft,
 } as const;
 
 export type IconName = keyof typeof Icons;

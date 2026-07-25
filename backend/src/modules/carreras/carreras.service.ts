@@ -70,20 +70,41 @@ export class CarrerasService {
     return this.carreraRepo.find({ order: { nombre: 'ASC' } });
   }
 
-  async obtenerDisponibles(usuarioId: number): Promise<Carrera[]> {
+  async obtenerDisponibles(
+    usuarioId: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: Carrera[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const inscripciones = await this.usuarioCarreraRepo.find({
       where: { usuario: { usuarioId } },
       relations: { carrera: true },
     });
     const inscritasIds = inscripciones.map((i) => i.carrera.carreraId);
-    if (inscritasIds.length === 0) {
-      return this.carreraRepo.find({ order: { nombre: 'ASC' } });
-    }
-    return this.carreraRepo
+
+    let query = this.carreraRepo
       .createQueryBuilder('c')
-      .where('c.carreraId NOT IN (:...ids)', { ids: inscritasIds })
-      .orderBy('c.nombre', 'ASC')
+      .orderBy('c.nombre', 'ASC');
+
+    if (inscritasIds.length > 0) {
+      query = query.where('c.carreraId NOT IN (:...ids)', {
+        ids: inscritasIds,
+      });
+    }
+
+    const total = await query.getCount();
+    const totalPages = Math.ceil(total / limit);
+    const data = await query
+      .skip((page - 1) * limit)
+      .take(limit)
       .getMany();
+
+    return { data, total, page, limit, totalPages };
   }
 
   async obtenerConPlan(id: number): Promise<Carrera> {

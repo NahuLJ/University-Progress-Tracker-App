@@ -36,8 +36,9 @@ interface LoginDto {
 |--------|------|------|------|------------|
 | `GET` | `/usuarios/:id` | ✅ Bearer | — | `200`: Usuario · `404`: No encontrado |
 | `PATCH` | `/usuarios/:id` | ✅ Bearer | `ActualizarUsuarioDto` | `200`: Actualizado · `404`: No encontrado |
-| `GET` | `/usuarios/:id/carreras` | ✅ Bearer | — | `200`: Carreras[] del usuario (todas) |
-| `GET` | `/usuarios/:id/carreras-activas` | ✅ Bearer | — | `200`: Carreras activas[] (sin soft delete) |
+| `GET` | `/usuarios/:id/carreras` | ✅ Bearer | `?page=N&limit=N` | `200`: `{ data: Carreras[], total, page, limit, totalPages }` |
+| `GET` | `/usuarios/:id/carreras-activas` | ✅ Bearer | `?page=N&limit=N` | `200`: `{ data: Carreras activas[], total, page, limit, totalPages }` |
+| `GET` | `/usuarios/:id/carreras-inactivas` | ✅ Bearer | `?page=N&limit=N` | `200`: `{ data: Carreras inactivas[], total, page, limit, totalPages }` |
 | `POST` | `/usuarios/:id/carreras` | ✅ Bearer | `InscribirCarreraDto` | `201`: Inscripción creada · `400`: Ya inscripto · `404`: Carrera no encontrada |
 | `DELETE` | `/usuarios/:id/carreras/:usuarioCarreraId` | ✅ Bearer | — | `200`: Inscripción desactivada · `404`: No encontrada |
 | `PATCH` | `/usuarios/:id/carreras/:usuarioCarreraId/reactivar` | ✅ Bearer | — | `200`: Inscripción reactivada · `400`: Ya activa · `404`: No encontrada |
@@ -68,7 +69,7 @@ interface InscribirCarreraDto {
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
 | `GET` | `/carreras` | ❌ Público | — | `200`: Carreras[] |
-| `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | — | `200`: Carreras[] no inscriptas por el usuario |
+| `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | `?page=N&limit=N` | `200`: `{ data: Carreras[], total, page, limit, totalPages }` |
 | `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada |
 | `GET` | `/carreras/:id/plan-estudios` | ❌ Público | `?usuarioCarreraId=N` (opcional) | `200`: Plan con materias + correlativas + `estadoUsuario`/`nota`/`tipoAprobacion` si se provee `usuarioCarreraId` · `404`: No encontrada |
 | `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación |
@@ -236,12 +237,12 @@ interface CrearMateriaDto {
 | Módulo | Endpoints |
 |--------|-----------|
 | `auth/` | 3 |
-| `usuarios/` | 7 |
+| `usuarios/` | 8 |
 | `carreras/` | 6 |
 | `materias/` | 5 |
 | `progreso/` | 4 |
 | `planificacion/` | 8 |
 | `estadisticas/` | 4 |
-| **Total únicos** | **37** |
+| **Total únicos** | **38** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

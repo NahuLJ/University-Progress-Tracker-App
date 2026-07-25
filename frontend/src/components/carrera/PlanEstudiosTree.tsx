@@ -24,7 +24,9 @@ function MateriaRow({ materia, onClick }: MateriaRowProps) {
                 <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
                     <span className="font-mono">{materia.codigo}</span>
                     <span>•</span>
-                    <span>{materia.creditos} créd.</span>
+                    <span>{materia.cargaHoraria}h/sem</span>
+                    <span>•</span>
+                    <span>{materia.creditos} créditos</span>
                 </div>
             </div>
             <div className="flex items-center gap-2">
