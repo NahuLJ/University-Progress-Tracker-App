@@ -11,7 +11,7 @@ Backend implementado en `backend/`. Documentación en [`docs/`](docs/).
 | Capa | Tecnologías |
 |---|---|
 | Backend | NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger |
-| Frontend | React 18, Vite 5, Tailwind CSS 3, TypeScript, React Router 6, Axios, React Query 5, zustand 4, React Hook Form + Zod |
+| Frontend | React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, oxlint |
 
 ## Documentación
 

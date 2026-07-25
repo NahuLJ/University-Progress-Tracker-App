@@ -40,16 +40,16 @@ export function CarreraCard({
             <div className="flex flex-col h-full">
                 <div className="flex justify-between items-start gap-4 mb-4">
                     <h3 className="text-lg font-semibold text-white">{carrera.nombre}</h3>
-                    {inscripto && (
-                        <Badge variant="success" size="sm" className="shrink-0 text-xs">
-                            Inscripto
-                        </Badge>
-                    )}
-                    {desinscripto && (
-                        <Badge variant="warning" size="sm" className="shrink-0 text-xs">
-                            Desinscripto
-                        </Badge>
-                    )}
+                        {inscripto && (
+                            <Badge variant="success" size="sm" className="shrink-0 text-xs">
+                                Inscripto
+                            </Badge>
+                        )}
+                        {desinscripto && (
+                            <Badge variant="warning" size="sm" className="shrink-0 text-xs">
+                                Desinscribirse
+                            </Badge>
+                        )}
                 </div>
 
                 <p className="text-sm text-slate-300 line-clamp-3">{carrera.descripcion}</p>

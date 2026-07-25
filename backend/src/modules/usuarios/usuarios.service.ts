@@ -183,7 +183,7 @@ export class UsuariosService {
       where: { usuarioCarreraId, usuario: { usuarioId } },
       relations: {
         carrera: true,
-        progresos: true,
+        progresos: { materia: true },
         periodos: { materiasPlanificadas: true },
       },
     });

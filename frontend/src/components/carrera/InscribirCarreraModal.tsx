@@ -65,7 +65,7 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, c
                     <Button type="button" variant="ghost" onClick={onClose}>
                         Cancelar
                     </Button>
-                    <Button type="submit" loading={inscribirCarrera.isPending}>
+                    <Button type="submit" variant="success" loading={inscribirCarrera.isPending}>
                         Confirmar inscripción
                     </Button>
                 </div>

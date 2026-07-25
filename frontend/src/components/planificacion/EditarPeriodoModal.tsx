@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,38 +7,49 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 
-const nuevoPeriodoSchema = z.object({
+const periodoSchema = z.object({
     anio: z.number().min(2020).max(2030),
     instancia: z.enum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre']),
     nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
 });
 
-type NuevoPeriodoFormData = z.infer<typeof nuevoPeriodoSchema>;
+type PeriodoFormData = z.infer<typeof periodoSchema>;
 
-interface NuevoPeriodoModalProps {
+interface EditarPeriodoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (data: NuevoPeriodoFormData) => void;
+    onSuccess: (data: PeriodoFormData) => void;
+    initialData: {
+        anio: number;
+        instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
+        nombre: string;
+    } | null;
 }
 
-export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoModalProps) {
-    const form = useForm<NuevoPeriodoFormData>({
-        resolver: zodResolver(nuevoPeriodoSchema),
-        defaultValues: {
+export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData }: EditarPeriodoModalProps) {
+    const form = useForm<PeriodoFormData>({
+        resolver: zodResolver(periodoSchema),
+        defaultValues: initialData ?? {
             anio: new Date().getFullYear(),
             instancia: '1er Cuatrimestre',
             nombre: '',
         },
     });
 
-    const onSubmit = (data: NuevoPeriodoFormData) => {
+    useEffect(() => {
+        if (initialData) {
+            form.reset(initialData);
+        }
+    }, [initialData, form]);
+
+    const onSubmit = (data: PeriodoFormData) => {
         onSuccess(data);
         onClose();
         form.reset();
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Nueva planificación" size="md">
+        <Modal isOpen={isOpen} onClose={onClose} title="Editar planificación" size="md">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <Input
                     label="Año"
@@ -69,7 +81,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
                     <Button type="button" variant="ghost" onClick={onClose}>
                         Cancelar
                     </Button>
-                    <Button type="submit" variant="success">Crear planificación</Button>
+                    <Button type="submit" variant="warning">Guardar cambios</Button>
                 </div>
             </form>
         </Modal>

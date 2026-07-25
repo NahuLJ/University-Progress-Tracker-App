@@ -42,6 +42,25 @@ Elimina un período de planificación y todas sus materias asignadas.
 | 200 | Período eliminado |
 | 404 | Período no encontrado |
 
+### PATCH /api/planificacion/periodos/:id
+
+Actualiza un período de planificación (año, instancia, nombre).
+
+**Request Body:**
+```json
+{
+    "anio": 2026,
+    "instancia": "1er Cuatrimestre",
+    "nombre": "Variante B"
+}
+```
+
+| Código | Descripción |
+|---|---|
+| 200 | Período actualizado |
+| 400 | Error de validación |
+| 404 | Período no encontrado |
+
 ### GET /api/planificacion/bloques
 
 Retorna el catálogo de todos los bloques horarios disponibles (7 bloques de 2 horas).
@@ -147,6 +166,30 @@ export class CrearPeriodoDto {
 }
 ```
 
+### ActualizarPeriodoDto
+
+```typescript
+import { IsOptional, IsInt, IsEnum, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ActualizarPeriodoDto {
+    @ApiPropertyOptional({ example: 2026 })
+    @IsOptional()
+    @IsInt()
+    anio?: number;
+
+    @ApiPropertyOptional({ enum: ['Verano', '1er Cuatrimestre', '2do Cuatrimestre'] })
+    @IsOptional()
+    @IsEnum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre'])
+    instancia?: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
+
+    @ApiPropertyOptional({ example: 'Variante B' })
+    @IsOptional()
+    @MaxLength(100)
+    nombre?: string;
+}
+```
+
 ### PlanificarMateriaDto
 
 ```typescript
@@ -165,6 +208,30 @@ export class PlanificarMateriaDto {
     @ApiProperty({ enum: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] })
     @IsEnum(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'])
     diaSemana: string;
+}
+```
+
+### ActualizarPeriodoDto
+
+```typescript
+import { IsOptional, IsInt, IsEnum, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ActualizarPeriodoDto {
+    @ApiPropertyOptional({ example: 2026 })
+    @IsOptional()
+    @IsInt()
+    anio?: number;
+
+    @ApiPropertyOptional({ enum: ['Verano', '1er Cuatrimestre', '2do Cuatrimestre'] })
+    @IsOptional()
+    @IsEnum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre'])
+    instancia?: string;
+
+    @ApiPropertyOptional({ example: 'Variante B' })
+    @IsOptional()
+    @MaxLength(100)
+    nombre?: string;
 }
 ```
 

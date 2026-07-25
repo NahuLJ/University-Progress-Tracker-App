@@ -2,7 +2,7 @@ import { cn } from '../../utils/cn';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     loading?: boolean;
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'warning' | 'success';
     size?: 'sm' | 'md' | 'lg';
 }
 
@@ -21,6 +21,8 @@ export function Button({
         outline: 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-neon-cyan',
         ghost: 'text-slate-300 hover:bg-white/5 hover:text-white',
         danger: 'border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)]',
+        warning: 'border-2 border-neon-yellow/60 text-neon-yellow bg-transparent hover:bg-neon-yellow/10 hover:shadow-[0_0_10px_rgba(251,146,60,0.8)]',
+        success: 'border-2 border-neon-green/60 text-neon-green bg-transparent hover:bg-neon-green/10 hover:shadow-[0_0_10px_rgba(34,197,94,0.8)]',
     };
 
     const sizes = {

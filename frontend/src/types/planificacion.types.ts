@@ -70,3 +70,9 @@ export interface MateriaDesbloqueable {
         estado: 'Pendiente' | 'En Proceso' | 'Completada';
     }[];
 }
+
+export interface ActualizarPeriodoDto {
+    anio?: number;
+    instancia?: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
+    nombre?: string;
+}

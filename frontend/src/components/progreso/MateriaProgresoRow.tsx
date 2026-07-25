@@ -140,6 +140,7 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
                         <div className="flex justify-end gap-3">
                             <Button variant="ghost" onClick={() => setModalReset(false)}>Cancelar</Button>
                             <Button
+                                variant="danger"
                                 onClick={() => {
                                     handleSave({ estado: 'Pendiente' });
                                     setModalReset(false);

@@ -4,7 +4,7 @@ import { planificacionService } from '../services/planificacion.service';
 import { usePlanificacionStore } from '../store/planificacion.store';
 import { useNotificationStore } from '../store/notification.store';
 import { useProgreso } from './useProgreso';
-import type { CrearPeriodoDto, MateriaEnCelda } from '../types/planificacion.types';
+import type { ActualizarPeriodoDto, CrearPeriodoDto, MateriaEnCelda } from '../types/planificacion.types';
 import { horasAsignadas } from '../types/planificacion.types';
 
 export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: number | null) {
@@ -182,12 +182,29 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
         },
     });
 
+    const actualizarPeriodoMutation = useMutation({
+        mutationFn: (data: ActualizarPeriodoDto) => {
+            const periodoId = store.periodoActivo?.periodoId;
+            if (!periodoId) throw new Error('No hay período activo');
+            return planificacionService.actualizarPeriodo(periodoId, data);
+        },
+        onSuccess: (actualizado) => {
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+            usePlanificacionStore.getState().setPeriodoActivo(actualizado);
+            addNotification('Período actualizado', 'success');
+        },
+        onError: () => {
+            addNotification('Error al actualizar el período', 'error');
+        },
+    });
+
     return {
         periodos,
         periodosLoading,
         periodosError: periodosError,
         crearPeriodo: crearPeriodoMutation,
         guardar: guardarMutation,
+        actualizarPeriodo: actualizarPeriodoMutation,
         cargarPeriodo,
         materiasDesbloqueables,
         store,

@@ -333,7 +333,7 @@ export class UsuariosService {
     async eliminarCarreraDefinitivamente(usuarioId: number, usuarioCarreraId: number): Promise<void> {
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId, usuario: { usuarioId } },
-            relations: { carrera: true, progresos: true, periodos: { materiasPlanificadas: true } },
+            relations: { carrera: true, progresos: { materia: true }, periodos: { materiasPlanificadas: true } },
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 

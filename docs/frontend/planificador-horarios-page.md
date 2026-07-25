@@ -10,7 +10,8 @@
 
 ```
 pages/
-└── PlanificacionPage.tsx        # orquesta períodos + calendario (carrera activa vía useCarreraActiva())
+├── PlanificacionesPage.tsx      # lista de planificaciones (cards + paginación) + botón "+ Nueva planificación"
+├── PlanificacionPage.tsx        # editor de período activo (carrera activa vía useCarreraActiva())
 
 components/planificacion/
 ├── CalendarioSemanal.tsx        # flex: sidebar materias disponibles (izq) + grilla horaria (der)
@@ -18,6 +19,7 @@ components/planificacion/
 ├── MateriaPlanificadaChip.tsx   # chip draggable: código + nombre + botón quitar
 ├── MateriaDisponibleList.tsx    # sidebar draggable con materias pendientes (muestra horas restantes)
 ├── NuevoPeriodoModal.tsx        # formulario para crear período (año/instancia/nombre)
+├── EditarPeriodoModal.tsx       # formulario para editar período (año/instancia/nombre) - reutiliza schema
 ├── PlanificacionTabs.tsx        # tabs por período + botón "+ Nueva"
 └── Extras.tsx                   # MateriasDesbloqueablesList
 
@@ -25,15 +27,15 @@ components/ui/
 ├── Card.tsx · Modal.tsx · Select.tsx · Button.tsx · Badge.tsx
 
 hooks/
-└── usePlanificacion.ts          # períodos, planEstudios (correlativas), materias del período,
-                                  # desbloqueables (con materiaIds de celdas), guardar, cargar.
-                                  # Recibe usuarioCarreraId + carreraId. Filtra disponibles por correlativas.
+└── usePlanificacion.ts          # períodos (list + paginado), planEstudios, materias del período,
+                                   # desbloqueables, guardar, cargar, actualizarPeriodo, actualizarPeriodo.
+                                   # Recibe usuarioCarreraId + carreraId. Filtra disponibles por correlativas.
 
-services/planificacion.service.ts # listarPeriodos, crearPeriodo, obtenerMateriasDelPeriodo,
-                                   # planificarMateria, obtenerMateriasDesbloqueables (acepta materiaIds), ...
+services/planificacion.service.ts # listarPeriodos, listarPeriodosPaginado, crearPeriodo, actualizarPeriodo,
+                                   # obtenerMateriasDelPeriodo, planificarMateria, obtenerMateriasDesbloqueables (acepta materiaIds), ...
 
 store/planificacion.store.ts      # zustand (devtools): período activo, celdas, materias, dirty.
-                                  # resetCeldas() para descartar sin limpiar materiasDisponibles.
+                                   # resetCeldas() para descartar sin limpiar materiasDisponibles.
 ```
 
 > **Estado:** `PlanificacionPage` resuelve la carrera activa con `useCarreraActiva()` (empty state si no
@@ -114,6 +116,7 @@ se agrega a `removidas` si estaba persistida. Si el destino está ocupado, evicc
   filtrando disponibles por `horasAsignadas < cargaHoraria` (materias parcialmente planificadas
   permanecen disponibles).
 - `crearPeriodo` (mutation).
+- `actualizarPeriodo` (mutation): PATCH `/api/planificacion/periodos/:id` con los datos editados.
 - `guardar` (mutation): primero ejecuta DELETE de `removidas` (secuencial), luego POST de
   asignaciones nuevas (secuencial). Al completar, actualiza los `planificacionId` de las celdas
   nuevas con los IDs reales devueltos por el backend, evitando re-POST en guardados posteriores.
@@ -151,6 +154,14 @@ ocupadas y vacías. Los textos de los chips tienen `truncate` para no desbordar.
 
 Formulario RHF + Zod: `anio` (2020–2030), `instancia` (Verano / 1er Cuatrimestre / 2do Cuatrimestre),
 `nombre` opcional. Al confirmar llama a `crearPeriodo`.
+
+### EditarPeriodoModal
+
+Formulario RHF + Zod idéntico a `NuevoPeriodoModal`, pero pre-cargado con los datos del período
+activo (`anio`, `instancia`, `nombre`). El título del modal es "Editar planificación" y el botón de
+envío dice "Guardar cambios" (variante `warning` = amarillo). Al confirmar llama a
+`actualizarPeriodo(periodoId, data)` (PATCH `/api/planificacion/periodos/:id`) y recarga el
+período activo para reflejar los cambios en el header.
 
 ### MateriaDisponibleList
 

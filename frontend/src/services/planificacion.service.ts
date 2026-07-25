@@ -7,7 +7,9 @@ import type {
     CrearPeriodoDto,
     PlanificarMateriaDto,
     MateriaDesbloqueable,
+    ActualizarPeriodoDto,
 } from '../types/planificacion.types';
+import type { PaginatedResponse } from '../types/api.types';
 
 export const planificacionService = {
     async obtenerMateriasDisponibles(usuarioCarreraId: number): Promise<MateriaEnCelda[]> {
@@ -31,8 +33,24 @@ export const planificacionService = {
         return response.data;
     },
 
+    async listarPeriodosPaginado(
+        usuarioCarreraId: number,
+        page: number = 1,
+        limit: number = 12,
+    ): Promise<PaginatedResponse<PeriodoPlanificacion>> {
+        const response = await api.get('/planificacion/periodos-paginado', {
+            params: { usuarioCarreraId, page, limit },
+        });
+        return response.data;
+    },
+
     async crearPeriodo(data: CrearPeriodoDto): Promise<PeriodoPlanificacion> {
         const response = await api.post('/planificacion/periodos', data);
+        return response.data;
+    },
+
+    async actualizarPeriodo(id: number, data: ActualizarPeriodoDto): Promise<PeriodoPlanificacion> {
+        const response = await api.patch(`/planificacion/periodos/${id}`, data);
         return response.data;
     },
 

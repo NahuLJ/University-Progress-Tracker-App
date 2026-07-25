@@ -26,7 +26,7 @@ export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraNo
                     <button
                         type="button"
                         onClick={() => { onSuccess(); onClose(); }}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-yellow/60 text-neon-yellow bg-transparent hover:bg-neon-yellow/10 hover:shadow-[0_0_10px_rgba(251,146,60,0.8)] transition-all"
                     >
                         Desinscribirme
                     </button>

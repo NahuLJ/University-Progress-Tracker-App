@@ -10,7 +10,7 @@ const NAV_ITEMS = [
     { to: '/dashboard', label: 'Dashboard', icon: 'chart' as const },
     { to: '/carreras', label: 'Carreras', icon: 'school' as const },
     { to: '/progreso', label: 'Progreso', icon: 'graduation' as const },
-    { to: '/planificacion', label: 'Planificación', icon: 'calendar' as const },
+    { to: '/planificaciones', label: 'Planificación', icon: 'calendar' as const },
     { to: '/admin', label: 'Admin', icon: 'briefcase' as const },
 ];
 

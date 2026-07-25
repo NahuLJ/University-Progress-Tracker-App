@@ -9,6 +9,7 @@ export const CarreraDetailPage = lazy(() =>
     import('../pages/CarreraDetailPage').then((m) => ({ default: m.CarreraDetailPage })),
 );
 export const ProgresoPage = lazy(() => import('../pages/ProgresoPage'));
+export const PlanificacionesPage = lazy(() => import('../pages/PlanificacionesPage'));
 export const PlanificacionPage = lazy(() => import('../pages/PlanificacionPage'));
 export const AdminPage = lazy(() =>
     import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })),

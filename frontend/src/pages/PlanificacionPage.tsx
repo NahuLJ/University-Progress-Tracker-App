@@ -1,37 +1,65 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Modal } from '../components/ui/Modal';
 import { CalendarioSemanal } from '../components/planificacion/CalendarioSemanal';
-import { NuevoPeriodoModal } from '../components/planificacion/NuevoPeriodoModal';
-import { PlanificacionTabs } from '../components/planificacion/PlanificacionTabs';
 import { usePlanificacion } from '../hooks/usePlanificacion';
+import { usePlanificacionStore } from '../store/planificacion.store';
 import { useCarreraActiva } from '../hooks/useCarreras';
 import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { MateriasDesbloqueablesList } from '../components/planificacion/Extras';
+import { planificacionService } from '../services/planificacion.service';
+import { useNotificationStore } from '../store/notification.store';
+import { EditarPeriodoModal } from '../components/planificacion/EditarPeriodoModal';
 
 export function PlanificacionPage() {
+    const { id } = useParams<{ id: string }>();
+    const periodoId = id ? parseInt(id, 10) : null;
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const addNotification = useNotificationStore((s) => s.addNotification);
+
     const { usuarioCarreraId, carreraActiva, isLoading: cargandoCarrera } = useCarreraActiva();
     const carreraId = carreraActiva?.carreraId ?? null;
-    const queryClient = useQueryClient();
 
     const {
         periodos,
         periodosLoading,
         periodosError,
-        crearPeriodo,
         guardar,
         cargarPeriodo,
         materiasDesbloqueables,
         store,
     } = usePlanificacion(usuarioCarreraId, carreraId);
 
-    const [mostrarNuevoPeriodo, setMostrarNuevoPeriodo] = useState(false);
     const [mostrarDescarte, setMostrarDescarte] = useState(false);
+    const [mostrarEditar, setMostrarEditar] = useState(false);
+    const [mostrarDescartarCambios, setMostrarDescartarCambios] = useState(false);
+
+    const periodoActivo = store.periodoActivo;
+    const periodoExiste = periodos?.some((p) => p.periodoId === periodoId);
+
+    useEffect(() => {
+        if (!periodosLoading && periodos && periodoId && !isNaN(periodoId)) {
+            cargarPeriodo(periodoId);
+        }
+    }, [periodosLoading, periodos, periodoId, cargarPeriodo]);
+
+    useEffect(() => {
+        return () => {
+            usePlanificacionStore.getState().limpiarStore();
+        };
+    }, []);
+
+    const handleEditar = () => {
+        if (periodoActivo) {
+            setMostrarEditar(true);
+        }
+    };
 
     if (cargandoCarrera || periodosLoading) {
         return <PlanificacionSkeleton />;
@@ -47,105 +75,155 @@ export function PlanificacionPage() {
     }
 
     if (!usuarioCarreraId) {
-        return <EmptyState
-            iconName="calendar"
-            title="No tenés carreras registradas"
-            description="Inscribite a una carrera para planificar tus horarios."
-            action={<Link to="/carreras" className="btn-primary">Ver carreras</Link>}
-        />;
+        return (
+            <EmptyState
+                iconName="calendar"
+                title="No tenés carreras registradas"
+                description="Inscribite a una carrera para planificar tus horarios."
+                action={
+                    <Button onClick={() => navigate('/carreras')}>
+                        Ver carreras
+                    </Button>
+                }
+            />
+        );
     }
 
-    const periodoActivo = store.periodoActivo;
-    const periodoId = periodoActivo?.periodoId;
+    if (!periodoId || isNaN(periodoId) || (periodos && !periodoExiste)) {
+        return (
+            <EmptyState
+                iconName="calendar"
+                title="Planificación no encontrada"
+                description="La planificación que buscás no existe o fue eliminada."
+                action={
+                    <Button onClick={() => navigate('/planificaciones')}>
+                        Volver a planificaciones
+                    </Button>
+                }
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Planificación de Horarios</h1>
-                <Button onClick={() => setMostrarNuevoPeriodo(true)}>+ Nueva planificación</Button>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/planificaciones')}
+                        className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                        title="Volver a planificaciones"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold">
+                            {periodoActivo?.anio} {periodoActivo?.instancia}
+                            {periodoActivo?.nombre && ` - ${periodoActivo.nombre}`}
+                        </h1>
+                        <p className="text-sm text-slate-400">
+                            {carreraActiva?.carrera?.nombre ?? ''}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="warning"
+                        onClick={handleEditar}
+                        className="text-sm"
+                    >
+                        Editar período
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={() => setMostrarDescarte(true)}
+                        className="text-sm"
+                    >
+                        Eliminar período
+                    </Button>
+                </div>
             </div>
 
-            {!periodos || periodos.length === 0 ? (
-                <EmptyState
-                    iconName="calendar"
-                    title="No hay planificaciones"
-                    description="Creá una planificación para comenzar a organizar tus horarios de clase."
-                />
-            ) : (
-                <>
-                    <PlanificacionTabs
-                        periodos={periodos}
-                        periodoActivo={periodoActivo}
-                        onSelect={cargarPeriodo}
-                    />
+            <Card>
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-semibold">Planificación de horarios</h2>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setMostrarDescartarCambios(true)}
+                                disabled={!store.dirty}
+                            >
+                                Descartar cambios
+                            </Button>
+                            <Button
+                                onClick={() => periodoId && guardar.mutate(periodoId)}
+                                loading={guardar.isPending}
+                                disabled={!store.dirty}
+                            >
+                                Guardar planificación
+                            </Button>
+                        </div>
+                    </div>
 
-                    {!periodoActivo && (
-                        <EmptyState
-                            iconName="calendar"
-                            title="Seleccioná una planificación"
-                            description="Elegí un período de planificación de los tabs de arriba para comenzar a organizar tus horarios."
-                        />
-                    )}
+                    <div className={`bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3 transition-opacity ${store.dirty ? 'opacity-100' : 'opacity-0'}`}>
+                        <p className="text-sm text-neon-yellow">
+                            ✅ Tenés cambios sin guardar
+                        </p>
+                    </div>
+                </div>
+            </Card>
 
-                    {periodoActivo && (
-                        <>
-                            <Card>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <h2 className="text-lg font-semibold">
-                                            {periodoActivo.anio} {periodoActivo.instancia}
-                                            {periodoActivo.nombre && ` - ${periodoActivo.nombre}`}
-                                        </h2>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setMostrarDescarte(true)}
-                                                disabled={!store.dirty}
-                                            >
-                                                Descartar cambios
-                                            </Button>
-                                            <Button
-                                                onClick={() => periodoId && guardar.mutate(periodoId)}
-                                                loading={guardar.isPending}
-                                                disabled={!store.dirty}
-                                            >
-                                                Guardar planificación
-                                            </Button>
-                                        </div>
-                                    </div>
+            <CalendarioSemanal />
 
-                                    <div className={`bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3 transition-opacity ${store.dirty ? 'opacity-100' : 'opacity-0'}`}>
-                                        <p className="text-sm text-neon-yellow">
-                                            ✅ Tenés cambios sin guardar
-                                        </p>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <CalendarioSemanal />
-
-                            {materiasDesbloqueables.length > 0 && (
-                                <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
-                            )}
-                        </>
-                    )}
-                </>
+            {materiasDesbloqueables.length > 0 && (
+                <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
             )}
 
             <Modal
                 isOpen={mostrarDescarte}
                 onClose={() => setMostrarDescarte(false)}
-                title="Descartar cambios"
+                title="Eliminar período"
                 size="sm"
             >
-                <p className="text-slate-300 mb-6">¿Descartar cambios sin guardar? Los cambios realizados se perderán.</p>
+                <p className="text-slate-300 mb-6">¿Eliminar esta planificación? Los cambios realizados se perderán.</p>
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setMostrarDescarte(false)}>
                         Cancelar
                     </Button>
                     <Button
+                        variant="danger"
                         onClick={() => {
+                            if (!periodoId) return;
                             setMostrarDescarte(false);
+                            void planificacionService.eliminarPeriodo(periodoId).then(() => {
+                                queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+                                addNotification('Período eliminado', 'success');
+                                navigate('/planificaciones');
+                            });
+                        }}
+                    >
+                        Eliminar
+                    </Button>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={mostrarDescartarCambios}
+                onClose={() => setMostrarDescartarCambios(false)}
+                title="Descartar cambios"
+                size="sm"
+            >
+                <p className="text-slate-300 mb-6">¿Descartar cambios sin guardar? Los cambios realizados se perderán.</p>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setMostrarDescartarCambios(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setMostrarDescartarCambios(false);
                             store.resetCeldas();
                             if (periodoId) cargarPeriodo(periodoId);
                         }}
@@ -155,18 +233,25 @@ export function PlanificacionPage() {
                 </div>
             </Modal>
 
-            <NuevoPeriodoModal
-                isOpen={mostrarNuevoPeriodo}
-                onClose={() => setMostrarNuevoPeriodo(false)}
+            <EditarPeriodoModal
+                isOpen={mostrarEditar}
+                onClose={() => setMostrarEditar(false)}
                 onSuccess={(data) => {
-                    setMostrarNuevoPeriodo(false);
-                    crearPeriodo.mutate({
-                        usuarioCarreraId,
-                        anio: data.anio,
-                        instancia: data.instancia,
-                        nombre: data.nombre,
+                    if (!periodoId) return;
+                    planificacionService.actualizarPeriodo(periodoId, data).then(() => {
+                        queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+                        addNotification('Período actualizado', 'success');
+                        setMostrarEditar(false);
+                        if (periodoActivo?.periodoId) {
+                            cargarPeriodo(periodoActivo.periodoId);
+                        }
                     });
                 }}
+                initialData={periodoActivo ? {
+                    anio: periodoActivo.anio,
+                    instancia: periodoActivo.instancia as 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre',
+                    nombre: periodoActivo.nombre ?? '',
+                } : null}
             />
         </div>
     );
@@ -177,9 +262,12 @@ export default PlanificacionPage;
 function PlanificacionSkeleton() {
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-10 w-32" />
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-9 w-9 rounded-lg" />
+                <div>
+                    <Skeleton className="h-8 w-64" />
+                    <Skeleton className="h-4 w-48 mt-1" />
+                </div>
             </div>
             <Card>
                 <div className="space-y-4">

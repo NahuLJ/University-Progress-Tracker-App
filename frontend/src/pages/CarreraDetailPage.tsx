@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/ui/Skeleton';
+import { Button } from '../components/ui/Button';
 import { PlanEstudiosTree } from '../components/carrera/PlanEstudiosTree';
 import { MateriaDetailModal } from '../components/carrera/MateriaDetailModal';
 import { InscribirCarreraModal } from '../components/carrera/InscribirCarreraModal';
@@ -49,11 +50,6 @@ export function CarreraDetailPage() {
     } = usePlanEstudios(parseInt(id!), inscripcionActual?.usuarioCarreraId);
 
     const queryClient = useQueryClient();
-
-    const handleAbrirDesinscribir = () => {
-        if (!inscripcionActual || !planEstudios) return;
-        setMostrarDesinscribirModal(true);
-    };
 
     const handleDesinscribirConfirmado = () => {
         if (!inscripcionActual) return;
@@ -130,7 +126,7 @@ export function CarreraDetailPage() {
                 <Icon name="arrowLeft" className="w-5 h-5" />
                 <span>Volver a carreras</span>
             </button>
-            <Card>
+<Card>
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <h1 className="text-2xl font-bold mb-2">{planEstudios.carrera.nombre}</h1>
@@ -145,22 +141,6 @@ export function CarreraDetailPage() {
                                 <p className="text-sm text-slate-400">
                                     Fecha: {new Date(inscripcionActual?.fechaInicio || '').toLocaleDateString('es-AR')}
                                 </p>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleAbrirDesinscribir}
-                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
-                                    >
-                                        Desinscribirse
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleEliminarDefinitivo(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
-                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
                             </div>
                         ) : desinscripto ? (
                             <div className="flex flex-col items-end gap-2">
@@ -170,31 +150,14 @@ export function CarreraDetailPage() {
                                 <p className="text-sm text-slate-400">
                                     Fecha: {new Date(inscripcionActual?.fechaInicio || '').toLocaleDateString('es-AR')}
                                 </p>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleReactivar(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
-                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
-                                    >
-                                        Volver a inscribirse
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleEliminarDefinitivo(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
-                                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
-                                    >
-                                        Eliminar definitivamente
-                                    </button>
-                                </div>
                             </div>
                         ) : (
-                            <button
-                                type="button"
+                            <Button
+                                variant="success"
                                 onClick={() => setMostrarInscribirModal(true)}
-                                className="px-4 py-2 text-base font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
                             >
                                 Inscribirse a esta carrera
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -204,6 +167,43 @@ export function CarreraDetailPage() {
                         {planEstudios.anios.length} años de estudios
                         • {planEstudios.anios.reduce((acc: number, anio: { cuatrimestres: any[] }) => acc + anio.cuatrimestres.reduce((acc2: number, cuat: { materias: any[] }) => acc2 + cuat.materias.length, 0), 0)} materias totales
                         • {planEstudios.carrera.creditosTotales} créditos totales
+                    </div>
+                    <div className="flex gap-2">
+                        {inscripto ? (
+                            <>
+                                <Button
+                                    variant="warning"
+                                    onClick={() => setMostrarDesinscribirModal(true)}
+                                    className="text-sm"
+                                >
+                                    Desinscribirse
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    onClick={() => handleEliminarDefinitivo(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
+                                    className="text-sm"
+                                >
+                                    Eliminar
+                                </Button>
+                            </>
+                        ) : desinscripto ? (
+                            <>
+                                <Button
+                                    variant="warning"
+                                    onClick={() => handleReactivar(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
+                                    className="text-sm"
+                                >
+                                    Volver a inscribirse
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    onClick={() => handleEliminarDefinitivo(inscripcionActual!.usuarioCarreraId, planEstudios.carrera.nombre)}
+                                    className="text-sm"
+                                >
+                                    Eliminar definitivamente
+                                </Button>
+                            </>
+                        ) : null}
                     </div>
                 </div>
             </Card>
@@ -379,7 +379,7 @@ export function CarreraDetailPage() {
             <button
                 type="button"
                 onClick={handleReactivarConfirmed}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-yellow/60 text-neon-yellow bg-transparent hover:bg-neon-yellow/10 hover:shadow-[0_0_10px_rgba(251,146,60,0.8)] transition-all"
             >
                 Confirmar
             </button>

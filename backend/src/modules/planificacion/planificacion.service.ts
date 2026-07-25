@@ -14,6 +14,7 @@ import { Correlativa } from '../materias/entities/correlativa.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
 import { CrearPeriodoDto } from './dto/crear-periodo.dto';
+import { ActualizarPeriodoDto } from './dto/actualizar-periodo.dto';
 import { PlanificarMateriaDto } from './dto/planificar-materia.dto';
 
 @Injectable()
@@ -47,6 +48,28 @@ export class PlanificacionService {
     });
   }
 
+  async listarPeriodosPaginado(
+    usuarioCarreraId: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: PeriodoPlanificacion[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const [data, total] = await this.periodoRepo.findAndCount({
+      where: { usuarioCarrera: { usuarioCarreraId } },
+      relations: { materiasPlanificadas: { materia: true, bloque: true } },
+      order: { anio: 'DESC', instancia: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
+  }
+
   async crearPeriodo(dto: CrearPeriodoDto): Promise<PeriodoPlanificacion> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId: dto.usuarioCarreraId },
@@ -60,6 +83,23 @@ export class PlanificacionService {
       nombre: dto.nombre,
     });
     return await this.periodoRepo.save(periodo);
+  }
+
+  async actualizarPeriodo(
+    id: number,
+    dto: ActualizarPeriodoDto,
+  ): Promise<PeriodoPlanificacion> {
+    const periodo = await this.periodoRepo.findOne({
+      where: { periodoId: id },
+      relations: { materiasPlanificadas: { materia: true, bloque: true } },
+    });
+    if (!periodo) throw new NotFoundException('Período no encontrado');
+
+    if (dto.anio !== undefined) periodo.anio = dto.anio;
+    if (dto.instancia !== undefined) periodo.instancia = dto.instancia;
+    if (dto.nombre !== undefined) periodo.nombre = dto.nombre;
+
+    return this.periodoRepo.save(periodo);
   }
 
   async eliminarPeriodo(id: number): Promise<void> {
