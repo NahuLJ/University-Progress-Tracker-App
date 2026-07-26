@@ -59,7 +59,12 @@ export function ProgresoPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Progreso Académico</h1>
+            <div>
+                <h1 className="text-2xl font-bold">Progreso Académico</h1>
+                <p className="text-sm text-slate-400 mt-1">
+                    Gestioná las materias que estás cursando, en progreso o completadas, y actualizá sus estados y notas.
+                </p>
+            </div>
 
             {resumenCarreras && resumenCarreras.length > 1 && (
                 <CarrerasResumenList

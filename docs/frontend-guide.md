@@ -76,7 +76,10 @@ frontend/
     │   ├── CarrerasPage.tsx      # delega a components/carrera/CarrerasPage
     │   ├── CarreraDetailPage.tsx # plan de estudios de una carrera
     │   ├── ProgresoPage.tsx
-    │   ├── PlanificacionPage.tsx
+    │   ├── PlanificacionesPage.tsx # lista de planificaciones independientes
+    │   ├── PlanificacionPage.tsx   # detalle de una planificación (calendario)
+    │   ├── TrayectoriasPage.tsx    # lista de trayectorias
+    │   ├── TrayectoriaPage.tsx     # detalle de una trayectoria (timeline + árbol)
     │   └── AdminPage.tsx          # tabs Carreras | Materias | Plan | Correlativas (uso admin)
     │
     ├── components/
@@ -124,8 +127,9 @@ frontend/
     │   │   ├── BloqueHorarioCelda.tsx    # celda drop zone (HTML5 drag & drop)
     │   │   ├── MateriaPlanificadaChip.tsx
     │   │   ├── MateriaDisponibleList.tsx
-    │   │   ├── NuevoPeriodoModal.tsx
+    │   │   ├── NuevoPeriodoModal.tsx     # creación de períodos (también sucesivos con trayectoriaId/planificacionOrigenId)
     │   │   ├── PlanificacionTabs.tsx
+    │   │   ├── ArbolTrayectoria.tsx      # árbol de bifurcaciones de una trayectoria
     │   │   ├── PeriodoSelector.tsx      # (definido, no usado en PlanificacionPage)
     │   │   └── Extras.tsx               # LeyendaHorarios, VistaSemanalHeader, VistaHorariosHeader, MateriasDesbloqueablesList
     │   │
@@ -140,6 +144,7 @@ frontend/
     │   ├── useProgreso.ts        # useQuery + useMutation + filtros (estado/búsqueda)
     │   ├── useDashboard.ts       # carreras + resumen/distribucion/evolucion
     │   ├── usePlanificacion.ts   # períodos, materias del período, desbloqueables, guardar
+    │   ├── useTrayectoria.ts     # trayectorias list + mutations + useArbolTrayectoria
     │   ├── useAdminCarreras.ts   # crearCarrera + agregarMateriaAlPlan (mutations)
     │   └── useAdminMaterias.ts   # listar/crear materias, asignar/quitar correlativas
     │
@@ -162,7 +167,8 @@ frontend/
     │   ├── sidebar.store.ts      # zustand + persist: sidebar collapsed
     │   ├── carrera.store.ts      # zustand + persist: usuarioCarreraId seleccionado
     │   ├── notification.store.ts # zustand: notificaciones del snackbar (add/remove + auto-dismiss)
-    │   └── planificacion.store.ts# zustand + devtools: período activo, celdas, materias, dirty
+    │   ├── planificacion.store.ts# zustand + devtools: período activo, celdas, materias, dirty
+    │   └── trayectoria.store.ts  # zustand: trayectoriaActiva, arbol
     │
     ├── types/
     │   ├── api.types.ts
@@ -243,14 +249,17 @@ Se usa RHF + Zod en: `useAuthForm` (login/registro), `MateriaProgresoRow` (estad
 Definidas en `routes/index.tsx` con `createBrowserRouter` (React Router 7).
 
 | Ruta | Página | Descripción | Acceso |
-|---|---|---|---|
+|---|---|---|---|---|
 | `/login` | `LoginPage` | Email + password. Redirige a `/dashboard` si ya hay sesión. | Público |
 | `/registro` | `RegisterPage` | Registro de usuario (RHF + Zod). | Público |
 | `/dashboard` | `DashboardPage` | Tarjetas de resumen + gráficos + carreras. | Privado |
 | `/carreras` | `CarrerasPage` | Catálogo de carreras; solo "Ver plan de estudios" por card. | Privado |
 | `/carreras/:id` | `CarreraDetailPage` | Plan de estudios (toggle árbol/tabla entre cards; botones Expandir/Contraer todo en header de "Plan de estudios" en vista árbol) + acciones inscribir/desinscribir/eliminar. | Privado |
 | `/progreso` | `ProgresoPage` | Progreso académico con edición de estado/nota/tipo. | Privado |
-| `/planificacion` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
+| `/planificaciones` | `PlanificacionesPage` | Listado de planificaciones independientes (sin trayectoria). | Privado |
+| `/planificacion/:id` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
+| `/trayectorias` | `TrayectoriasPage` | Listado de trayectorias de la carrera activa. | Privado |
+| `/trayectoria/:id` | `TrayectoriaPage` | Detalle de trayectoria: timeline + árbol de bifurcaciones. | Privado |
 | `/admin` | `AdminPage` | Administración: crear carreras, materias y correlativas. | Privado |
 
 > Nota: `/admin` no aplica aún guard de rol (backend aún sin `RolesGuard`); cualquier usuario autenticado puede acceder.

@@ -84,7 +84,7 @@ opcional). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['m
 ### PlanEstudiosAdmin
 1. `Select` de carrera (datos reales de `obtenerCarrerasDisponibles`).
 2. `Card` izquierda: árbol Año→Cuatrimestre con las materias del plan (`obtenerPlanEstudios`) y la
-   cantidad de correlativas por materia.
+   cantidad de correlativas por materia. El título "Materias en el plan" incluye un chip neon-cyan con el total de materias.
 3. `Card` derecha: elige una materia del catálogo que **no** esté ya en el plan + `anio`/`cuatrimestre`/
    `orden`, y llama `agregarMateriaAlPlan`. Al éxito, invalida la query del plan.
 
@@ -93,7 +93,7 @@ opcional). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['m
    Si se deja en "Global", las correlativas aplican a todas las carreras (`carrera_id = NULL`).
 2. `Select` de materia del catálogo.
 3. Muestra sus correlativas actuales (vía `obtenerMateria` con `carreraId` opcional) con botón "Quitar"
-   (`eliminarCorrelativa` con `carreraId` opcional).
+   (`eliminarCorrelativa` con `carreraId` opcional). El título "Correlativas actuales" incluye un chip neon-cyan con el total.
 4. `Select` de "materia correlativa" (filtra la propia y las ya asignadas) + botón "Asignar correlativa"
    (`asignarCorrelativa` con `carreraId` opcional). Previene auto-referencia y duplicados (el backend también lo rechaza).
 

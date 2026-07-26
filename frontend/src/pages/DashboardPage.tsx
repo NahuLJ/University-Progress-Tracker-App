@@ -52,7 +52,12 @@ export function DashboardPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <div>
+                    <h1 className="text-2xl font-bold">Dashboard</h1>
+                    <p className="text-sm text-slate-400 mt-1">
+                        Resumen general de tu progreso académico, promedios y tiempo estimado restante.
+                    </p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">

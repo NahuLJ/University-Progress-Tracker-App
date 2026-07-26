@@ -11,6 +11,7 @@ import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Carrera } from './carrera.entity';
 import { ProgresoMateria } from '../../progreso/entities/progreso-materia.entity';
 import { PeriodoPlanificacion } from '../../planificacion/entities/periodo-planificacion.entity';
+import { Trayectoria } from '../../trayectoria/entities/trayectoria.entity';
 
 @Entity('usuario_carrera')
 @Unique(['usuario', 'carrera'])
@@ -40,4 +41,7 @@ export class UsuarioCarrera {
 
   @OneToMany(() => PeriodoPlanificacion, (pp) => pp.usuarioCarrera)
   periodos: PeriodoPlanificacion[];
+
+  @OneToMany(() => Trayectoria, (t) => t.usuarioCarrera)
+  trayectorias: Trayectoria[];
 }

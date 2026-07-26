@@ -60,6 +60,7 @@ backend/
     │   ├── materias/            # MateriasModule, MateriasController, MateriasService
     │   ├── progreso/            # ProgresoModule, ProgresoController, ProgresoService
     │   ├── planificacion/       # PlanificacionModule, PlanificacionController, PlanificacionService
+    │   ├── trayectoria/         # TrayectoriaModule, TrayectoriaController, TrayectoriaService
     │   └── estadisticas/        # EstadisticasModule, EstadisticasController, EstadisticasService
     └── database/
         └── seeds/
@@ -79,8 +80,9 @@ backend/
 | 3 | Usuarios (perfil + carreras) | ✅ UsuariosModule completo |
 | 4 | Carreras y Materias + Correlativas | ✅ CarrerasModule + MateriasModule |
 | 5 | Progreso y Notas | ✅ ProgresoModule con validación de correlativas |
-| 6 | Planificador de Horarios | ✅ PlanificacionModule con detección de conflictos |
-| 7 | Estadísticas | ✅ EstadisticasModule con resumen, distribución y evolución |
+| 6 | Planificador de Horarios | ✅ PlanificacionModule con detección de conflictos (soporte trayectoria, IsNull, fork) |
+| 7 | Trayectorias | ✅ TrayectoriaModule, fork/bifurcación, árbol, cascada |
+| 8 | Estadísticas | ✅ EstadisticasModule con resumen, distribución y evolución |
 
 ---
 

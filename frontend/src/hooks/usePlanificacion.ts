@@ -22,11 +22,26 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
         enabled: !!usuarioCarreraId,
     });
 
+    const periodoActivoStore = store.periodoActivo;
+    const periodoActual = useMemo(() => {
+        if (!periodoActivoStore?.periodoId || !periodos) return null;
+        return periodos.find((p) => p.periodoId === periodoActivoStore.periodoId) ?? null;
+    }, [periodos, periodoActivoStore?.periodoId]);
+
+    const disponiblesKey = [
+        'planificacion', 'disponibles', usuarioCarreraId,
+        periodoActual?.trayectoriaId, periodoActual?.periodoId,
+    ];
+
     const { data: materiasDisponiblesData } = useQuery({
-        queryKey: ['planificacion', 'disponibles', usuarioCarreraId],
+        queryKey: disponiblesKey,
         queryFn: () => {
             if (!usuarioCarreraId) return [];
-            return planificacionService.obtenerMateriasDisponibles(usuarioCarreraId);
+            return planificacionService.obtenerMateriasDisponibles(
+                usuarioCarreraId,
+                periodoActual?.trayectoriaId ?? undefined,
+                periodoActual?.periodoId ?? undefined,
+            );
         },
         enabled: !!usuarioCarreraId,
     });

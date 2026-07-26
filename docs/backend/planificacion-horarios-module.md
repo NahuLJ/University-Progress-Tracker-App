@@ -5,17 +5,26 @@
 
 ## Endpoints de la API
 
-### GET /api/planificacion/periodos?usuarioCarreraId=:id
+### GET /api/planificacion/periodos?usuarioCarreraId=:id&independientes=:bool
 
 Lista todos los períodos de planificación creados por el usuario para una carrera.
+Parámetro opcional `independientes=true` filtra solo períodos sin `trayectoriaId` (usando `IsNull()` de TypeORM).
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ periodoId, anio, instancia, nombre, materiasPlanificadas: [...] }]` |
+| 200 | `[{ periodoId, anio, instancia, nombre, trayectoriaId, planificacionOrigenId, trayectoria, planificacionOrigen, materiasPlanificadas: [...] }]` |
+
+### GET /api/planificacion/periodos-paginado?usuarioCarreraId=:id&page=:p&limit=:l&independientes=:bool
+
+Versión paginada de `listarPeriodos`. Parámetro opcional `independientes=true` filtra solo períodos sin trayectoria.
+
+| Código | Descripción |
+|---|---|
+| 200 | `{ data: [...], total, page, limit, totalPages }` |
 
 ### POST /api/planificacion/periodos
 
-Crea un nuevo período de planificación.
+Crea un nuevo período de planificación. Si `trayectoriaId` está presente valida orden cronológico; si además `planificacionOrigenId` está presente, la validación solo verifica que el nuevo período sea posterior al origen (fork).
 
 **Request Body:**
 ```json
@@ -23,15 +32,17 @@ Crea un nuevo período de planificación.
     "usuarioCarreraId": 1,
     "anio": 2026,
     "instancia": "1er Cuatrimestre",
-    "nombre": "Variante A"
+    "nombre": "Variante A",
+    "trayectoriaId": 1,
+    "planificacionOrigenId": 3
 }
 ```
 
 | Código | Descripción |
 |---|---|
 | 201 | Período creado |
-| 400 | Error de validación |
-| 404 | Inscripción no encontrada |
+| 400 | Error de validación (orden cronológico, origen no pertenece a la trayectoria, etc.) |
+| 404 | Inscripción / trayectoria / origen no encontrado |
 
 ### DELETE /api/planificacion/periodos/:id
 
@@ -73,12 +84,11 @@ Retorna el catálogo de todos los bloques horarios disponibles (7 bloques de 2 h
 
 ### GET /api/planificacion/periodos/:id/materias
 
-Retorna todas las materias planificadas dentro de un período, agrupadas por día y bloque.
+Retorna todas las materias planificadas dentro de un período, agrupadas por día y bloque. Si el período no existe retorna `[]` (no 404).
 
 | Código | Descripción |
 |---|---|
 | 200 | `[{ planificacionId, materia: { id, nombre, codigo }, bloque: { id, horaInicio, horaFin }, diaSemana }]` |
-| 404 | Período no encontrado |
 
 ### POST /api/planificacion/periodos/:id/materias
 
@@ -112,7 +122,7 @@ Materias que el usuario puede planificar (no completadas, con correlativas cumpl
 
 ### GET /api/planificacion/periodos/:id/materias-desbloqueables
 
-Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas. Devueltas ordenadas alfabéticamente por `nombre`.
+Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas. Devueltas ordenadas alfabéticamente por `nombre`. Si el período no existe retorna `[]` (no 404).
 
 | Parámetro | Tipo | Descripción |
 |---|---|---|
@@ -165,6 +175,16 @@ export class CrearPeriodoDto {
     @IsOptional()
     @MaxLength(100)
     nombre?: string;
+
+    @ApiPropertyOptional({ example: 1 })
+    @IsOptional()
+    @IsInt()
+    trayectoriaId?: number;
+
+    @ApiPropertyOptional({ example: 3 })
+    @IsOptional()
+    @IsInt()
+    planificacionOrigenId?: number;
 }
 ```
 
@@ -244,7 +264,7 @@ export class ActualizarPeriodoDto {
 ### PlanificacionService
 
 ```typescript
-import { Repository, In } from 'typeorm';
+import { Repository, In, IsNull } from 'typeorm';
 
 @Injectable()
 export class PlanificacionService {
@@ -265,12 +285,16 @@ export class PlanificacionService {
         private readonly progresoRepo: Repository<ProgresoMateria>,
         @InjectRepository(CarreraMateria)
         private readonly carreraMateriaRepo: Repository<CarreraMateria>,
+        @InjectRepository(Trayectoria)
+        private readonly trayectoriaRepo: Repository<Trayectoria>,
     ) {}
 
-    async listarPeriodos(usuarioCarreraId: number): Promise<PeriodoPlanificacion[]> {
+    async listarPeriodos(usuarioCarreraId: number, independientes?: boolean): Promise<PeriodoPlanificacion[]> {
+        const where: any = { usuarioCarrera: { usuarioCarreraId } };
+        if (independientes) where.trayectoriaId = IsNull();
         return this.periodoRepo.find({
-            where: { usuarioCarrera: { usuarioCarreraId } },
-            relations: ['materiasPlanificadas', 'materiasPlanificadas.materia', 'materiasPlanificadas.bloque'],
+            where,
+            relations: ['materiasPlanificadas', 'materiasPlanificadas.materia', 'materiasPlanificadas.bloque', 'trayectoria', 'planificacionOrigen'],
             order: { anio: 'DESC', instancia: 'ASC' },
         });
     }
@@ -281,8 +305,34 @@ export class PlanificacionService {
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
+        if (dto.trayectoriaId !== undefined) {
+            const trayectoria = await this.trayectoriaRepo.findOne({
+                where: { trayectoriaId: dto.trayectoriaId },
+            });
+            if (!trayectoria) throw new NotFoundException('Trayectoria no encontrada');
+            if (trayectoria.usuarioCarreraId !== dto.usuarioCarreraId) {
+                throw new BadRequestException('La trayectoria no pertenece a esta inscripción');
+            }
+            await this.validarOrdenCronologico(
+                dto.trayectoriaId, dto.anio, dto.instancia, dto.planificacionOrigenId,
+            );
+            if (dto.planificacionOrigenId !== undefined) {
+                const origen = await this.periodoRepo.findOne({
+                    where: { periodoId: dto.planificacionOrigenId },
+                });
+                if (!origen) throw new NotFoundException('Planificación origen no encontrada');
+                if (origen.trayectoriaId !== dto.trayectoriaId) {
+                    throw new BadRequestException('La planificación origen no pertenece a esta trayectoria');
+                }
+            }
+        } else if (dto.planificacionOrigenId !== undefined) {
+            throw new BadRequestException('Una planificación con origen debe pertenecer a una trayectoria');
+        }
+
         const periodo = this.periodoRepo.create({
-            usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
+            usuarioCarrera: inscripcion,
+            trayectoriaId: dto.trayectoriaId ?? null,
+            planificacionOrigenId: dto.planificacionOrigenId ?? null,
             anio: dto.anio,
             instancia: dto.instancia,
             nombre: dto.nombre || null,
@@ -290,203 +340,39 @@ export class PlanificacionService {
         return this.periodoRepo.save(periodo);
     }
 
-    async eliminarPeriodo(id: number): Promise<void> {
-        const periodo = await this.periodoRepo.findOne({
-            where: { periodoId: id },
-            relations: ['materiasPlanificadas'],
+    private async validarOrdenCronologico(
+        trayectoriaId: number,
+        anio: number,
+        instancia: string,
+        planificacionOrigenId?: number,
+    ): Promise<void> {
+        const anteriores = await this.periodoRepo.find({
+            where: { trayectoriaId },
+            order: { anio: 'DESC', instancia: 'DESC' },
         });
-        if (!periodo) throw new NotFoundException('Período no encontrado');
-
-        await this.materiaPlanificadaRepo.remove(periodo.materiasPlanificadas);
-        await this.periodoRepo.remove(periodo);
-    }
-
-    async listarBloques(): Promise<BloqueHorario[]> {
-        return this.bloqueRepo.find({ order: { horaInicio: 'ASC' } });
-    }
-
-    async obtenerMateriasDelPeriodo(periodoId: number): Promise<MateriaPlanificada[]> {
-        const periodo = await this.periodoRepo.findOne({ where: { periodoId } });
-        if (!periodo) throw new NotFoundException('Período no encontrado');
-
-        return this.materiaPlanificadaRepo.find({
-            where: { periodo: { periodoId } },
-            relations: ['materia', 'bloque'],
-            order: { diaSemana: 'ASC', bloque: { horaInicio: 'ASC' } },
-        });
-    }
-
-    async planificarMateria(periodoId: number, dto: PlanificarMateriaDto): Promise<MateriaPlanificada> {
-        const periodo = await this.periodoRepo.findOne({
-            where: { periodoId },
-            relations: { usuarioCarrera: true },
-        });
-        if (!periodo) throw new NotFoundException('Período no encontrado');
-
-        const materia = await this.materiaRepo.findOne({ where: { materiaId: dto.materiaId } });
-        if (!materia) throw new NotFoundException('Materia no encontrada');
-
-        const bloque = await this.bloqueRepo.findOne({ where: { bloqueId: dto.bloqueId } });
-        if (!bloque) throw new NotFoundException('Bloque horario no encontrado');
-
-        const conflicto = await this.materiaPlanificadaRepo.findOne({
-            where: {
-                periodo: { periodoId },
-                bloque: { bloqueId: dto.bloqueId },
-                diaSemana: dto.diaSemana,
-            },
-        });
-        if (conflicto) {
-            throw new BadRequestException(
-                'El bloque horario ya está ocupado en ese día para este período',
-            );
-        }
-
-        const bloquesAsignados = await this.materiaPlanificadaRepo.count({
-            where: {
-                periodo: { periodoId },
-                materia: { materiaId: dto.materiaId },
-            },
-        });
-        const maxBloques = Math.ceil(materia.cargaHoraria / 2);
-        if (bloquesAsignados + 1 > maxBloques) {
-            throw new BadRequestException(
-                'La materia ya tiene todas sus horas planificadas en este período',
-            );
-        }
-
-        const correlativasCumplidas = await this.validarCorrelativas(
-            periodo.usuarioCarrera.usuarioCarreraId,
-            dto.materiaId,
-            periodo.usuarioCarrera.carrera.carreraId,
-        );
-        if (!correlativasCumplidas) {
-            throw new BadRequestException(
-                'No se puede planificar: existen correlativas pendientes de aprobación',
-            );
-        }
-
-        const planificacion = this.materiaPlanificadaRepo.create({
-            periodo,
-            materia,
-            bloque,
-            diaSemana: dto.diaSemana,
-        });
-        return this.materiaPlanificadaRepo.save(planificacion);
-    }
-
-    async eliminarMateriaPlanificada(id: number): Promise<void> {
-        const planificacion = await this.materiaPlanificadaRepo.findOne({ where: { planificacionId: id } });
-        if (!planificacion) throw new NotFoundException('Materia planificada no encontrada');
-        await this.materiaPlanificadaRepo.remove(planificacion);
-    }
-
-    async obtenerMateriasDesbloqueables(
-        periodoId: number,
-        materiaIds?: number[],
-    ): Promise<Materia[]> {
-        const periodo = await this.periodoRepo.findOne({
-            where: { periodoId },
-            relations: { usuarioCarrera: { carrera: true } },
-        });
-        if (!periodo) throw new NotFoundException('Período no encontrado');
-
-        const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
-        const carreraId = periodo.usuarioCarrera.carrera.carreraId;
-
-        let idsPlanificadas: Set<number>;
-        if (materiaIds !== undefined) {
-            idsPlanificadas = new Set(materiaIds);
-        } else {
-            const planificadas = await this.materiaPlanificadaRepo.find({
-                where: { periodo: { periodoId } },
-                relations: { materia: true },
-            });
-            idsPlanificadas = new Set(planificadas.map((mp) => mp.materia.materiaId));
-        }
-
-        const progresos = await this.progresoRepo.find({
-            where: { usuarioCarrera: { usuarioCarreraId } },
-            relations: { materia: true, estado: true },
-        });
-        const idsCompletadas = new Set(
-            progresos.filter((p) => p.estado.nombre === 'Completada').map((p) => p.materia.materiaId),
-        );
-
-        const idsHipoteticamenteCompletadas = new Set([...idsCompletadas, ...idsPlanificadas]);
-
-        const planEstudios = await this.carreraMateriaRepo.find({
-            where: { carrera: { carreraId } },
-            relations: {
-                materia: {
-                    correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
-                },
-            },
-        });
-
-        const desbloqueables: Materia[] = [];
-
-        for (const cm of planEstudios) {
-            const materia = cm.materia;
-            const materiaId = materia.materiaId;
-
-            if (idsCompletadas.has(materiaId) || idsPlanificadas.has(materiaId)) continue;
-
-            const correlativas = (materia.correlativasRequeridas || []).filter(
-                (c) => !c.carrera || c.carrera.carreraId === carreraId,
-            );
-            if (correlativas.length === 0) continue;
-
-            const todasCumplidas = correlativas.every((c) =>
-                idsHipoteticamenteCompletadas.has(c.materiaCorrelativa.materiaId),
-            );
-
-            if (todasCumplidas) desbloqueables.push(materia);
-        }
-
-        return desbloqueables;
-    }
-
-    private async validarCorrelativas(
-        usuarioCarreraId: number,
-        materiaId: number,
-        carreraId?: number,
-    ): Promise<boolean> {
-        const whereClause: any = { materia: { materiaId } };
-        if (carreraId) {
-            whereClause.carrera = { carreraId };
-        }
-        const correlativas = await this.correlativaRepo.find({
-            where: whereClause,
-            relations: { materiaCorrelativa: true, carrera: true },
-        });
-
-        if (correlativas.length === 0) {
-            if (carreraId) {
-                return this.validarCorrelativas(usuarioCarreraId, materiaId);
+        const instanciaNum = ORDEN_INSTANCIA[instancia] ?? -1;
+        if (planificacionOrigenId !== undefined) {
+            const origen = anteriores.find((p) => p.periodoId === planificacionOrigenId);
+            if (!origen) return;
+            const origenInstanciaNum = ORDEN_INSTANCIA[origen.instancia] ?? -1;
+            if (anio < origen.anio || (anio === origen.anio && instanciaNum <= origenInstanciaNum)) {
+                throw new ConflictException('El nuevo período debe ser cronológicamente posterior al período origen.');
             }
-            return true;
+            return;
         }
-
-        const idsCorrelativas = correlativas.map(
-            (c) => c.materiaCorrelativa.materiaId,
-        );
-
-        const progresos = await this.progresoRepo.find({
-            where: {
-                usuarioCarrera: { usuarioCarreraId },
-                materia: { materiaId: In(idsCorrelativas) },
-            },
-            relations: { estado: true },
-        });
-
-        const completadas = progresos.filter(
-            (p) => p.estado.nombre === 'Completada',
-        );
-        return completadas.length === correlativas.length;
+        for (const p of anteriores) {
+            const pInstanciaNum = ORDEN_INSTANCIA[p.instancia] ?? -1;
+            if (p.anio > anio || (p.anio === anio && pInstanciaNum >= instanciaNum)) {
+                throw new ConflictException('Ya existe una planificación posterior o igual en esta trayectoria.');
+            }
+        }
     }
+
+    // ... resto de métodos
 }
 ```
+
+> **Nota:** `IsNull()` de TypeORM es necesario para filtrar por NULL. TypeORM rechaza `null` literal en where.
 
 ---
 
@@ -512,6 +398,23 @@ export class PeriodoPlanificacion {
 
     @Column({ length: 100, nullable: true })
     nombre: string;
+
+    @ManyToOne(() => Trayectoria, { nullable: true })
+    @JoinColumn({ name: 'trayectoria_id' })
+    trayectoria?: Trayectoria;
+
+    @Column({ name: 'trayectoria_id', nullable: true })
+    trayectoriaId?: number;
+
+    @ManyToOne(() => PeriodoPlanificacion, { nullable: true })
+    @JoinColumn({ name: 'planificacion_origen_id' })
+    planificacionOrigen?: PeriodoPlanificacion;
+
+    @Column({ name: 'planificacion_origen_id', nullable: true })
+    planificacionOrigenId?: number;
+
+    @OneToMany(() => PeriodoPlanificacion, pp => pp.planificacionOrigen)
+    continuaciones: PeriodoPlanificacion[];
 
     @OneToMany(() => MateriaPlanificada, (mp) => mp.periodo, { cascade: true })
     materiasPlanificadas: MateriaPlanificada[];
@@ -577,3 +480,7 @@ export class MateriaPlanificada {
 | Los días disponibles son Lunes a Sábado | ENUM en la entidad |
 | Un período pertenece siempre a un usuario y una carrera | FK a `usuario_carrera` |
 | Un usuario puede tener múltiples planificaciones para el mismo año/instancia | Campo `nombre` opcional para distinguirlas |
+| Al listar con `independientes=true` se filtran períodos con `trayectoria_id IS NULL` | Usa `IsNull()` de TypeORM |
+| Al crear en una trayectoria, validar orden cronológico | `validarOrdenCronologico` |
+| Al crear con `planificacionOrigenId`, solo validar contra el origen (fork) | `validarOrdenCronologico` con `planificacionOrigenId` |
+| La FK `trayectoria_id` y `planificacion_origen_id` tienen `ON DELETE CASCADE` | Eliminación en cascada automática |

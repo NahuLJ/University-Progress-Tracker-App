@@ -17,10 +17,12 @@ type NuevoPeriodoFormData = z.infer<typeof nuevoPeriodoSchema>;
 interface NuevoPeriodoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (data: NuevoPeriodoFormData) => void;
+    onSuccess: (data: NuevoPeriodoFormData & { trayectoriaId?: number; planificacionOrigenId?: number }) => void;
+    trayectoriaId?: number;
+    planificacionOrigenId?: number;
 }
 
-export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoModalProps) {
+export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, planificacionOrigenId }: NuevoPeriodoModalProps) {
     const form = useForm<NuevoPeriodoFormData>({
         resolver: zodResolver(nuevoPeriodoSchema),
         defaultValues: {
@@ -31,14 +33,24 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
     });
 
     const onSubmit = (data: NuevoPeriodoFormData) => {
-        onSuccess(data);
+        onSuccess({ ...data, trayectoriaId, planificacionOrigenId });
         onClose();
         form.reset();
     };
 
+    const isSucesiva = trayectoriaId !== undefined;
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Nueva planificación" size="md">
+        <Modal isOpen={isOpen} onClose={onClose} title={isSucesiva ? 'Nueva planificación sucesiva' : 'Nueva planificación'} size="md">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {isSucesiva && (
+                    <div className="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-3 text-sm text-neon-cyan">
+                        {planificacionOrigenId
+                            ? 'Esta planificación continuará la seleccionada en la trayectoria.'
+                            : 'Esta planificación se creará dentro de la trayectoria actual.'}
+                    </div>
+                )}
+
                 <Input
                     label="Año"
                     type="number"
@@ -60,7 +72,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
 
                 <Input
                     label="Nombre"
-                    placeholder="Ej: Variante A, Intensiva, etc."
+                    placeholder={isSucesiva ? 'Ej: RPA, IA, Mixta...' : 'Ej: Variante A, Intensiva, etc.'}
                     error={form.formState.errors.nombre?.message}
                     {...form.register('nombre')}
                 />
@@ -69,7 +81,9 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess }: NuevoPeriodoMo
                     <Button type="button" variant="ghost" onClick={onClose}>
                         Cancelar
                     </Button>
-                    <Button type="submit" variant="success">Crear planificación</Button>
+                    <Button type="submit" variant="success">
+                        {isSucesiva ? 'Crear planificación sucesiva' : 'Crear planificación'}
+                    </Button>
                 </div>
             </form>
         </Modal>

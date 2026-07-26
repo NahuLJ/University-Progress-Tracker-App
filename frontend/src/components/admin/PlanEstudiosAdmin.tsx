@@ -76,7 +76,10 @@ export function PlanEstudiosAdmin() {
             {carreraId > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className="p-4">
-                        <h3 className="font-semibold text-white mb-3">Materias en el plan</h3>
+                        <div className="flex items-center gap-3 mb-3">
+                            <h3 className="font-semibold text-white">Materias en el plan</h3>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{materiasEnPlan.length}</span>
+                        </div>
                         {plan.isLoading && <LoadingSpinner />}
                         {plan.isError && (
                             <QueryError error={plan.error} onRetry={() => plan.refetch()} />

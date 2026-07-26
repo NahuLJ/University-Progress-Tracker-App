@@ -107,7 +107,10 @@ export function MateriaCorrelativasAdmin() {
 
                 {materiaId > 0 && (
                     <div className="mt-4">
-                        <h4 className="text-sm font-medium text-neon-cyan mb-2">Correlativas actuales</h4>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-sm font-medium text-neon-cyan">Correlativas actuales</h4>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{correlativasExistentes.length}</span>
+                        </div>
                         {detalle.isLoading && <LoadingSpinner />}
                         {detalle.isError && (
                             <QueryError

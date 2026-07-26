@@ -386,6 +386,17 @@ Comandos disponibles: `npm run dev`, `npm run build` (`tsc -b && vite build`), `
 - [x] Guardar planificación → envía solo novedades (`planificacionId === 0`)
 - [x] Sin carreras registradas → ver empty state con botón "Ver carreras"
 
+#### Flujo de trayectorias
+
+- [ ] Ir a `/trayectorias` → ver todas las trayectorias de la carrera activa
+- [ ] Crear una trayectoria → aparece en la lista con contador de planificaciones
+- [ ] Click en "Ver trayectoria" → `/trayectoria/:id` con timeline y árbol de bifurcaciones
+- [ ] Desde una planificación en una trayectoria, crear planificación sucesiva → aparece como hijo en el árbol
+- [ ] Plantificaciones independientes (sin trayectoria) solo se ven en `/planificaciones`
+- [ ] Al cambiar de carrera activa, redirige a `/trayectorias` si la trayectoria actual no pertenece a la nueva carrera
+- [ ] Eliminar una planificación con sucesores → cascade elimina toda la subrama
+- [ ] Chips de contador neon-cyan en títulos (trayectorias, carreras, plan, correlativas)
+
 #### Flujo del dashboard
 
 - [x] Una vez con progreso registrado, ir a `/dashboard` → ver promedio, créditos y progreso reales

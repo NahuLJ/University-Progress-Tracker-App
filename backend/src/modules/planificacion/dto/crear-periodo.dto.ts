@@ -4,13 +4,24 @@ import {
   IsString,
   IsNotEmpty,
   MaxLength,
+  IsOptional,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CrearPeriodoDto {
   @ApiProperty({ example: 1 })
   @IsInt()
   usuarioCarreraId: number;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsInt()
+  trayectoriaId?: number;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsInt()
+  planificacionOrigenId?: number;
 
   @ApiProperty({ example: 2026 })
   @IsInt()

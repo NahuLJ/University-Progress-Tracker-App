@@ -10,6 +10,7 @@ import { Materia } from '../materias/entities/materia.entity';
 import { Correlativa } from '../materias/entities/correlativa.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
+import { Trayectoria } from '../trayectoria/entities/trayectoria.entity';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
       Correlativa,
       ProgresoMateria,
       CarreraMateria,
+      Trayectoria,
     ]),
   ],
   controllers: [PlanificacionController],

@@ -4,9 +4,36 @@ export interface BloqueHorario {
     horaFin: string;
 }
 
+export interface Trayectoria {
+    trayectoriaId: number;
+    usuarioCarreraId: number;
+    nombre: string;
+    creadoEn: string;
+    planificaciones: PeriodoPlanificacion[];
+}
+
+export interface NodoTrayectoria {
+    periodo: PeriodoPlanificacion | null;
+    hijos: NodoTrayectoria[];
+}
+
+export interface CrearTrayectoriaDto {
+    usuarioCarreraId: number;
+    nombre: string;
+}
+
+export interface ActualizarTrayectoriaDto {
+    nombre?: string;
+}
+
 export interface PeriodoPlanificacion {
     periodoId: number;
     usuarioCarreraId: number;
+    trayectoriaId?: number | null;
+    trayectoria?: Trayectoria | null;
+    planificacionOrigenId?: number | null;
+    planificacionOrigen?: PeriodoPlanificacion | null;
+    continuaciones?: PeriodoPlanificacion[];
     anio: number;
     instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
     nombre: string;
@@ -16,6 +43,8 @@ export interface PeriodoPlanificacion {
 
 export interface CrearPeriodoDto {
     usuarioCarreraId: number;
+    trayectoriaId?: number;
+    planificacionOrigenId?: number;
     anio: number;
     instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
     nombre: string;
@@ -75,4 +104,18 @@ export interface ActualizarPeriodoDto {
     anio?: number;
     instancia?: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
     nombre?: string;
+}
+
+export interface MateriaImpactada {
+    planificacionId: number;
+    materiaId: number;
+    nombre: string;
+    codigo: string;
+    periodoId: number;
+    periodoNombre: string;
+}
+
+export interface EliminarMateriaResultado {
+    eliminadas: number[];
+    impactadas: MateriaImpactada[];
 }

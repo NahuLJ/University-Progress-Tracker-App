@@ -23,7 +23,7 @@ export function PlanificacionesPage() {
 
     const periodosQuery = useInfiniteQuery({
         queryKey: ['planificacion', 'periodos-paginado', usuarioCarreraId],
-        queryFn: ({ pageParam }) => planificacionService.listarPeriodosPaginado(usuarioCarreraId!, pageParam),
+        queryFn: ({ pageParam }) => planificacionService.listarPeriodosPaginado(usuarioCarreraId!, pageParam, 12, true),
         initialPageParam: 1,
         getNextPageParam: (lastPage) => {
             if (lastPage.page < lastPage.totalPages) {
@@ -84,10 +84,28 @@ export function PlanificacionesPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold">Planificaciones</h1>
-                    <p className="text-sm text-slate-400">
-                        {carreraActiva?.carrera?.nombre ?? ''}
-                        {total > 0 && <span className="ml-1">({total})</span>}
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold">Planificaciones</h1>
+                        {total > 0 && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">
+                                {total}
+                            </span>
+                        )}
+                    </div>
+                    {carreraActiva?.carrera?.nombre && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <svg className="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span className="text-sm font-medium text-white">{carreraActiva.carrera.nombre}</span>
+                        </div>
+                    )}
+                    <p className="text-sm text-slate-400 mt-1">
+                        Planificaciones independientes para organizar horarios período por período.
+                        Si querés planificar varios cuatrimestres consecutivos con materias que se desbloquean entre sí, usá{' '}
+                        <button type="button" onClick={() => navigate('/trayectorias')} className="text-neon-cyan hover:underline">
+                            Trayectorias
+                        </button>.
                     </p>
                 </div>
                 <Button variant="success" onClick={() => setMostrarNuevoPeriodo(true)}>

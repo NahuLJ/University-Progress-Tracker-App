@@ -11,6 +11,8 @@ export const CarreraDetailPage = lazy(() =>
 export const ProgresoPage = lazy(() => import('../pages/ProgresoPage'));
 export const PlanificacionesPage = lazy(() => import('../pages/PlanificacionesPage'));
 export const PlanificacionPage = lazy(() => import('../pages/PlanificacionPage'));
+export const TrayectoriasPage = lazy(() => import('../pages/TrayectoriasPage'));
+export const TrayectoriaPage = lazy(() => import('../pages/TrayectoriaPage'));
 export const AdminPage = lazy(() =>
     import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })),
 );

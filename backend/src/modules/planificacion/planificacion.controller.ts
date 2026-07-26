@@ -31,8 +31,11 @@ export class PlanificacionController {
   @Get('periodos')
   @ApiOperation({ summary: 'Listar períodos de planificación' })
   @ApiResponse({ status: 200, description: 'Lista de períodos' })
-  async listarPeriodos(@Query('usuarioCarreraId') usuarioCarreraId: number) {
-    return this.planificacionService.listarPeriodos(usuarioCarreraId);
+  async listarPeriodos(
+    @Query('usuarioCarreraId') usuarioCarreraId: number,
+    @Query('independientes') independientes?: boolean,
+  ) {
+    return this.planificacionService.listarPeriodos(usuarioCarreraId, independientes);
   }
 
   @Get('periodos-paginado')
@@ -45,11 +48,13 @@ export class PlanificacionController {
     @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(12), ParseIntPipe) limit: number,
+    @Query('independientes') independientes?: boolean,
   ) {
     return this.planificacionService.listarPeriodosPaginado(
       usuarioCarreraId,
       page,
       limit,
+      independientes,
     );
   }
 
@@ -84,17 +89,24 @@ export class PlanificacionController {
   @Get('disponibles')
   @ApiOperation({
     summary:
-      'Materias disponibles para planificar (no completadas, con correlativas cumplidas)',
+      'Materias disponibles para planificar. Si se proveen trayectoriaId y periodoId, se incluyen materias desbloqueadas por planificaciones previas.',
   })
+  @ApiQuery({ name: 'usuarioCarreraId', required: true })
+  @ApiQuery({ name: 'trayectoriaId', required: false })
+  @ApiQuery({ name: 'periodoId', required: false })
   @ApiResponse({
     status: 200,
     description: 'Lista de materias disponibles',
   })
   async obtenerMateriasDisponibles(
-    @Query('usuarioCarreraId') usuarioCarreraId: number,
+    @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
+    @Query('trayectoriaId') trayectoriaId?: number,
+    @Query('periodoId') periodoId?: number,
   ) {
     return this.planificacionService.obtenerMateriasDisponibles(
       usuarioCarreraId,
+      trayectoriaId ? Number(trayectoriaId) : undefined,
+      periodoId ? Number(periodoId) : undefined,
     );
   }
 
@@ -151,15 +163,54 @@ export class PlanificacionController {
     return this.planificacionService.obtenerMateriasDesbloqueables(id, ids);
   }
 
+  @Get('materias/:id/impacto')
+  @ApiOperation({
+    summary:
+      'Obtener materias en planes hijos que quedarían inválidas al eliminar esta materia planificada',
+  })
+  @ApiResponse({ status: 200, description: 'Lista de materias impactadas' })
+  @ApiResponse({
+    status: 404,
+    description: 'Materia planificada no encontrada',
+  })
+  async obtenerImpactoEliminacion(@Param('id', ParseIntPipe) id: number) {
+    return this.planificacionService.obtenerImpactoEliminacion(id);
+  }
+
   @Delete('materias/:id')
   @ApiOperation({ summary: 'Eliminar materia planificada' })
+  @ApiQuery({
+    name: 'modo',
+    required: false,
+    enum: ['simple', 'cascade'],
+    description:
+      "'simple' (default): solo elimina la materia. 'cascade': también elimina materias dependientes en planes hijos.",
+  })
   @ApiResponse({
     status: 200,
     description: 'Materia removida de la planificación',
   })
   @ApiResponse({ status: 404, description: 'Planificación no encontrada' })
-  async eliminarMateriaPlanificada(@Param('id') id: number) {
-    await this.planificacionService.eliminarMateriaPlanificada(id);
-    return { message: 'Materia removida de la planificación' };
+  async eliminarMateriaPlanificada(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('modo') modo?: 'simple' | 'cascade',
+  ) {
+    return this.planificacionService.eliminarMateriaPlanificada(
+      id,
+      modo ?? 'simple',
+    );
+  }
+
+  @Get('periodos/:id/inconsistencias')
+  @ApiOperation({
+    summary:
+      'Verificar materias en un período cuyas correlativas ya no se cumplen',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de materias inconsistentes',
+  })
+  async verificarInconsistencias(@Param('id', ParseIntPipe) id: number) {
+    return this.planificacionService.verificarInconsistencias(id);
   }
 }

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
     { to: '/carreras', label: 'Carreras', icon: 'school' as const },
     { to: '/progreso', label: 'Progreso', icon: 'graduation' as const },
     { to: '/planificaciones', label: 'Planificación', icon: 'calendar' as const },
+    { to: '/trayectorias', label: 'Trayectorias', icon: 'trending' as const },
     { to: '/admin', label: 'Admin', icon: 'briefcase' as const },
 ];
 

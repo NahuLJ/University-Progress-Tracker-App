@@ -137,6 +137,16 @@ backend/
     │   │       ├── planificar-materia.dto.ts
     │   │       └── periodo-response.dto.ts
     │   │
+    │   ├── trayectoria/
+    │   │   ├── trayectoria.module.ts
+    │   │   ├── trayectoria.controller.ts
+    │   │   ├── trayectoria.service.ts
+    │   │   ├── entities/
+    │   │   │   └── trayectoria.entity.ts
+    │   │   └── dto/
+    │   │       ├── crear-trayectoria.dto.ts
+    │   │       └── actualizar-trayectoria.dto.ts
+    │   │
     │   └── estadisticas/
     │       ├── estadisticas.module.ts
     │       ├── estadisticas.controller.ts

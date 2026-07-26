@@ -47,10 +47,13 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 | `docs/backend/progreso-module.md` | Estados, notas, validación de correlativas |
 | `docs/backend/planificacion-horarios-module.md` | Periodos, bloques, conflictos horarios |
 | `docs/backend/estadisticas-module.md` | Promedio, cuatrimestres restantes, queries SQL |
+| `docs/backend/trayectoria-module.md` | Trayectoria entity, endpoints, fork validation, árbol de bifurcaciones |
+| `docs/backend/planificacion-horarios-module.md` | Periodos, bloques, conflictos horarios, trayectoria, IsNull, cascada |
 | `docs/frontend/login-registro-page.md` | Formularios, validación Zod, barra de fortaleza |
 | `docs/frontend/dashboard-page.md` | Tarjetas, gráficos, selector multi-carrera |
 | `docs/frontend/plan-estudios-page.md` | Árbol Año→Cuatrimestre, modal correlativas |
 | `docs/frontend/progreso-academico-page.md` | Grilla inline, modal nota obligatoria |
 | `docs/frontend/planificador-horarios-page.md` | Calendario drag & drop, store zustand |
-| `docs/frontend/admin-page.md` | Módulo admin: carreras, materias, plan, correlativas |
+| `docs/frontend/admin-page.md` | Módulo admin: carreras, materias, plan, correlativas, chips neon-cyan |
+| `docs/frontend/trayectorias-page.md` | Páginas TrayectoriasPage y TrayectoriaPage, ArbolTrayectoria, chips, navegación |
 | `docs/security/jwt-auth-specification.md` | Payload JWT, Passport strategy, Axios interceptor, PrivateRoute |

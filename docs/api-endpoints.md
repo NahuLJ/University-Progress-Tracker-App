@@ -148,13 +148,16 @@ interface ActualizarProgresoDto {
 
 | Método | Ruta | Auth | Query | Body | Respuestas |
 |--------|------|------|-------|------|------------|
-| `GET` | `/planificacion/periodos` | ✅ Bearer | `usuarioCarreraId` | — | `200`: Períodos[] |
-| `POST` | `/planificacion/periodos` | ✅ Bearer | — | `CrearPeriodoDto` | `201`: Creado · `404`: Inscripción no encontrada |
-| `DELETE` | `/planificacion/periodos/:id` | ✅ Bearer | — | — | `200`: Eliminado · `404`: No encontrado |
+| `GET` | `/planificacion/periodos` | ✅ Bearer | `usuarioCarreraId`, `independientes` (bool) | — | `200`: Períodos[] (con `independientes=true` solo sin `trayectoriaId`) |
+| `GET` | `/planificacion/periodos-paginado` | ✅ Bearer | `usuarioCarreraId`, `page`, `limit`, `independientes` (bool) | — | `200`: `{ data: [...], total, page, limit, totalPages }` |
+| `POST` | `/planificacion/periodos` | ✅ Bearer | — | `CrearPeriodoDto` | `201`: Creado · `400`: Orden cronológico / origen inválido · `404`: Inscripción/trayectoria no encontrada |
+| `PATCH` | `/planificacion/periodos/:id` | ✅ Bearer | — | `ActualizarPeriodoDto` | `200`: Actualizado · `400`: Validación · `404`: No encontrado |
+| `DELETE` | `/planificacion/periodos/:id` | ✅ Bearer | — | — | `200`: Eliminado (cascade a hijos por FK) · `404`: No encontrado |
 | `GET` | `/planificacion/bloques` | ✅ Bearer | — | — | `200`: Bloques[] (7 bloques 08-10 a 20-22) |
-| `GET` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | — | `200`: Materias planificadas · `404`: No encontrado |
+| `GET` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | — | `200`: Materias planificadas[] (vacío si no existe el período) |
 | `POST` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | `PlanificarMateriaDto` | `201`: Planificada · `400`: Conflicto / Correlativas pendientes · `404`: No encontrado |
-| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs, `""` = vacío, omisión = usa DB) | — | `200`: Materias[] que se desbloquearían · `404`: No encontrado |
+| `GET` | `/planificacion/disponibles` | ✅ Bearer | `usuarioCarreraId`, `trayectoriaId` (opcional), `periodoId` (opcional) | — | `200`: Materias disponibles[] (incluye desbloqueadas por planificaciones previas si hay trayectoria) |
+| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs) | — | `200`: Materias[] que se desbloquearían (vacío si no existe el período) |
 | `DELETE` | `/planificacion/materias/:id` | ✅ Bearer | — | — | `200`: Removida · `404`: No encontrada |
 
 ### DTOs
@@ -164,13 +167,41 @@ interface CrearPeriodoDto {
   usuarioCarreraId: number;
   anio: number;
   instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
-  nombre?: string; // max 100, opcional para distinguir variantes
+  nombre?: string;            // max 100, opcional para distinguir variantes
+  trayectoriaId?: number;     // si se especifica, pertenece a una trayectoria
+  planificacionOrigenId?: number; // planificación anterior en la cadena (fork)
 }
 
 interface PlanificarMateriaDto {
   materiaId: number;
   bloqueId: number;    // 1=08-10, 2=10-12, ..., 7=20-22
   diaSemana: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado';
+}
+```
+
+---
+
+## Trayectorias — `/trayectorias`
+
+| Método | Ruta | Auth | Query | Body | Respuestas |
+|--------|------|------|-------|------|------------|
+| `GET` | `/trayectorias` | ✅ Bearer | `usuarioCarreraId` | — | `200`: Trayectorias[] (incluye `planificaciones` con count) |
+| `POST` | `/trayectorias` | ✅ Bearer | — | `CrearTrayectoriaDto` | `201`: Creada · `400`: Ya existe (unique nombre por carrera) |
+| `PATCH` | `/trayectorias/:id` | ✅ Bearer | — | `ActualizarTrayectoriaDto` | `200`: Actualizada · `404`: No encontrada |
+| `DELETE` | `/trayectorias/:id` | ✅ Bearer | — | — | `200`: Eliminada + cascade a planificaciones |
+| `GET` | `/trayectorias/:id/planificaciones` | ✅ Bearer | — | — | `200`: PeriodoPlanificacion[] ordenadas por anio, instancia |
+| `GET` | `/trayectorias/:id/arbol` | ✅ Bearer | — | — | `200`: `{ periodo, hijos: [...] }` árbol de bifurcaciones |
+
+### DTOs
+
+```typescript
+interface CrearTrayectoriaDto {
+  usuarioCarreraId: number;
+  nombre: string;            // max 150
+}
+
+interface ActualizarTrayectoriaDto {
+  nombre?: string;           // max 150
 }
 ```
 
@@ -241,8 +272,9 @@ interface CrearMateriaDto {
 | `carreras/` | 6 |
 | `materias/` | 5 |
 | `progreso/` | 4 |
-| `planificacion/` | 8 |
+| `planificacion/` | 11 |
+| `trayectorias/` | 6 |
 | `estadisticas/` | 4 |
-| **Total únicos** | **38** |
+| **Total únicos** | **47** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

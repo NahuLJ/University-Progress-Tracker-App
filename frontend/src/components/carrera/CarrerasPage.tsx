@@ -82,12 +82,15 @@ export function CarrerasPage() {
             <section>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     Mis carreras
-                    <span className="text-sm font-normal text-slate-400">({totalActivas + totalInactivas})</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalActivas + totalInactivas}</span>
                 </h2>
 
                 {activasList.length > 0 && (
                     <div className="mb-6">
-                        <h3 className="text-sm font-medium text-slate-300 mb-3">Activas ({totalActivas})</h3>
+                        <div className="flex items-center gap-2 mb-3">
+                            <h3 className="text-sm font-medium text-slate-300">Activas</h3>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalActivas}</span>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {activasList.map((insc: any) => (
                                 <CarreraCard
@@ -122,7 +125,10 @@ export function CarrerasPage() {
 
                 {inactivasList.length > 0 && (
                     <div>
-                        <h3 className="text-sm font-medium text-slate-300 mb-3">Desinscriptas ({totalInactivas})</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-medium text-slate-300">Desinscriptas</h3>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalInactivas}</span>
+                    </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {inactivasList.map((insc: any) => (
                                 <CarreraCard
@@ -167,7 +173,7 @@ export function CarrerasPage() {
             <section>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     Carreras disponibles
-                    <span className="text-sm font-normal text-slate-400">({totalDisponibles})</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalDisponibles}</span>
                 </h2>
                 {restantes.length === 0 && !disponibles.isFetching ? (
                     <Card>
