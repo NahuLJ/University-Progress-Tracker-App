@@ -35,7 +35,10 @@ export class PlanificacionController {
     @Query('usuarioCarreraId') usuarioCarreraId: number,
     @Query('independientes') independientes?: boolean,
   ) {
-    return this.planificacionService.listarPeriodos(usuarioCarreraId, independientes);
+    return this.planificacionService.listarPeriodos(
+      usuarioCarreraId,
+      independientes,
+    );
   }
 
   @Get('periodos-paginado')

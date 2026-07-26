@@ -50,6 +50,7 @@ store/
 ### Componentes
 
 - **Timeline**: lista vertical con puntos conectados. Cada entrada es una planificación (nombre, fecha, cant. materias). Click → navega a `/planificacion/:id`. Botón "Continuar" para crear bifurcación.
+- **Sin botón "+ Nueva planificación" global**: Solo se crean periodos como continuación de otro existente (botón "Continuar" por período) o como el primero de la trayectoria (botón "Crear primera planificación" en EmptyState). No hay botón de creación sin origen en el header.
 - **Árbol de bifurcaciones**: componente `ArbolTrayectoria` que renderiza el árbol de `GET /trayectorias/:id/arbol`.
 
 ### Manejo de cambio de carrera
@@ -65,8 +66,11 @@ store/
 | Periodos de la trayectoria | `['trayectoria', trayectoriaId]` |
 | Árbol | `['trayectoria-arbol', trayectoriaId]` |
 | Lista de trayectorias | `['trayectorias', usuarioCarreraId]` |
+| Planificaciones | `['planificacion']` |
 
 Luego navega a `/planificacion/:nuevoPeriodoId`.
+
+> **Nota:** Se agregaron `['planificacion']` para activar la recarga del hook `usePlanificacion`, especialmente para las plantillas de materias no completadas. Esto ayuda a resolver el 404 cuando el período todavía no está en la cache luego de navegar por el árbol o eliminar un periodo.
 
 ### Eliminación de período (desde PlanificacionPage)
 
@@ -77,6 +81,7 @@ Al eliminar un período (click en "Eliminar" en `PlanificacionPage`):
 3. En `.then()`:
    - `invalidateQueries(['trayectoria'])` — refresca timeline de la trayectoria.
    - `invalidateQueries(['trayectorias'])` — refresca contador en lista.
+   - `invalidateQueries(['trayectoria-arbol'])` — refresca el árbol de bifurcaciones.
    - `invalidateQueries(['planificacion'])` — refresca queries de planificación.
    - `navigate(-1)` — vuelve a la página anterior (trayectoria o lista).
 

@@ -47,10 +47,11 @@ Crea un nuevo período de planificación. Si `trayectoriaId` está presente vali
 ### DELETE /api/planificacion/periodos/:id
 
 Elimina un período de planificación y todas sus materias asignadas.
+Si el período tiene continuaciones (hijos en la trayectoria), se eliminan recursivamente todos los descendientes.
 
 | Código | Descripción |
 |---|---|
-| 200 | Período eliminado |
+| 200 | Período eliminado (más todos sus descendientes) |
 | 404 | Período no encontrado |
 
 > **Nota de implementación frontend:** Al eliminar un período, el frontend **limpia primero `periodoActivo` (set null)** y **cancela/elimina las queries de `materias-desbloqueables` para ese período ANTES de invalidar queries**, evitando que el hook `usePlanificacion` intente hacer fetch de materias desbloqueables para un período que ya no existe (lo que causaba 404).
@@ -290,8 +291,14 @@ export class PlanificacionService {
     ) {}
 
     async listarPeriodos(usuarioCarreraId: number, independientes?: boolean): Promise<PeriodoPlanificacion[]> {
-        const where: any = { usuarioCarrera: { usuarioCarreraId } };
-        if (independientes) where.trayectoriaId = IsNull();
+        const where = independientes
+            ? {
+                usuarioCarrera: { usuarioCarreraId },
+                trayectoriaId: IsNull(),
+              }
+            : {
+                usuarioCarrera: { usuarioCarreraId },
+              };
         return this.periodoRepo.find({
             where,
             relations: ['materiasPlanificadas', 'materiasPlanificadas.materia', 'materiasPlanificadas.bloque', 'trayectoria', 'planificacionOrigen'],
@@ -474,7 +481,7 @@ export class MateriaPlanificada {
 |---|---|
 | No puede haber dos materias en el mismo bloque, día y período | Índice único + validación explícita en el Service |
 | Una materia puede ocupar múltiples bloques en distintos días, pero no exceder su `cargaHoraria` semanal | Validación explícita en el Service (cuenta bloques asignados vs `Math.ceil(cargaHoraria / 2)`) |
-| No se puede planificar una materia si no se cumplen sus correlativas | Validación explícita en el Service (`validarCorrelativas`) |
+| No se puede planificar una materia si no se cumplen sus correlativas | Validación contra `obtenerMateriasDisponibles` (misma lógica que el listado del frontend; considera completadas + planificadas previas en trayectoria) |
 | Las materias que se desbloquearían al completar la planificación se calculan en `GET /periodos/:id/materias-desbloqueables` | Endpoint dedicado que compara planificadas + completadas vs. correlativas del plan |
 | Solo existen 7 bloques fijos: 08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22 | Catálogo predefinido en base de datos (seed) |
 | Los días disponibles son Lunes a Sábado | ENUM en la entidad |
@@ -483,4 +490,5 @@ export class MateriaPlanificada {
 | Al listar con `independientes=true` se filtran períodos con `trayectoria_id IS NULL` | Usa `IsNull()` de TypeORM |
 | Al crear en una trayectoria, validar orden cronológico | `validarOrdenCronologico` |
 | Al crear con `planificacionOrigenId`, solo validar contra el origen (fork) | `validarOrdenCronologico` con `planificacionOrigenId` |
-| La FK `trayectoria_id` y `planificacion_origen_id` tienen `ON DELETE CASCADE` | Eliminación en cascada automática |
+| La FK `trayectoria_id` tiene `ON DELETE CASCADE` | Eliminación en cascada al borrar trayectoria |
+| La FK `planificacion_origen_id` tiene `ON DELETE SET NULL` | Al eliminar un periodo padre, los hijos se desvinculan (y se eliminan recursivamente vía `eliminarDescendientes`) |

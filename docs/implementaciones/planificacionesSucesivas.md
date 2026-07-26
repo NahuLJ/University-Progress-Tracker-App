@@ -100,9 +100,14 @@ Validaciones adicionales:
 Nuevo parámetro opcional `trayectoriaId?: number`. Cuando se especifica:
 
 1. Obtener las materias normalmente disponibles (correlativas ya cumplidas en BD).
-2. Obtener todas las planificaciones de la trayectoria con `periodo_id < periodoActual` (anteriores en la cadena).
-3. De esas planificaciones anteriores, extraer los `materia_id` planificados.
-4. Calcular correlativas como si esas materias estuvieran completadas (usar estado `Planificado` en memoria).
+2. Si `periodoId` también está presente:
+   - Obtener TODAS las planificaciones de la trayectoria (no solo las anteriores).
+   - Para cada planificación:
+     - Si `planificacionId === periodoId`: NO agregar sus materias a `idsPlanificadasEnTrayectoria` (permite disponibilidad parcial dentro del mismo período)
+     - Si `planificacionId !== periodoId`: agregar sus materias a `idsPlanificadasEnTrayectoria` (excluyen de disponibles completamente)
+   - Si además `planificacionId < periodoId`: también agregar sus materias a `idsPlanificadasPrevias` (considerarlas cumplidas para correlativas)
+3. Filtrar materias: excluir las que estén en `idsPlanificadasEnTrayectoria`, mantener las que solo estén en `idsPlanificadasPrevias` (desbloqueadas por planificaciones previas).
+4. Calcular correlativas como si las materias en `idsPlanificadasPrevias` estuvieran completadas (en memoria).
 5. Unir ambos conjuntos: disponibles actuales + las que se desbloquean con las planificaciones anteriores.
 
 **Endpoint existente modificado:**
@@ -111,7 +116,7 @@ GET /planificacion/disponibles?usuarioCarreraId=:id&trayectoriaId=:tid&periodoId
 ```
 
 - `trayectoriaId`: opcional. Si presente, se calculan disponibles sucesivos.
-- `periodoId`: obligatorio si `trayectoriaId` está presente. Es el periodo actual que se está editando. Se usan las planificaciones ANTERIORES a este periodo en la trayectoria.
+- `periodoId`: obligatorio si `trayectoriaId` está presente. Es el periodo actual que se está editando. Se usan las planificaciones de TODA la trayectoria (actual y anteriores) para filtrar/excluir las completamente planificadas y considerar las previas para correlativas.
 
 #### 3.2.3 `obtenerMateriasDesbloqueables()` modificado
 
@@ -325,10 +330,9 @@ Para validar, al crear una planificación en una trayectoria:
 
 ### 5.4 Eliminación en cascada de nodos
 
-Debido a que `planificacion_origen_id` tiene `ON DELETE CASCADE`, al eliminar una planificación:
-
-1. La BD borra automáticamente **todas** las planificaciones que la tengan como origen (`planificacion_origen_id = periodo_id`).
-2. Esas hijas a su vez disparan el cascade sobre sus propias hijas, y así recursivamente hasta las hojas del árbol.
+`planificacion_origen_id` NO tiene `ON DELETE CASCADE`. El borrado de descendientes se maneja manualmente
+en el servicio `PlanificacionService.eliminarPeriodo()` mediante el método privado `eliminarDescendientes`,
+que recorre recursivamente todas las continuaciones y las elimina junto con sus materias planificadas.
 
 **Ejemplo:** Dado el árbol:
 ```
@@ -339,12 +343,10 @@ A ──┬── B1 ── C1
 | Acción | Resultado |
 |---|---|
 | Eliminar C1 | Solo C1 |
-| Eliminar B1 | B1 + C1 (cascade sobre C1) |
-| Eliminar A | A + B1 + C1 + B2 + C2 (cascade en dos niveles) |
+| Eliminar B1 | B1 + C1 (recursivo sobre continuaciones de B1) |
+| Eliminar A | A + B1 + C1 + B2 + C2 (recursivo sobre continuaciones de A y sus descendientes) |
 
-El `eliminarPeriodo` del servicio puede delegar completamente en la cascada de la BD (no necesita borrar hijos manualmente), o bien mantener la lógica de borrado recursivo por claridad.
-
-> **IMPORTANTE:** Al eliminar una trayectoria, su FK `trayectoria_id → trayectoria` también tiene `ON DELETE CASCADE`, lo que elimina todas las planificaciones de la trayectoria (y por el cascade anterior, toda la sub-rama completa).
+> **IMPORTANTE:** La FK `trayectoria_id → trayectoria` SÍ tiene `ON DELETE CASCADE`, por lo que al eliminar una trayectoria se borran todas sus planificaciones (ejecutando los hooks de eliminación de TypeORM).
 
 ### 5.5 Efectos al completar materias reales
 
@@ -473,7 +475,7 @@ ALTER TABLE periodo_planificacion
 ## 8. Notas adicionales
 
 - El comportamiento actual (planificaciones sueltas, sin trayectoria) debe seguir funcionando sin cambios. `trayectoria_id = NULL` mantiene compatibilidad total.
-- Las planificaciones dentro de una trayectoria se pueden eliminar individualmente. El `ON DELETE CASCADE` de `planificacion_origen_id` se encarga de eliminar automaticamente toda la subrama descendiente. Ver sección 5.4.
+- Las planificaciones dentro de una trayectoria se pueden eliminar individualmente. El servicio ejecuta `eliminarDescendientes` recursivamente para eliminar toda la subrama. Ver sección 5.4.
 - Considerar agregar validación temprana en el frontend: al crear una planificación sucesiva, el backend debe rechazar si el orden cronológico no es válido.
 - Las materias disponibles en modo sucesivo se calculan en el backend; el frontend solo muestra la lista que recibe. No hay lógica adicional del lado del cliente para este cálculo.
 
@@ -493,3 +495,9 @@ ALTER TABLE periodo_planificacion
 | Backend 404 en materias/materias-desbloqueables | `NotFoundException` | Retorna `[]` si el período no existe, evitando errores por race conditions. |
 | Chips de contador | No especificado | CarrerasPage, CarreraDetailPage (años, cuatrimestres), PlanEstudiosAdmin, MateriaCorrelativasAdmin usan chips neon-cyan `px-2.5 py-0.5 rounded-full`. |
 | Estado `Planificado` (id=4) | Se menciona como necesario | No implementado. El cálculo de disponibles trayectoria se hace consultando `materia_planificada` de periodos previos, sin persistir estado adicional. |
+| Eliminación en cascada de periodos | `ON DELETE CASCADE` en `planificacion_origen_id` | Se maneja manualmente vía `eliminarDescendientes` en `planificacion.service.ts`. La FK usa `ON DELETE SET NULL` (definido en la entity como `onDelete: 'SET NULL'`). |
+| Validación de correlativas al planificar | Llama a `validarCorrelativas` internamente | `planificarMateria` ahora usa `obtenerMateriasDisponibles` para validar (misma lógica que el listado del frontend), garantizando consistencia absoluta entre lo que se muestra y lo que se acepta. |
+| Botón "+ Nueva planificación" en TrayectoriaPage | Presente | Eliminado. Solo se crean periodos como continuación de otro (botón "Continuar") o como el primero (EmptyState). |
+| Invalidación de árbol al eliminar periodo | Solo `['trayectoria']`, `['trayectorias']`, `['planificacion']` | Se agregó `['trayectoria-arbol']` para refrescar el árbol de bifurcaciones. |
+| Relación `materia` en query de progresos para `validarCorrelativas` | No se cargaba explícitamente | Se agregó `materia: true` en las relations de la query de progresos. |
+| Método `eliminarPeriodo` | Solo eliminaba materias planificadas y el periodo | Ahora antes de eliminar ejecuta `eliminarDescendientes` para eliminar recursivamente todos los hijos y sus materias. |

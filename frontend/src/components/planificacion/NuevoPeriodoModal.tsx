@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,9 +7,17 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 
+const ORDEN_INSTANCIA: Record<string, number> = {
+    Verano: 0,
+    '1er Cuatrimestre': 1,
+    '2do Cuatrimestre': 2,
+};
+
+const INSTANCIAS = ['Verano', '1er Cuatrimestre', '2do Cuatrimestre'] as const;
+
 const nuevoPeriodoSchema = z.object({
     anio: z.number().min(2020).max(2030),
-    instancia: z.enum(['Verano', '1er Cuatrimestre', '2do Cuatrimestre']),
+    instancia: z.enum(INSTANCIAS),
     nombre: z.string().min(1, 'El nombre es obligatorio').max(100),
 });
 
@@ -20,9 +29,11 @@ interface NuevoPeriodoModalProps {
     onSuccess: (data: NuevoPeriodoFormData & { trayectoriaId?: number; planificacionOrigenId?: number }) => void;
     trayectoriaId?: number;
     planificacionOrigenId?: number;
+    origenAnio?: number;
+    origenInstancia?: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
 }
 
-export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, planificacionOrigenId }: NuevoPeriodoModalProps) {
+export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, planificacionOrigenId, origenAnio, origenInstancia }: NuevoPeriodoModalProps) {
     const form = useForm<NuevoPeriodoFormData>({
         resolver: zodResolver(nuevoPeriodoSchema),
         defaultValues: {
@@ -32,6 +43,29 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
         },
     });
 
+    const anioSeleccionado = form.watch('anio');
+
+    const instanciasDisponibles = useMemo(() => {
+        if (origenAnio === undefined || origenInstancia === undefined) {
+            return [...INSTANCIAS];
+        }
+        if (anioSeleccionado > origenAnio) {
+            return [...INSTANCIAS];
+        }
+        if (anioSeleccionado === origenAnio) {
+            const ordenOrigen = ORDEN_INSTANCIA[origenInstancia];
+            return INSTANCIAS.filter((i) => ORDEN_INSTANCIA[i] > ordenOrigen);
+        }
+        return [];
+    }, [origenAnio, origenInstancia, anioSeleccionado]);
+
+    useEffect(() => {
+        const current = form.getValues('instancia');
+        if (instanciasDisponibles.length > 0 && !instanciasDisponibles.includes(current)) {
+            form.setValue('instancia', instanciasDisponibles[0]);
+        }
+    }, [instanciasDisponibles, form]);
+
     const onSubmit = (data: NuevoPeriodoFormData) => {
         onSuccess({ ...data, trayectoriaId, planificacionOrigenId });
         onClose();
@@ -39,6 +73,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
     };
 
     const isSucesiva = trayectoriaId !== undefined;
+    const noInstancias = isSucesiva && origenAnio !== undefined && instanciasDisponibles.length === 0;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={isSucesiva ? 'Nueva planificación sucesiva' : 'Nueva planificación'} size="md">
@@ -54,7 +89,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
                 <Input
                     label="Año"
                     type="number"
-                    min={2020}
+                    min={origenAnio ?? 2020}
                     max={2030}
                     error={form.formState.errors.anio?.message}
                     {...form.register('anio', { valueAsNumber: true })}
@@ -65,10 +100,16 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
                     error={form.formState.errors.instancia?.message}
                     {...form.register('instancia')}
                 >
-                    <option value="Verano">Verano</option>
-                    <option value="1er Cuatrimestre">1er Cuatrimestre</option>
-                    <option value="2do Cuatrimestre">2do Cuatrimestre</option>
+                    {instanciasDisponibles.map((i) => (
+                        <option key={i} value={i}>{i}</option>
+                    ))}
                 </Select>
+
+                {noInstancias && (
+                    <p className="text-sm text-neon-yellow">
+                        No hay cuatrimestres disponibles para {anioSeleccionado}. Seleccioná un año posterior.
+                    </p>
+                )}
 
                 <Input
                     label="Nombre"
@@ -81,7 +122,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
                     <Button type="button" variant="ghost" onClick={onClose}>
                         Cancelar
                     </Button>
-                    <Button type="submit" variant="success">
+                    <Button type="submit" variant="success" disabled={noInstancias}>
                         {isSucesiva ? 'Crear planificación sucesiva' : 'Crear planificación'}
                     </Button>
                 </div>

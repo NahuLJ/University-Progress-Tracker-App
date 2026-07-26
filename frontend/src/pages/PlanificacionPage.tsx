@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -45,14 +45,10 @@ export function PlanificacionPage() {
     const periodoActivo = store.periodoActivo;
     const periodoExiste = periodos?.some((p) => p.periodoId === periodoId);
 
-    const { data: periodoFull } = useQuery({
-        queryKey: ['planificacion', 'periodo-full', periodoId],
-        queryFn: () => {
-            if (!periodoId || !periodos) return null;
-            return periodos.find((p) => p.periodoId === periodoId) ?? null;
-        },
-        enabled: !!periodoId && !!periodos,
-    });
+    const periodoFull = useMemo(() => {
+        if (!periodoId || !periodos) return null;
+        return periodos.find((p) => p.periodoId === periodoId) ?? null;
+    }, [periodoId, periodos]);
 
     const trayectoria = periodoFull?.trayectoria ?? null;
 
@@ -253,6 +249,7 @@ export function PlanificacionPage() {
                             planificacionService.eliminarPeriodo(periodoId).then(() => {
                                 queryClient.invalidateQueries({ queryKey: ['trayectoria'] });
                                 queryClient.invalidateQueries({ queryKey: ['trayectorias'] });
+                                queryClient.invalidateQueries({ queryKey: ['trayectoria-arbol'] });
                                 queryClient.invalidateQueries({ queryKey: ['planificacion'] });
                                 addNotification('Período eliminado', 'success');
                                 navigate(-1);
@@ -290,10 +287,14 @@ export function PlanificacionPage() {
             <EditarPeriodoModal
                 isOpen={mostrarEditar}
                 onClose={() => setMostrarEditar(false)}
+                readonlyAnioInstancia={!!trayectoria}
                 onSuccess={(data) => {
                     if (!periodoId) return;
                     planificacionService.actualizarPeriodo(periodoId, data).then(() => {
                         queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+                        queryClient.invalidateQueries({ queryKey: ['trayectoria'] });
+                        queryClient.invalidateQueries({ queryKey: ['trayectoria-arbol'] });
+                        queryClient.invalidateQueries({ queryKey: ['trayectorias'] });
                         addNotification('Período actualizado', 'success');
                         setMostrarEditar(false);
                         if (periodoActivo?.periodoId) {
@@ -329,6 +330,8 @@ export function PlanificacionPage() {
                 }}
                 trayectoriaId={trayectoria?.trayectoriaId}
                 planificacionOrigenId={periodoId ?? undefined}
+                origenAnio={periodoFull?.anio}
+                origenInstancia={periodoFull?.instancia as 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre' | undefined}
             />
         </div>
     );

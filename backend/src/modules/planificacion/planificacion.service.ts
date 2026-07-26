@@ -66,8 +66,14 @@ export class PlanificacionService {
     usuarioCarreraId: number,
     independientes?: boolean,
   ): Promise<PeriodoPlanificacion[]> {
-    const where: any = { usuarioCarrera: { usuarioCarreraId } };
-    if (independientes) where.trayectoriaId = IsNull();
+    const where = independientes
+      ? {
+          usuarioCarrera: { usuarioCarreraId },
+          trayectoriaId: IsNull(),
+        }
+      : {
+          usuarioCarrera: { usuarioCarreraId },
+        };
     return this.periodoRepo.find({
       where,
       relations: {
@@ -91,8 +97,14 @@ export class PlanificacionService {
     limit: number;
     totalPages: number;
   }> {
-    const where: any = { usuarioCarrera: { usuarioCarreraId } };
-    if (independientes) where.trayectoriaId = IsNull();
+    const where = independientes
+      ? {
+          usuarioCarrera: { usuarioCarreraId },
+          trayectoriaId: IsNull(),
+        }
+      : {
+          usuarioCarrera: { usuarioCarreraId },
+        };
     const [data, total] = await this.periodoRepo.findAndCount({
       where,
       relations: {
@@ -188,8 +200,23 @@ export class PlanificacionService {
     });
     if (!periodo) throw new NotFoundException('Período no encontrado');
 
+    await this.eliminarDescendientes(id);
+
     await this.materiaPlanificadaRepo.remove(periodo.materiasPlanificadas);
     await this.periodoRepo.remove(periodo);
+  }
+
+  private async eliminarDescendientes(periodoId: number): Promise<void> {
+    const hijos = await this.periodoRepo.find({
+      where: { planificacionOrigenId: periodoId },
+      relations: { materiasPlanificadas: true },
+    });
+
+    for (const hijo of hijos) {
+      await this.eliminarDescendientes(hijo.periodoId);
+      await this.materiaPlanificadaRepo.remove(hijo.materiasPlanificadas);
+      await this.periodoRepo.remove(hijo);
+    }
   }
 
   async listarBloques(): Promise<BloqueHorario[]> {
@@ -201,7 +228,7 @@ export class PlanificacionService {
   ): Promise<MateriaPlanificada[]> {
     const periodo = await this.periodoRepo.findOne({ where: { periodoId } });
     if (!periodo) return [];
-  
+
     return this.materiaPlanificadaRepo.find({
       where: { periodo: { periodoId } },
       relations: { materia: true, bloque: true },
@@ -255,14 +282,15 @@ export class PlanificacionService {
       );
     }
 
-    const correlativasCumplidas = await this.validarCorrelativas(
+    const disponibles = await this.obtenerMateriasDisponibles(
       periodo.usuarioCarrera.usuarioCarreraId,
-      dto.materiaId,
-      periodo.usuarioCarrera.carrera.carreraId,
       periodo.trayectoriaId ?? undefined,
       periodo.periodoId,
     );
-    if (!correlativasCumplidas) {
+    const materiaDisponible = disponibles.some(
+      (m) => m.materiaId === dto.materiaId,
+    );
+    if (!materiaDisponible) {
       throw new BadRequestException(
         'No se puede planificar: existen correlativas pendientes de aprobación',
       );
@@ -310,26 +338,30 @@ export class PlanificacionService {
     );
 
     const idsPlanificadasPrevias = new Set<number>();
+    const idsPlanificadasEnTrayectoria = new Set<number>();
 
     if (trayectoriaId !== undefined && periodoId !== undefined) {
       const periodoActual = await this.periodoRepo.findOne({
         where: { periodoId },
       });
       if (periodoActual) {
-        const periodosAnteriores = await this.periodoRepo.find({
+        const periodosEnTrayectoria = await this.periodoRepo.find({
           where: { trayectoriaId },
           relations: { materiasPlanificadas: { materia: true } },
         });
 
-        for (const p of periodosAnteriores) {
-          if (p.periodoId === periodoId) continue;
-          const esAnterior =
-            p.anio < periodoActual.anio ||
-            (p.anio === periodoActual.anio &&
-              (ORDEN_INSTANCIA[p.instancia] ?? -1) <
-                (ORDEN_INSTANCIA[periodoActual.instancia] ?? -1));
-          if (esAnterior) {
-            for (const mp of p.materiasPlanificadas) {
+        for (const p of periodosEnTrayectoria) {
+          for (const mp of p.materiasPlanificadas) {
+            if (p.periodoId !== periodoId) {
+              idsPlanificadasEnTrayectoria.add(mp.materia.materiaId);
+            }
+            if (p.periodoId === periodoId) continue;
+            const esAnterior =
+              p.anio < periodoActual.anio ||
+              (p.anio === periodoActual.anio &&
+                (ORDEN_INSTANCIA[p.instancia] ?? -1) <
+                  (ORDEN_INSTANCIA[periodoActual.instancia] ?? -1));
+            if (esAnterior) {
               idsPlanificadasPrevias.add(mp.materia.materiaId);
             }
           }
@@ -349,7 +381,7 @@ export class PlanificacionService {
       const materiaId = materia.materiaId;
 
       if (idsCompletadas.has(materiaId)) continue;
-      if (idsPlanificadasPrevias.has(materiaId)) continue;
+      if (idsPlanificadasEnTrayectoria.has(materiaId)) continue;
 
       const correlativas = (materia.correlativasRequeridas || []).filter(
         (c) =>
@@ -796,10 +828,15 @@ export class PlanificacionService {
     const instanciaNum = ORDEN_INSTANCIA[instancia] ?? -1;
 
     if (planificacionOrigenId !== undefined) {
-      const origen = anteriores.find((p) => p.periodoId === planificacionOrigenId);
+      const origen = anteriores.find(
+        (p) => p.periodoId === planificacionOrigenId,
+      );
       if (!origen) return;
       const origenInstanciaNum = ORDEN_INSTANCIA[origen.instancia] ?? -1;
-      if (anio < origen.anio || (anio === origen.anio && instanciaNum <= origenInstanciaNum)) {
+      if (
+        anio < origen.anio ||
+        (anio === origen.anio && instanciaNum <= origenInstanciaNum)
+      ) {
         throw new ConflictException(
           'El nuevo período debe ser cronológicamente posterior al período origen.',
         );
@@ -851,7 +888,7 @@ export class PlanificacionService {
         usuarioCarrera: { usuarioCarreraId },
         materia: { materiaId: In(idsCorrelativas) },
       },
-      relations: { estado: true },
+      relations: { estado: true, materia: true },
     });
 
     const completadas = progresos.filter(
@@ -863,37 +900,18 @@ export class PlanificacionService {
       const idsCompletadas = new Set(
         completadas.map((p) => p.materia.materiaId),
       );
-      const idsFaltantes = idsCorrelativas.filter(
-        (id) => !idsCompletadas.has(id),
+
+      const idsPlanificadasPrevias = await this.obtenerPlanificadasPrevias(
+        periodoId,
+        idsCompletadas,
       );
-      if (idsFaltantes.length === 0) return true;
 
-      const periodosAnteriores = await this.periodoRepo.find({
-        where: { trayectoriaId },
-        relations: { materiasPlanificadas: { materia: true } },
-      });
+      const idsCumplidos = new Set([
+        ...idsCompletadas,
+        ...idsPlanificadasPrevias,
+      ]);
 
-      const periodoActual = await this.periodoRepo.findOne({
-        where: { periodoId },
-      });
-      if (!periodoActual) return false;
-
-      for (const p of periodosAnteriores) {
-        if (p.periodoId === periodoId) continue;
-        const esAnterior =
-          p.anio < periodoActual.anio ||
-          (p.anio === periodoActual.anio &&
-            (ORDEN_INSTANCIA[p.instancia] ?? -1) <
-              (ORDEN_INSTANCIA[periodoActual.instancia] ?? -1));
-        if (esAnterior) {
-          for (const mp of p.materiasPlanificadas) {
-            const idx = idsFaltantes.indexOf(mp.materia.materiaId);
-            if (idx !== -1) idsFaltantes.splice(idx, 1);
-          }
-        }
-      }
-
-      return idsFaltantes.length === 0;
+      return idsCorrelativas.every((id) => idsCumplidos.has(id));
     }
 
     return completadas.length === correlativas.length;

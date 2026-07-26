@@ -24,9 +24,10 @@ interface EditarPeriodoModalProps {
         instancia: 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre';
         nombre: string;
     } | null;
+    readonlyAnioInstancia?: boolean;
 }
 
-export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData }: EditarPeriodoModalProps) {
+export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData, readonlyAnioInstancia = false }: EditarPeriodoModalProps) {
     const form = useForm<PeriodoFormData>({
         resolver: zodResolver(periodoSchema),
         defaultValues: initialData ?? {
@@ -57,12 +58,14 @@ export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData }: 
                     min={2020}
                     max={2030}
                     error={form.formState.errors.anio?.message}
+                    disabled={readonlyAnioInstancia}
                     {...form.register('anio', { valueAsNumber: true })}
                 />
 
                 <Select
                     label="Instancia"
                     error={form.formState.errors.instancia?.message}
+                    disabled={readonlyAnioInstancia}
                     {...form.register('instancia')}
                 >
                     <option value="Verano">Verano</option>

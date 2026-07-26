@@ -59,6 +59,10 @@ export function TrayectoriaPage() {
         return (orden[a.instancia] ?? 0) - (orden[b.instancia] ?? 0);
     });
 
+    const origenPeriod = origenSeleccionado
+        ? sortedPlanificaciones.find((p) => p.periodoId === origenSeleccionado)
+        : undefined;
+
     const handleContinuar = (origenId?: number) => {
         setOrigenSeleccionado(origenId);
         setMostrarNuevoPeriodo(true);
@@ -137,9 +141,6 @@ export function TrayectoriaPage() {
                         </div>
                     </div>
                 </div>
-                <Button variant="success" onClick={() => handleContinuar(undefined)}>
-                    + Nueva planificación
-                </Button>
             </div>
 
             {sortedPlanificaciones.length === 0 ? (
@@ -210,6 +211,8 @@ export function TrayectoriaPage() {
                 onSuccess={handleCrearSucesivo}
                 trayectoriaId={trayectoriaId ?? undefined}
                 planificacionOrigenId={origenSeleccionado}
+                origenAnio={origenPeriod?.anio}
+                origenInstancia={origenPeriod?.instancia as 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre' | undefined}
             />
         </div>
     );

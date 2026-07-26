@@ -43,7 +43,7 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
                 periodoActual?.periodoId ?? undefined,
             );
         },
-        enabled: !!usuarioCarreraId,
+        enabled: !!usuarioCarreraId && !!periodoActual,
     });
 
     useEffect(() => {
@@ -91,11 +91,6 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
 
     const cargarPeriodo = useCallback(async (periodoId: number) => {
         try {
-            let disponiblesFull = materiasDisponiblesData;
-            if (!disponiblesFull) {
-                disponiblesFull = await planificacionService.obtenerMateriasDisponibles(usuarioCarreraId!);
-            }
-            usePlanificacionStore.getState().setMateriasDisponibles(disponiblesFull);
             usePlanificacionStore.getState().resetCeldas();
 
             const periodo = periodos?.find((p) => p.periodoId === periodoId);
@@ -124,16 +119,10 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
             }
 
             usePlanificacionStore.getState().setCeldas(celdas);
-
-            const state = usePlanificacionStore.getState();
-            const disponibles = state.materiasDisponibles.filter((m) =>
-                horasAsignadas(m.materiaId, state.celdas) < m.cargaHoraria,
-            );
-            usePlanificacionStore.getState().setMateriasDisponibles(disponibles);
         } catch (error) {
             console.error('Error al cargar período:', error);
         }
-    }, [periodos, materiasDisponiblesData, usuarioCarreraId]);
+    }, [periodos]);
 
     const addNotification = useNotificationStore((s) => s.addNotification);
 
