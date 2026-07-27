@@ -144,6 +144,18 @@ export class CrearPeriodoDto {
 - Sin `planificacionOrigenId`: el nuevo período debe ser posterior a **todos** los existentes en la trayectoria.
 - Con `planificacionOrigenId`: el nuevo período solo debe ser posterior al período origen (permite bifurcaciones aunque existan otros períodos en la misma posición).
 
+### Materias disponibles en fork — cadena de ancestros
+
+`obtenerMateriasDisponibles()` (en `PlanificacionService`) calcula las materias disponibles para un período dentro de una trayectoria. En lugar de considerar **todos** los periodos de la trayectoria, recorre solo la **cadena de ancestros** vía `planificacionOrigenId`:
+
+- Se construye un `Map<periodoId, PeriodoPlanificacion>` con todos los periodos de la trayectoria.
+- Se parte del `periodoActual` y se sube por `planificacionOrigenId` hasta la raíz.
+- Solo las materias de los periodos ancestros se agregan a `idsPlanificadasEnTrayectoria` (excluidas de disponibles) y a `idsPlanificadasPrevias` (cuentan como cumplidas para correlativas).
+
+Esto asegura que cada **fork** tenga su propia lista independiente de materias disponibles. Si B y C son hijos de A (mismo año/cuatrimestre), las materias planificadas en B no se excluyen de la lista de C, y viceversa.
+
+El mismo patrón se aplica en `obtenerMateriasDesbloqueables()`.
+
 ### Listar períodos — filtro independientes
 
 `listarPeriodos(usuarioCarreraId, independientes?)` y `listarPeriodosPaginado(usuarioCarreraId, page, limit, independientes?)` aceptan un booleano opcional. Cuando es `true`, agregan `where.trayectoriaId = IsNull()` (usando `IsNull` de TypeORM, no `null` literal).

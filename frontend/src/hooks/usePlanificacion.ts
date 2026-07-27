@@ -147,6 +147,18 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
         mutationFn: async (periodoId: number) => {
             const state = usePlanificacionStore.getState();
 
+            const materiasEnCeldas = new Map<number, number>();
+            for (const m of Object.values(state.celdas)) {
+                if (m && !materiasEnCeldas.has(m.materiaId)) {
+                    materiasEnCeldas.set(m.materiaId, m.cargaHoraria);
+                }
+            }
+            for (const [materiaId, cargaHoraria] of materiasEnCeldas) {
+                if (horasAsignadas(materiaId, state.celdas) < cargaHoraria) {
+                    throw new Error(`Faltan asignar bloques de una materia`);
+                }
+            }
+
             const asignaciones = Object.entries(state.celdas).flatMap(([key, materia]) => {
                 if (!materia || materia.planificacionId !== 0) return [];
                 const [bloqueId, diaSemana] = key.split('-');
@@ -181,8 +193,8 @@ export function usePlanificacion(usuarioCarreraId: number | null, _carreraId: nu
             queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Planificación guardada', 'success');
         },
-        onError: () => {
-            addNotification('Error al guardar la planificación', 'error');
+        onError: (error) => {
+            addNotification(error instanceof Error ? error.message : 'Error al guardar la planificación', 'error');
         },
     });
 

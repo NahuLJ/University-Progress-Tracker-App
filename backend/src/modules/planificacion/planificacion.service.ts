@@ -350,21 +350,20 @@ export class PlanificacionService {
           relations: { materiasPlanificadas: { materia: true } },
         });
 
+        const periodosMap = new Map<number, PeriodoPlanificacion>();
         for (const p of periodosEnTrayectoria) {
-          for (const mp of p.materiasPlanificadas) {
-            if (p.periodoId !== periodoId) {
-              idsPlanificadasEnTrayectoria.add(mp.materia.materiaId);
-            }
-            if (p.periodoId === periodoId) continue;
-            const esAnterior =
-              p.anio < periodoActual.anio ||
-              (p.anio === periodoActual.anio &&
-                (ORDEN_INSTANCIA[p.instancia] ?? -1) <
-                  (ORDEN_INSTANCIA[periodoActual.instancia] ?? -1));
-            if (esAnterior) {
-              idsPlanificadasPrevias.add(mp.materia.materiaId);
-            }
+          periodosMap.set(p.periodoId, p);
+        }
+
+        let current: PeriodoPlanificacion | null = periodoActual;
+        while (current.planificacionOrigenId) {
+          const ancestro = periodosMap.get(current.planificacionOrigenId);
+          if (!ancestro) break;
+          for (const mp of ancestro.materiasPlanificadas) {
+            idsPlanificadasEnTrayectoria.add(mp.materia.materiaId);
+            idsPlanificadasPrevias.add(mp.materia.materiaId);
           }
+          current = ancestro;
         }
       }
     }
@@ -442,23 +441,24 @@ export class PlanificacionService {
     const idsPlanificadasPrevias = new Set<number>();
 
     if (periodo.trayectoriaId) {
-      const periodosAnteriores = await this.periodoRepo.find({
+      const periodosEnTrayectoria = await this.periodoRepo.find({
         where: { trayectoriaId: periodo.trayectoriaId },
         relations: { materiasPlanificadas: { materia: true } },
       });
 
-      for (const p of periodosAnteriores) {
-        if (p.periodoId === periodoId) continue;
-        const esAnterior =
-          p.anio < periodo.anio ||
-          (p.anio === periodo.anio &&
-            (ORDEN_INSTANCIA[p.instancia] ?? -1) <
-              (ORDEN_INSTANCIA[periodo.instancia] ?? -1));
-        if (esAnterior) {
-          for (const mp of p.materiasPlanificadas) {
-            idsPlanificadasPrevias.add(mp.materia.materiaId);
-          }
+      const periodosMap = new Map<number, PeriodoPlanificacion>();
+      for (const p of periodosEnTrayectoria) {
+        periodosMap.set(p.periodoId, p);
+      }
+
+      let current: PeriodoPlanificacion | null = periodo;
+      while (current.planificacionOrigenId) {
+        const ancestro = periodosMap.get(current.planificacionOrigenId);
+        if (!ancestro) break;
+        for (const mp of ancestro.materiasPlanificadas) {
+          idsPlanificadasPrevias.add(mp.materia.materiaId);
         }
+        current = ancestro;
       }
     }
 
@@ -788,20 +788,21 @@ export class PlanificacionService {
       relations: { materiasPlanificadas: { materia: true } },
     });
 
+    const periodosMap = new Map<number, PeriodoPlanificacion>();
     for (const p of todos) {
-      if (p.periodoId === periodoId) continue;
-      const esAnterior =
-        p.anio < actual.anio ||
-        (p.anio === actual.anio &&
-          (ORDEN_INSTANCIA[p.instancia] ?? -1) <
-            (ORDEN_INSTANCIA[actual.instancia] ?? -1));
-      if (esAnterior) {
-        for (const mp of p.materiasPlanificadas) {
-          if (!idsCompletadas.has(mp.materia.materiaId)) {
-            ids.add(mp.materia.materiaId);
-          }
+      periodosMap.set(p.periodoId, p);
+    }
+
+    let current: PeriodoPlanificacion | null = actual;
+    while (current.planificacionOrigenId) {
+      const ancestro = periodosMap.get(current.planificacionOrigenId);
+      if (!ancestro) break;
+      for (const mp of ancestro.materiasPlanificadas) {
+        if (!idsCompletadas.has(mp.materia.materiaId)) {
+          ids.add(mp.materia.materiaId);
         }
       }
+      current = ancestro;
     }
     return ids;
   }

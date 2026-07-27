@@ -43,6 +43,14 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
         },
     });
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const anio = planificacionOrigenId && origenAnio !== undefined
+            ? origenInstancia === '2do Cuatrimestre' ? origenAnio + 1 : origenAnio
+            : new Date().getFullYear();
+        form.reset({ anio, instancia: '1er Cuatrimestre', nombre: '' });
+    }, [isOpen]);
+
     const anioSeleccionado = form.watch('anio');
 
     const instanciasDisponibles = useMemo(() => {

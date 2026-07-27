@@ -187,6 +187,7 @@ alfabéticamente por `nombre` via `useMemo`. Si está vacía muestra "No hay mat
 | Cambios sin guardar (`dirty`) | Botones "Descartar"/"Guardar" habilitados; banner de aviso con opacidad (siempre presente, no desplaza layout) |
 | **Modales separados** | "Descartar cambios" y "Eliminar período" usan modales **separados** con sus propios estados y mensajes |
 | Guardar secuencial | Primero DELETE de `removidas`, luego POST de nuevas; actualiza `planificacionId` en celdas para evitar re-POST |
+| Validar bloques completos al guardar | Antes de cualquier llamada API, verifica que cada materia en `celdas` tenga `horasAsignadas >= cargaHoraria`. Si falta algún bloque, lanza error con snackbar "Faltan asignar bloques de una materia" |
 | Materias desbloqueables dinámicas | Se envían todos los `idsSeleccionados` al backend (reemplazan DB). Refleja tanto altas como bajas |
 | Persistencia de `planificacionId` tras guardar | Las celdas nuevas reciben el ID real devuelto por el backend. Guardados posteriores no las re-POSTean |
 | Orden alfabético en listas | `MateriaDisponibleList` y `MateriasDesbloqueablesList` ordenan por `nombre` con `localeCompare('es')` |

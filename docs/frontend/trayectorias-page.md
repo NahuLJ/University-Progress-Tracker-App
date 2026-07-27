@@ -128,6 +128,18 @@ Para evitar scrollbars del navegador:
 
 Acepta props opcionales `trayectoriaId` y `planificacionOrigenId`. Cuando `trayectoriaId` está presente, el modal sabe que se trata de una planificación sucesiva (no independiente).
 
+### Auto-set de año al continuar
+
+Al abrirse el modal (`useEffect` con `isOpen`), se resetea el formulario con el año adecuado según la planificación de origen:
+
+| Instancia origen | Año por defecto |
+|---|---|
+| Verano | `origenAnio` (mismo año) |
+| 1er Cuatrimestre | `origenAnio` (mismo año) |
+| 2do Cuatrimestre | `origenAnio + 1` (año siguiente) |
+
+Esto evita que al continuar una planificación de 2do Cuatrimestre no haya instancias disponibles en el mismo año.
+
 ## Cards con chip de contador
 
 | Página/Sección | Chip |
