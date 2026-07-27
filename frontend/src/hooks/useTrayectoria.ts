@@ -93,5 +93,6 @@ export function useArbolTrayectoria(trayectoriaId: number | null) {
             return planificacionService.obtenerArbolTrayectoria(trayectoriaId);
         },
         enabled: !!trayectoriaId,
+        refetchOnMount: 'always',
     });
 }

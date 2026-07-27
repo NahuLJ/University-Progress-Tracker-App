@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/common/EmptyState';
@@ -21,6 +20,12 @@ export function TrayectoriaPage() {
     const queryClient = useQueryClient();
     const addNotification = useNotificationStore((s) => s.addNotification);
     const { usuarioCarreraId, carreraActiva, isLoading: cargandoCarrera } = useCarreraActiva();
+
+    useEffect(() => {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = prev; };
+    }, []);
     const [mostrarNuevoPeriodo, setMostrarNuevoPeriodo] = useState(false);
     const [origenSeleccionado, setOrigenSeleccionado] = useState<number | undefined>(undefined);
 
@@ -117,8 +122,8 @@ export function TrayectoriaPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="h-screen overflow-hidden flex flex-col gap-6 -ml-4 sm:-ml-6 lg:-ml-8 -mr-4 sm:-mr-6 lg:-mr-8">
+            <div className="flex items-center justify-between shrink-0 px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-4">
                     <button type="button" onClick={() => navigate('/trayectorias')}
                         className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
@@ -144,66 +149,27 @@ export function TrayectoriaPage() {
             </div>
 
             {sortedPlanificaciones.length === 0 ? (
-                <EmptyState
-                    iconName="calendar"
-                    title="Trayectoria vacía"
-                    description="Agregá planificaciones para comenzar a planificar tus materias sucesivamente."
-                    action={
-                        <Button variant="success" onClick={() => handleContinuar(undefined)}>
-                            Crear primera planificación
-                        </Button>
-                    }
-                />
-            ) : (
-                <>
-                    <Card>
-                        <h2 className="text-lg font-semibold mb-4">Línea de tiempo</h2>
-                        <div className="space-y-2">
-                            {sortedPlanificaciones.map((p, idx) => (
-                                <div key={p.periodoId} className="flex items-center gap-4">
-                                    <div className="flex flex-col items-center">
-                                        <div className={`w-3 h-3 rounded-full ${idx === sortedPlanificaciones.length - 1 ? 'bg-neon-cyan' : 'bg-slate-500'}`} />
-                                        {idx < sortedPlanificaciones.length - 1 && <div className="w-0.5 h-8 bg-slate-600" />}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate(`/planificacion/${p.periodoId}`)}
-                                        className="flex-1 flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors text-left"
-                                    >
-                                        <div>
-                                            <span className="text-white font-medium">
-                                                {p.nombre || `${p.instancia} ${p.anio}`}
-                                            </span>
-                                            <span className="text-slate-400 text-sm ml-2">
-                                                {p.materiasPlanificadas?.length ?? 0} materias
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleContinuar(p.periodoId);
-                                                }}
-                                            >
-                                                Continuar
-                                            </Button>
-                                        </div>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-
-                    {arbol && arbol.periodo && (
-                        <Card>
-                            <h2 className="text-lg font-semibold mb-4">Árbol de bifurcaciones</h2>
-                            <ArbolTrayectoria nodo={arbol} onNavigate={(pid) => navigate(`/planificacion/${pid}`)} onContinuar={handleContinuar} />
-                        </Card>
-                    )}
-                </>
-            )}
+                <div className="px-4 sm:px-6 lg:px-8">
+                    <EmptyState
+                        iconName="calendar"
+                        title="Trayectoria vacía"
+                        description="Agregá planificaciones para comenzar a planificar tus materias sucesivamente."
+                        action={
+                            <Button variant="success" onClick={() => handleContinuar(undefined)}>
+                                Crear primera planificación
+                            </Button>
+                        }
+                    />
+                </div>
+            ) : arbol && arbol.periodo ? (
+                <div className="flex-1 min-h-0">
+                    <ArbolTrayectoria
+                        nodo={arbol}
+                        onNavigate={(pid) => navigate(`/planificacion/${pid}`)}
+                        onContinuar={handleContinuar}
+                    />
+                </div>
+            ) : null}
 
             <NuevoPeriodoModal
                 isOpen={mostrarNuevoPeriodo}
@@ -222,23 +188,25 @@ export default TrayectoriaPage;
 
 function TrayectoriaSkeleton() {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
+        <div className="h-screen overflow-hidden flex flex-col gap-6 -ml-4 sm:-ml-6 lg:-ml-8 -mr-4 sm:-mr-6 lg:-mr-8">
+            <div className="flex items-center gap-4 shrink-0 px-4 sm:px-6 lg:px-8">
                 <Skeleton className="h-9 w-9 rounded-lg" />
                 <div>
                     <Skeleton className="h-8 w-64" />
                     <Skeleton className="h-4 w-48 mt-1" />
                 </div>
             </div>
-            <Card>
-                <Skeleton className="h-6 w-48 mb-4" />
+            <div className="flex-1 min-h-0 overflow-hidden flex gap-6 p-1">
                 {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 mb-2">
-                        <Skeleton className="w-3 h-3 rounded-full" />
-                        <Skeleton className="h-12 flex-1 rounded-lg" />
+                    <div key={i} className="w-72 shrink-0 space-y-4">
+                        <Skeleton className="h-5 w-36" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-9 w-full mt-4" />
                     </div>
                 ))}
-            </Card>
+            </div>
         </div>
     );
 }
