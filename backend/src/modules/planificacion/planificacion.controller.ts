@@ -203,17 +203,4 @@ export class PlanificacionController {
       modo ?? 'simple',
     );
   }
-
-  @Get('periodos/:id/inconsistencias')
-  @ApiOperation({
-    summary:
-      'Verificar materias en un período cuyas correlativas ya no se cumplen',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de materias inconsistentes',
-  })
-  async verificarInconsistencias(@Param('id', ParseIntPipe) id: number) {
-    return this.planificacionService.verificarInconsistencias(id);
-  }
 }

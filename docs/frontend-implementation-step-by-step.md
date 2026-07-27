@@ -394,7 +394,7 @@ Comandos disponibles: `npm run dev`, `npm run build` (`tsc -b && vite build`), `
 - [ ] Desde una planificación en una trayectoria, crear planificación sucesiva → aparece como hijo en el árbol
 - [ ] Plantificaciones independientes (sin trayectoria) solo se ven en `/planificaciones`
 - [ ] Al cambiar de carrera activa, redirige a `/trayectorias` si la trayectoria actual no pertenece a la nueva carrera
-- [ ] Eliminar una planificación con sucesores → cascade elimina toda la subrama
+- [x] Eliminar una planificación con sucesores → cascade elimina toda la subrama
 - [ ] Chips de contador neon-cyan en títulos (trayectorias, carreras, plan, correlativas)
 
 #### Flujo del dashboard

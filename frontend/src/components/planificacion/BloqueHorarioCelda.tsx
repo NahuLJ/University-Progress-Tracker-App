@@ -10,10 +10,12 @@ interface BloqueHorarioCeldaProps {
     materia?: MateriaEnCelda | null;
     onDrop: (bloqueId: number, dia: string, materiaId: number) => void;
     onMoveDrop: (bloqueId: number, dia: string, sourceKey: string) => void;
+    onBeforeQuitar?: (materia: MateriaEnCelda, bloqueId: number, dia: string) => void;
+    idsCompletadas?: Set<number>;
     style?: CSSProperties;
 }
 
-export function BloqueHorarioCelda({ bloqueId, dia, materia, onDrop, onMoveDrop, style }: BloqueHorarioCeldaProps) {
+export function BloqueHorarioCelda({ bloqueId, dia, materia, onDrop, onMoveDrop, onBeforeQuitar, idsCompletadas, style }: BloqueHorarioCeldaProps) {
     const draggedMateriaId = usePlanificacionStore((s) => s.draggedMateriaId);
     const hoveredCell = usePlanificacionStore((s) => s.hoveredCell);
     const isPreview = hoveredCell?.bloqueId === bloqueId && hoveredCell?.dia === dia && draggedMateriaId !== null;
@@ -44,11 +46,19 @@ export function BloqueHorarioCelda({ bloqueId, dia, materia, onDrop, onMoveDrop,
         usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
     };
 
+    const handleBeforeQuitar = (m: MateriaEnCelda) => {
+        if (onBeforeQuitar) onBeforeQuitar(m, bloqueId, dia);
+    };
+
+    const esCompletada = materia ? idsCompletadas?.has(materia.materiaId) ?? false : false;
+
     if (materia) {
         return (
             <MateriaPlanificadaChip
                 materia={materia}
                 onQuitar={handleQuitar}
+                onBeforeQuitar={onBeforeQuitar ? handleBeforeQuitar : undefined}
+                esCompletada={esCompletada}
                 style={{ ...style, gridColumn: undefined, gridRow: undefined }}
                 bloqueId={bloqueId}
                 dia={dia}

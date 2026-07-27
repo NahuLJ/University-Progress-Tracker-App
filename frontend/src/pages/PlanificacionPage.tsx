@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/ui/Card';
@@ -6,9 +6,11 @@ import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Modal } from '../components/ui/Modal';
 import { CalendarioSemanal } from '../components/planificacion/CalendarioSemanal';
+import { ConfirmarEliminacionModal } from '../components/planificacion/ConfirmarEliminacionModal';
 import { usePlanificacion } from '../hooks/usePlanificacion';
 import { usePlanificacionStore } from '../store/planificacion.store';
 import { useCarreraActiva } from '../hooks/useCarreras';
+import { useProgreso } from '../hooks/useProgreso';
 import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
 import { MateriasDesbloqueablesList } from '../components/planificacion/Extras';
@@ -16,6 +18,7 @@ import { planificacionService } from '../services/planificacion.service';
 import { useNotificationStore } from '../store/notification.store';
 import { EditarPeriodoModal } from '../components/planificacion/EditarPeriodoModal';
 import { NuevoPeriodoModal } from '../components/planificacion/NuevoPeriodoModal';
+import type { MateriaEnCelda, MateriaImpactada } from '../types/planificacion.types';
 
 export function PlanificacionPage() {
     const { id } = useParams<{ id: string }>();
@@ -41,6 +44,22 @@ export function PlanificacionPage() {
     const [mostrarEditar, setMostrarEditar] = useState(false);
     const [mostrarDescartarCambios, setMostrarDescartarCambios] = useState(false);
     const [mostrarNuevoSucesivo, setMostrarNuevoSucesivo] = useState(false);
+    const [impactoState, setImpactoState] = useState<{
+        materia: MateriaEnCelda;
+        bloqueId: number;
+        dia: string;
+        impactadas: MateriaImpactada[];
+    } | null>(null);
+
+    const { progresos } = useProgreso(usuarioCarreraId);
+    const idsCompletadas = useMemo(() => {
+        if (!progresos) return new Set<number>();
+        return new Set(
+            progresos
+                .filter((p) => p.estado.nombre === 'Completada')
+                .map((p) => p.materia.materiaId),
+        );
+    }, [progresos]);
 
     const periodoActivo = store.periodoActivo;
     const periodoExiste = periodos?.some((p) => p.periodoId === periodoId);
@@ -69,6 +88,67 @@ export function PlanificacionPage() {
             setMostrarEditar(true);
         }
     };
+
+    const handleBeforeQuitar = useCallback(async (materia: MateriaEnCelda, bloqueId: number, dia: string) => {
+        if (idsCompletadas.has(materia.materiaId)) {
+            addNotification('No se puede eliminar una materia completada', 'error');
+            return;
+        }
+
+        const celdas = usePlanificacionStore.getState().celdas;
+        const bloquesMateria = Object.values(celdas).filter(m => m?.materiaId === materia.materiaId).length;
+
+        if (bloquesMateria > 1) {
+            usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
+            return;
+        }
+
+        if (materia.planificacionId === 0) {
+            usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
+            return;
+        }
+
+        try {
+            const impactadas = await planificacionService.obtenerImpactoEliminacion(materia.planificacionId);
+            if (impactadas.length === 0) {
+                usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
+            } else {
+                setImpactoState({ materia, bloqueId, dia, impactadas });
+            }
+        } catch {
+            usePlanificacionStore.getState().quitarMateria(bloqueId, dia);
+        }
+    }, [idsCompletadas, addNotification]);
+
+    const handleImpactoCascade = useCallback(async () => {
+        if (!impactoState || !periodoId) return;
+        const { materia } = impactoState;
+        try {
+            await planificacionService.eliminarMateriaPlanificada(materia.planificacionId, 'cascade');
+
+            const state = usePlanificacionStore.getState();
+            const keysAEliminar = Object.entries(state.celdas)
+                .filter(([, m]) => m?.materiaId === materia.materiaId)
+                .map(([k]) => k);
+            const newCeldas = { ...state.celdas };
+            for (const k of keysAEliminar) {
+                delete newCeldas[k];
+            }
+            const nuevasDisponibles = [...state.materiasDisponibles];
+            if (!nuevasDisponibles.some(m => m.materiaId === materia.materiaId)) {
+                nuevasDisponibles.push(materia);
+            }
+            usePlanificacionStore.setState({ celdas: newCeldas, materiasDisponibles: nuevasDisponibles });
+
+            addNotification('Materia eliminada en cascada', 'success');
+            queryClient.invalidateQueries({ queryKey: ['trayectoria'] });
+            queryClient.invalidateQueries({ queryKey: ['trayectoria-arbol'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+        } catch {
+            addNotification('Error al eliminar en cascada', 'error');
+        }
+        setImpactoState(null);
+    }, [impactoState, addNotification, queryClient, periodoId]);
 
     if (cargandoCarrera || periodosLoading) {
         return <PlanificacionSkeleton />;
@@ -223,7 +303,10 @@ export function PlanificacionPage() {
                 </div>
             </Card>
 
-            <CalendarioSemanal />
+            <CalendarioSemanal
+                onBeforeQuitar={handleBeforeQuitar}
+                idsCompletadas={idsCompletadas}
+            />
 
             {materiasDesbloqueables.length > 0 && (
                 <MateriasDesbloqueablesList materias={materiasDesbloqueables} />
@@ -332,6 +415,16 @@ export function PlanificacionPage() {
                 planificacionOrigenId={periodoId ?? undefined}
                 origenAnio={periodoFull?.anio}
                 origenInstancia={periodoFull?.instancia as 'Verano' | '1er Cuatrimestre' | '2do Cuatrimestre' | undefined}
+            />
+
+            <ConfirmarEliminacionModal
+                isOpen={impactoState !== null}
+                onClose={() => setImpactoState(null)}
+                materiaNombre={impactoState?.materia.nombre ?? ''}
+                materiaCodigo={impactoState?.materia.codigo ?? ''}
+                periodoActualNombre={periodoActivo ? `${periodoActivo.anio} ${periodoActivo.instancia}${periodoActivo.nombre ? ` - ${periodoActivo.nombre}` : ''}` : ''}
+                impactadas={impactoState?.impactadas ?? []}
+                onCascade={handleImpactoCascade}
             />
         </div>
     );

@@ -354,9 +354,7 @@ A ──┬── B1 ── C1
 
 Cuando el usuario realmente completa una materia (progreso → Completada), esta deja de aparecer como "planificada" en las trayectorias y pasa a ser "completada real". El cálculo de disponibles sucesivos debe priorizar `completadas_reales` sobre `planificadas_previas` (aunque en la práctica es irrelevante porque la unión es la misma).
 
-### 5.6 Validación al editar una planificación con hijos — ⏳ NO IMPLEMENTADO (frontend)
-
-> **Estado actual:** El backend tiene la lógica completa (`obtenerImpactoEliminacion`, `eliminarMateriaPlanificada` con `modo: 'simple' | 'cascade'`, `verificarInconsistencias`, `eliminarRecursivo`). El frontend **no tiene** el modal de impacto ni laUI para elegir modo de eliminación. Al guardar, se llama `eliminarMateriaPlanificada(id)` sin `modo` (default `simple`).
+### 5.6 Validación al editar una planificación con hijos — ✅ IMPLEMENTADO
 
 Cuando se edita una planificación que tiene continuaciones (hijos), las acciones sobre sus materias planificadas pueden romper la cadena de correlativas de los planes sucesores. Se definen tres reglas según el estado de la materia y la decisión del usuario:
 
@@ -369,54 +367,43 @@ Si una materia planificada tiene `estado_materia_id = 3` (Completada) en `progre
 - Se muestra visualmente como bloqueada (opaca, con badge "Completada", sin botón de quitar ni capacidad drag).
 - **Fundamento:** el plan funciona como registro histórico de qué se cursó y en qué horario.
 
-#### 5.6.2 Materia no completada — eliminación simple
+#### 5.6.2 Materia no completada — eliminación en cascada
 
-Si una materia NO está completada y el usuario elige "Eliminar sin afectar hijos":
+Si una materia NO está completada y se confirma la eliminación:
 
-1. Se elimina la materia del plan actual.
-2. No se modifica ningún plan hijo.
-3. En cada plan hijo donde exista una materia cuya correlativa dependa de la eliminada, esa materia se marca como **inconsistente** (⚠️).
-4. Una materia inconsistente:
-   - Sigue visible en el plan hijo (el registro se conserva).
-   - Muestra un tooltip: *"Correlativa '{nombre}' ya no está planificada en '{plan}'"*.
-   - La inconsistencia se resuelve **automáticamente** si la materia ausente se completa realmente en el futuro (al recalcular disponibles, pasa a estar en `completadas_reales`).
-
-#### 5.6.3 Materia no completada — eliminación en cascada
-
-Si una materia NO está completada y el usuario elige "Eliminar en cascada":
-
-1. Se elimina la materia del plan actual.
-2. Se identifican **todas** las materias en planes hijos que dependan directa o indirectamente de ella (a través de la cadena de correlativas).
-3. Se eliminan también esas materias de los planes hijos (recursivamente en toda la subrama).
+1. Se identifican **todas** las materias en planes hijos que dependan directa o indirectamente de ella (a través de la cadena de correlativas).
+2. Se eliminan **todos los bloques** de la materia del plan actual.
+3. Se eliminan **todos los bloques** de las materias afectadas en los planes hijos.
 4. No quedan marcas de inconsistencia porque los elementos problemáticos se eliminan.
 
-#### 5.6.4 Modal de análisis de impacto — ⏳ NO IMPLEMENTADO
+No existe la opción "Eliminar simple" (que dejaría materias inconsistentes ⚠️). La única opción disponible es "Eliminar en cascada".
 
-Al intentar eliminar una materia no completada de un plan que tenga hijos, se muestra un modal con la siguiente estructura:
+#### 5.6.3 Modal de análisis de impacto
+
+Al intentar eliminar el **último bloque** de una materia no completada de un plan que tenga hijos, se muestra un modal con la siguiente estructura:
 
 ```
-"Estás por sacar '{nombre_materia}' del plan '{plan_actual}'."
+"Impacto en planes sucesores — 2026 1er Cuatrimestre - Variante A"
+
+"Estás por sacar '{codigo} - {nombre_materia}' del plan actual."
 
 [Lista de materias afectadas en planes sucesores:]
-• Plan '{plan_hijo_1}': {nombre_materia_1}
-• Plan '{plan_hijo_2}': {nombre_materia_2}
+• '{codigo_1} - {nombre_1}' en 2026 2do Cuatrimestre - Variante B
+• '{codigo_2} - {nombre_2}' en 2027 Verano - Variante C
 
-"¿Qué querés hacer?"
+"Al confirmar se eliminará esta materia del plan actual y todas las materias afectadas
+ de los planes hijos, incluyendo las que dependan indirectamente."
 
-[Cancelar]  [Eliminar solo '{nombre_materia}' (materias hijas quedarán ⚠️)]  [Eliminar en cascada (se eliminan también las materias hijas)]
+[Cancelar]  [Eliminar en cascada]
 ```
 
-- **Opción 1** por defecto si hay materias afectadas. Cancela la operación.
-- **Opción 2** preseleccionada. Aplica la regla 5.6.2.
-- **Opción 3** aplica la regla 5.6.3.
-
-#### 5.6.5 Resumen de comportamientos
+#### 5.6.4 Resumen de comportamientos
 
 | Estado de la materia editada | ¿Se puede eliminar? | ¿Se puede mover? | Efecto en planes hijos |
 |---|---|---|---|
 | Completada real | No | No | Sin efecto |
-| No completada → "Eliminar simple" | Sí | Sí | Materias dependientes marcadas ⚠️ |
-| No completada → "Eliminar cascada" | Sí | Sí | Materias dependientes eliminadas |
+| No completada (sin hijos o sin impacto) | Sí | Sí | Sin efecto |
+| No completada (con impacto) | Sí (cascada) | Sí | Materias dependientes eliminadas (todos sus bloques) |
 
 ---
 
@@ -499,7 +486,7 @@ ALTER TABLE periodo_planificacion
 | Backend 404 en materias/materias-desbloqueables | `NotFoundException` | Retorna `[]` si el período no existe, evitando errores por race conditions. |
 | Chips de contador | No especificado | CarrerasPage, CarreraDetailPage (años, cuatrimestres), PlanEstudiosAdmin, MateriaCorrelativasAdmin usan chips neon-cyan `px-2.5 py-0.5 rounded-full`. |
 | Estado `Planificado` (id=4) | Se menciona como necesario | No implementado. El cálculo de disponibles trayectoria se hace consultando `materia_planificada` de periodos previos, sin persistir estado adicional. |
-| Eliminación en cascada de periodos | `ON DELETE CASCADE` en `planificacion_origen_id` | Se maneja manualmente vía `eliminarDescendientes` en `planificacion.service.ts`. La FK usa `ON DELETE SET NULL` (definido en la entity como `onDelete: 'SET NULL'`). |
+| Eliminación en cascada de periodos | `ON DELETE CASCADE` en `planificacion_origen_id` (migración SQL) | Se maneja manualmente vía `eliminarDescendientes` en `planificacion.service.ts`. La entity no declara `onDelete` explícito. |
 | Validación de correlativas al planificar | Llama a `validarCorrelativas` internamente | `planificarMateria` ahora usa `obtenerMateriasDisponibles` para validar (misma lógica que el listado del frontend), garantizando consistencia absoluta entre lo que se muestra y lo que se acepta. |
 | Cálculo de materias disponibles en forks | Consideraba todos los periodos de la trayectoria planos | Usa **cadena de ancestros** vía `planificacionOrigenId`. Cada fork es independiente: materias en B no afectan disponibles en C. Aplica también en `obtenerMateriasDesbloqueables`. |
 | Botón "+ Nueva planificación" en TrayectoriaPage | Presente | Eliminado. Solo se crean periodos como continuación de otro (botón "Continuar") o como el primero (EmptyState). |
@@ -507,4 +494,4 @@ ALTER TABLE periodo_planificacion
 | Relación `materia` en query de progresos para `validarCorrelativas` | No se cargaba explícitamente | Se agregó `materia: true` en las relations de la query de progresos. |
 | Método `eliminarPeriodo` | Solo eliminaba materias planificadas y el periodo | Ahora antes de eliminar ejecuta `eliminarDescendientes` para eliminar recursivamente todos los hijos y sus materias. |
 | `obtenerPlanificadasPrevias` | Escaneo plano cronológico de todos los periodos | Usa **cadena de ancestros** vía `planificacionOrigenId` (consistente con `obtenerMateriasDisponibles`). |
-| Sección 5.6 (validación al editar con hijos) | Documentado como implementado | Backend: implementado. Frontend: **NO implementado** (falta modal de impacto, selector simple/cascade, materias bloqueadas). |
+| Sección 5.6 (validación al editar con hijos) | — | Implementado: backend + frontend (modal `ConfirmarEliminacionModal` solo con cascade, materias completadas bloqueadas, elimina todos los bloques). Se eliminó `verificarInconsistencias` (sin frontend). |

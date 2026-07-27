@@ -545,14 +545,6 @@ export class PlanificacionService {
       todasLasPlanificaciones.map((p) => [p.periodoId, p]),
     );
 
-    const hijos = this.obtenerDescendientes(
-      periodo.periodoId,
-      mapaPeriodos,
-      new Set(),
-    );
-
-    if (hijos.length === 0) return [];
-
     const progresos = await this.progresoRepo.find({
       where: { usuarioCarrera: { usuarioCarreraId } },
       relations: { materia: true, estado: true },
@@ -563,52 +555,16 @@ export class PlanificacionService {
         .map((p) => p.materia.materiaId),
     );
 
+    const idsExcluidas = new Set<number>([materiaRemovidaId]);
     const impactadas: MateriaImpactada[] = [];
 
-    for (const hijo of hijos) {
-      const planificadasPreviasHijo = await this.obtenerPlanificadasPrevias(
-        hijo.periodoId,
-        idsCompletadas,
-      );
-
-      const idsPreviosSinRemovida = new Set(
-        [...planificadasPreviasHijo].filter((id) => id !== materiaRemovidaId),
-      );
-
-      for (const mpHijo of hijo.materiasPlanificadas) {
-        const correlativas = await this.correlativaRepo.find({
-          where: { materia: { materiaId: mpHijo.materia.materiaId } },
-          relations: { materiaCorrelativa: true, carrera: true },
-        });
-
-        if (correlativas.length === 0) continue;
-
-        const necesitaRemovida = correlativas.some(
-          (c) => c.materiaCorrelativa.materiaId === materiaRemovidaId,
-        );
-        if (!necesitaRemovida) continue;
-
-        const seSigueCumpliendo = correlativas.every((c) => {
-          const corrId = c.materiaCorrelativa.materiaId;
-          return (
-            idsCompletadas.has(corrId) ||
-            idsPreviosSinRemovida.has(corrId) ||
-            corrId === mpHijo.materia.materiaId
-          );
-        });
-
-        if (!seSigueCumpliendo) {
-          impactadas.push({
-            planificacionId: mpHijo.planificacionId,
-            materiaId: mpHijo.materia.materiaId,
-            nombre: mpHijo.materia.nombre,
-            codigo: mpHijo.materia.codigo,
-            periodoId: hijo.periodoId,
-            periodoNombre: hijo.nombre || `${hijo.instancia} ${hijo.anio}`,
-          });
-        }
-      }
-    }
+    await this.verificarImpactoDescendientes(
+      periodo.periodoId,
+      mapaPeriodos,
+      idsCompletadas,
+      idsExcluidas,
+      impactadas,
+    );
 
     return impactadas;
   }
@@ -631,126 +587,45 @@ export class PlanificacionService {
     if (modo === 'cascade' && mp.periodo.trayectoriaId) {
       const impactadas = await this.obtenerImpactoEliminacion(id);
 
-      for (const imp of impactadas) {
-        await this.eliminarRecursivo(imp.materiaId, mp.periodo.periodoId);
+      const resto = await this.materiaPlanificadaRepo.find({
+        where: {
+          materia: { materiaId: mp.materia.materiaId },
+          periodo: { periodoId: mp.periodo.periodoId },
+        },
+        relations: { materia: true, periodo: true },
+      });
+
+      for (const r of resto) {
+        await this.materiaPlanificadaRepo.remove(r);
       }
 
-      await this.materiaPlanificadaRepo.remove(mp);
+      const todasEliminadas = new Set<number>();
+      for (const r of resto) {
+        todasEliminadas.add(r.planificacionId);
+      }
 
-      const eliminadas = [id, ...impactadas.map((i) => i.planificacionId)];
-      return { eliminadas, impactadas };
+      for (const imp of impactadas) {
+        const hijosMismaMateria = await this.materiaPlanificadaRepo.find({
+          where: {
+            materia: { materiaId: imp.materiaId },
+            periodo: { periodoId: imp.periodoId },
+          },
+          relations: { materia: true, periodo: true },
+        });
+        for (const hm of hijosMismaMateria) {
+          todasEliminadas.add(hm.planificacionId);
+          await this.materiaPlanificadaRepo.remove(hm);
+        }
+      }
+
+      return {
+        eliminadas: [...todasEliminadas],
+        impactadas,
+      };
     }
 
     await this.materiaPlanificadaRepo.remove(mp);
     return { eliminadas: [id], impactadas: [] };
-  }
-
-  private async eliminarRecursivo(
-    materiaId: number,
-    periodoOrigenId: number,
-    visitados: Set<number> = new Set(),
-  ): Promise<void> {
-    const periodoOrigen = await this.periodoRepo.findOne({
-      where: { periodoId: periodoOrigenId },
-    });
-    if (!periodoOrigen || !periodoOrigen.trayectoriaId) return;
-
-    const hijos = await this.periodoRepo.find({
-      where: { planificacionOrigenId: periodoOrigenId },
-      relations: { materiasPlanificadas: { materia: true } },
-    });
-
-    for (const hijo of hijos) {
-      if (visitados.has(hijo.periodoId)) continue;
-      visitados.add(hijo.periodoId);
-
-      for (const mpHijo of hijo.materiasPlanificadas) {
-        if (mpHijo.materia.materiaId === materiaId) {
-          await this.materiaPlanificadaRepo.remove(mpHijo);
-        } else {
-          const mpCorrelativas = await this.correlativaRepo.find({
-            where: { materia: { materiaId: mpHijo.materia.materiaId } },
-            relations: { materiaCorrelativa: true },
-          });
-          const necesita = mpCorrelativas.some(
-            (c) => c.materiaCorrelativa.materiaId === materiaId,
-          );
-          if (necesita) {
-            await this.eliminarRecursivo(
-              mpHijo.materia.materiaId,
-              hijo.periodoId,
-              visitados,
-            );
-          }
-        }
-      }
-    }
-  }
-
-  async verificarInconsistencias(
-    periodoId: number,
-  ): Promise<MateriaImpactada[]> {
-    const periodo = await this.periodoRepo.findOne({
-      where: { periodoId },
-      relations: { usuarioCarrera: true },
-    });
-    if (!periodo) throw new NotFoundException('Período no encontrado');
-    if (!periodo.trayectoriaId) return [];
-
-    const usuarioCarreraId = periodo.usuarioCarrera
-      ? periodo.usuarioCarrera.usuarioCarreraId
-      : await this.obtenerUsuarioCarreraId(periodoId);
-
-    const planificadas = await this.materiaPlanificadaRepo.find({
-      where: { periodo: { periodoId } },
-      relations: { materia: true },
-    });
-
-    const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
-      relations: { materia: true, estado: true },
-    });
-    const idsCompletadas = new Set(
-      progresos
-        .filter((p) => p.estado.nombre === 'Completada')
-        .map((p) => p.materia.materiaId),
-    );
-
-    const planificadasPrevias = await this.obtenerPlanificadasPrevias(
-      periodoId,
-      idsCompletadas,
-    );
-
-    const inconsistentes: MateriaImpactada[] = [];
-
-    for (const mp of planificadas) {
-      const correlativas = await this.correlativaRepo.find({
-        where: { materia: { materiaId: mp.materia.materiaId } },
-        relations: { materiaCorrelativa: true },
-      });
-
-      if (correlativas.length === 0) continue;
-
-      const todasCumplidas = correlativas.every(
-        (c) =>
-          idsCompletadas.has(c.materiaCorrelativa.materiaId) ||
-          planificadasPrevias.has(c.materiaCorrelativa.materiaId),
-      );
-
-      if (!todasCumplidas) {
-        inconsistentes.push({
-          planificacionId: mp.planificacionId,
-          materiaId: mp.materia.materiaId,
-          nombre: mp.materia.nombre,
-          codigo: mp.materia.codigo,
-          periodoId,
-          periodoNombre:
-            periodo.nombre || `${periodo.instancia} ${periodo.anio}`,
-        });
-      }
-    }
-
-    return inconsistentes;
   }
 
   private obtenerDescendientes(
@@ -770,6 +645,68 @@ export class PlanificacionService {
       }
     }
     return result;
+  }
+
+  private async verificarImpactoDescendientes(
+    periodoPadreId: number,
+    mapaPeriodos: Map<number, PeriodoPlanificacion>,
+    idsCompletadas: Set<number>,
+    idsExcluidas: Set<number>,
+    impactadas: MateriaImpactada[],
+  ): Promise<void> {
+    const hijos = [...mapaPeriodos.values()].filter(
+      (p) => p.planificacionOrigenId === periodoPadreId,
+    );
+
+    for (const hijo of hijos) {
+      const previas = await this.obtenerPlanificadasPrevias(
+        hijo.periodoId,
+        idsCompletadas,
+      );
+      for (const excluida of idsExcluidas) {
+        previas.delete(excluida);
+      }
+
+      for (const mp of hijo.materiasPlanificadas) {
+        const correlativas = await this.correlativaRepo.find({
+          where: { materia: { materiaId: mp.materia.materiaId } },
+          relations: { materiaCorrelativa: true, carrera: true },
+        });
+
+        if (correlativas.length === 0) continue;
+
+        const todasCumplidas = correlativas.every(
+          (c) =>
+            idsCompletadas.has(c.materiaCorrelativa.materiaId) ||
+            previas.has(c.materiaCorrelativa.materiaId),
+        );
+
+        if (!todasCumplidas) {
+          const key = `${mp.materia.materiaId}-${hijo.periodoId}`;
+          if (
+            !impactadas.some((i) => `${i.materiaId}-${i.periodoId}` === key)
+          ) {
+            impactadas.push({
+              planificacionId: mp.planificacionId,
+              materiaId: mp.materia.materiaId,
+              nombre: mp.materia.nombre,
+              codigo: mp.materia.codigo,
+              periodoId: hijo.periodoId,
+              periodoNombre: `${hijo.anio} ${hijo.instancia}${hijo.nombre ? ` - ${hijo.nombre}` : ''}`,
+            });
+          }
+          idsExcluidas.add(mp.materia.materiaId);
+        }
+      }
+
+      await this.verificarImpactoDescendientes(
+        hijo.periodoId,
+        mapaPeriodos,
+        idsCompletadas,
+        idsExcluidas,
+        impactadas,
+      );
+    }
   }
 
   private async obtenerPlanificadasPrevias(

@@ -158,7 +158,7 @@ interface ActualizarProgresoDto {
 | `POST` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | `PlanificarMateriaDto` | `201`: Planificada · `400`: Conflicto / Correlativas pendientes · `404`: No encontrado |
 | `GET` | `/planificacion/disponibles` | ✅ Bearer | `usuarioCarreraId`, `trayectoriaId` (opcional), `periodoId` (opcional) | — | `200`: Materias disponibles[] (incluye desbloqueadas por planificaciones previas si hay trayectoria) |
 | `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs) | — | `200`: Materias[] que se desbloquearían (vacío si no existe el período) |
-| `DELETE` | `/planificacion/materias/:id` | ✅ Bearer | — | — | `200`: Removida · `404`: No encontrada |
+| `DELETE` | `/planificacion/materias/:id` | ✅ Bearer | `modo`: `simple` \| `cascade` | Opcional. `simple` (default): elimina solo esa materia. `cascade`: elimina todos los bloques + dependientes en hijos | `200`: Removida · `404`: No encontrada |
 
 ### DTOs
 

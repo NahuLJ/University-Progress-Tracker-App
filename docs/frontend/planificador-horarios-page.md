@@ -188,6 +188,8 @@ alfabéticamente por `nombre` via `useMemo`. Si está vacía muestra "No hay mat
 | **Modales separados** | "Descartar cambios" y "Eliminar período" usan modales **separados** con sus propios estados y mensajes |
 | Guardar secuencial | Primero DELETE de `removidas`, luego POST de nuevas; actualiza `planificacionId` en celdas para evitar re-POST |
 | Validar bloques completos al guardar | Antes de cualquier llamada API, verifica que cada materia en `celdas` tenga `horasAsignadas >= cargaHoraria`. Si falta algún bloque, lanza error con snackbar "Faltan asignar bloques de una materia" |
+| Materia completada — inamovible | Si una materia tiene estado "Completada" en progreso, el chip se muestra en verde opaco con badge "Completada". No se puede eliminar ni arrastrar |
+| Eliminación con impacto en hijos | El modal solo se abre al eliminar el **último bloque** de una materia (si tiene más de un bloque, se elimina directamente). Al confirmar, se llama a `eliminarMateriaPlanificada(id, 'cascade')` que borra **todos los bloques** de esa materia en el período actual + todas las materias dependientes (todos sus bloques) en planes hijos. Luego se remueven todos los bloques del store y se invalida cache |
 | Materias desbloqueables dinámicas | Se envían todos los `idsSeleccionados` al backend (reemplazan DB). Refleja tanto altas como bajas |
 | Persistencia de `planificacionId` tras guardar | Las celdas nuevas reciben el ID real devuelto por el backend. Guardados posteriores no las re-POSTean |
 | Orden alfabético en listas | `MateriaDisponibleList` y `MateriasDesbloqueablesList` ordenan por `nombre` con `localeCompare('es')` |

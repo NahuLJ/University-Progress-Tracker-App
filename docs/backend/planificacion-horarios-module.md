@@ -146,6 +146,10 @@ Retorna las materias que se desbloquearían (todas sus correlativas estarían cu
 
 Elimina una materia de la planificación.
 
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `modo` | `'simple' \| 'cascade'` | No | `'simple'` (default): elimina solo esa materia. `'cascade'`: elimina todos los bloques de esa materia en el período actual + todas las materias dependientes (todos sus bloques) en planes hijos. |
+
 | Código | Descripción |
 |---|---|
 | 200 | Materia removida de la planificación |

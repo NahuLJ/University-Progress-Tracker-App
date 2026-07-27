@@ -115,12 +115,6 @@ export const planificacionService = {
         return response.data;
     },
 
-    // ── Inconsistencias ──
-    async verificarInconsistencias(periodoId: number): Promise<MateriaImpactada[]> {
-        const response = await api.get(`/planificacion/periodos/${periodoId}/inconsistencias`);
-        return response.data;
-    },
-
     // ── Trayectorias ──
     async listarTrayectorias(usuarioCarreraId: number): Promise<Trayectoria[]> {
         const response = await api.get('/trayectorias', {

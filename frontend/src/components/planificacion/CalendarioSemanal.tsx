@@ -3,6 +3,12 @@ import { usePlanificacionStore } from '../../store/planificacion.store';
 import { BloqueHorarioCelda } from './BloqueHorarioCelda';
 import { MateriaDisponibleList } from './MateriaDisponibleList';
 import { horasAsignadas } from '../../types/planificacion.types';
+import type { MateriaEnCelda } from '../../types/planificacion.types';
+
+interface CalendarioSemanalProps {
+    onBeforeQuitar?: (materia: MateriaEnCelda, bloqueId: number, dia: string) => void;
+    idsCompletadas?: Set<number>;
+}
 
 const DIAS = [
     { id: 'Lunes', corto: 'Lun' },
@@ -23,7 +29,7 @@ const BLOQUES = [
     { id: 7, label: '20-22' },
 ];
 
-export function CalendarioSemanal() {
+export function CalendarioSemanal({ onBeforeQuitar, idsCompletadas }: CalendarioSemanalProps) {
     const celdas = usePlanificacionStore((s) => s.celdas);
     const materiasDisponibles = usePlanificacionStore((s) => s.materiasDisponibles);
 
@@ -82,6 +88,8 @@ export function CalendarioSemanal() {
                     materia={materia}
                     onDrop={handleDrop}
                     onMoveDrop={handleMoveDrop}
+                    onBeforeQuitar={onBeforeQuitar}
+                    idsCompletadas={idsCompletadas}
                     style={{ gridColumn: i + 2, gridRow: bloque.id + 1 }}
                 />,
             );

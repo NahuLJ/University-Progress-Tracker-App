@@ -49,7 +49,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
             ? origenInstancia === '2do Cuatrimestre' ? origenAnio + 1 : origenAnio
             : new Date().getFullYear();
         form.reset({ anio, instancia: '1er Cuatrimestre', nombre: '' });
-    }, [isOpen]);
+    }, [isOpen, planificacionOrigenId, origenAnio, origenInstancia, form]);
 
     const anioSeleccionado = form.watch('anio');
 
