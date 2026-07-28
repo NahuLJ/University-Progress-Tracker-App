@@ -7,6 +7,50 @@ import { Icon } from '../components/ui/Icon';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { QueryError } from '../components/common/QueryError';
 
+interface GrupoReq {
+    carreraNombre: string;
+    items: { correlativaId: number; materiaCorrelativaNombre: string; materiaCorrelativaCodigo: string; materiaCorrelativaId: number }[];
+}
+
+interface GrupoEsc {
+    carreraNombre: string;
+    items: { correlativaId: number; materiaNombre: string; materiaCodigo: string; materiaId: number }[];
+}
+
+function groupReq(corr: any[]): GrupoReq[] {
+    const map = new Map<number, GrupoReq>();
+    for (const c of corr) {
+        const car = c.carrera;
+        if (!map.has(car.carreraId)) {
+            map.set(car.carreraId, { carreraNombre: car.nombre, items: [] });
+        }
+        map.get(car.carreraId)!.items.push({
+            correlativaId: c.correlativaId,
+            materiaCorrelativaNombre: c.materiaCorrelativa.nombre,
+            materiaCorrelativaCodigo: c.materiaCorrelativa.codigo,
+            materiaCorrelativaId: c.materiaCorrelativa.materiaId,
+        });
+    }
+    return Array.from(map.values());
+}
+
+function groupEsc(corr: any[]): GrupoEsc[] {
+    const map = new Map<number, GrupoEsc>();
+    for (const c of corr) {
+        const car = c.carrera;
+        if (!map.has(car.carreraId)) {
+            map.set(car.carreraId, { carreraNombre: car.nombre, items: [] });
+        }
+        map.get(car.carreraId)!.items.push({
+            correlativaId: c.correlativaId,
+            materiaNombre: c.materia.nombre,
+            materiaCodigo: c.materia.codigo,
+            materiaId: c.materia.materiaId,
+        });
+    }
+    return Array.from(map.values());
+}
+
 export function MateriaDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -17,6 +61,9 @@ export function MateriaDetailPage() {
     if (isLoading) return <LoadingSpinner />;
     if (isError) return <QueryError error={error} onRetry={() => refetch()} />;
     if (!materia) return null;
+
+    const reqGroups = groupReq((materia as any).correlativasRequeridas ?? []);
+    const escGroups = groupEsc((materia as any).esCorrelativaDe ?? []);
 
     return (
         <div className="space-y-6">
@@ -35,19 +82,22 @@ export function MateriaDetailPage() {
                 </Button>
             </div>
 
-            <div className="flex gap-2">
-                <Badge variant="info">{materia.codigo}</Badge>
-                <Badge variant="default">{materia.cargaHoraria}h</Badge>
-                <Badge variant="default">{materia.creditos} créditos</Badge>
-            </div>
-
             <Card title="Información general">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div><span className="text-slate-400">Nombre:</span> <span className="text-white">{materia.nombre}</span></div>
-                    <div><span className="text-slate-400">Código:</span> <span className="text-white font-mono">{materia.codigo}</span></div>
+                    <div>
+                        <span className="text-slate-400">Código:</span>{' '}
+                        <Badge variant="info">{materia.codigo}</Badge>
+                    </div>
                     <div className="col-span-2"><span className="text-slate-400">Descripción:</span> <span className="text-white">{materia.descripcion ?? '-'}</span></div>
-                    <div><span className="text-slate-400">Carga horaria:</span> <span className="text-white">{materia.cargaHoraria}h</span></div>
-                    <div><span className="text-slate-400">Créditos:</span> <span className="text-white">{materia.creditos}</span></div>
+                    <div>
+                        <span className="text-slate-400">Carga horaria:</span>{' '}
+                        <Badge variant="default">{materia.cargaHoraria}h</Badge>
+                    </div>
+                    <div>
+                        <span className="text-slate-400">Créditos:</span>{' '}
+                        <Badge variant="default">{materia.creditos}</Badge>
+                    </div>
                 </div>
             </Card>
 
@@ -82,26 +132,57 @@ export function MateriaDetailPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card title="Correlativas requeridas">
-                    {materia.correlativas.length === 0 ? (
+                    {reqGroups.length === 0 ? (
                         <p className="text-sm text-slate-400">No requiere correlativas.</p>
                     ) : (
-                        <ul className="space-y-2">
-                            {materia.correlativas.map((c) => (
-                                <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
-                                    <span className="text-sm text-slate-200">
-                                        {c.materiaCorrelativa.nombre} <span className="text-slate-400">({c.materiaCorrelativa.codigo})</span>
-                                    </span>
-                                    <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/materias/${c.materiaCorrelativaId}`)}>
-                                        Ver materia
-                                    </Button>
-                                </li>
+                        <div className="space-y-4">
+                            {reqGroups.map((g) => (
+                                <div key={g.carreraNombre}>
+                                    <h4 className="text-sm font-medium text-neon-cyan mb-2">{g.carreraNombre}</h4>
+                                    <ul className="space-y-2">
+                                        {g.items.map((c) => (
+                                            <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
+                                                <span className="text-sm text-slate-200">
+                                                    {c.materiaCorrelativaNombre}{' '}
+                                                    <span className="text-slate-400">({c.materiaCorrelativaCodigo})</span>
+                                                </span>
+                                                <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/materias/${c.materiaCorrelativaId}`)}>
+                                                    Ver materia
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     )}
                 </Card>
 
                 <Card title="Es correlativa de">
-                    <p className="text-sm text-slate-400">No implementado en detalle.</p>
+                    {escGroups.length === 0 ? (
+                        <p className="text-sm text-slate-400">No es correlativa de ninguna materia.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {escGroups.map((g) => (
+                                <div key={g.carreraNombre}>
+                                    <h4 className="text-sm font-medium text-neon-cyan mb-2">{g.carreraNombre}</h4>
+                                    <ul className="space-y-2">
+                                        {g.items.map((c) => (
+                                            <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
+                                                <span className="text-sm text-slate-200">
+                                                    {c.materiaNombre}{' '}
+                                                    <span className="text-slate-400">({c.materiaCodigo})</span>
+                                                </span>
+                                                <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/materias/${c.materiaId}`)}>
+                                                    Ver materia
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Card>
             </div>
         </div>

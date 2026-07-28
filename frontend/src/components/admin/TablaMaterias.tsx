@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminMaterias } from '../../hooks/useAdminMaterias';
 import { Icon } from '../ui/Icon';
@@ -6,8 +6,10 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Paginador } from '../ui/Paginador';
 import { FiltrosModal, type FiltrosState } from './FiltrosModal';
+import { Modal } from '../ui/Modal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { MateriaAdminRow } from '../../types/materia.types';
 
 const SORT_OPTIONS = [
@@ -21,24 +23,30 @@ const SORT_OPTIONS = [
 
 export function TablaMaterias() {
     const navigate = useNavigate();
+    const isFirstRender = useRef(true);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(20);
+    const [page, setPage] = useLocalStorage<number>('admin-materias-page', 1);
+    const [limit, setLimit] = useLocalStorage<number>('admin-materias-limit', 20);
     const [filters, setFilters] = useState<FiltrosState>({
         sortBy: 'nombre',
         sortOrder: 'ASC',
         incluirInactivos: false,
     });
     const [filtrosOpen, setFiltrosOpen] = useState(false);
+    const [eliminarConfirm, setEliminarConfirm] = useState<MateriaAdminRow | null>(null);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         const t = setTimeout(() => {
             setDebouncedSearch(search);
             setPage(1);
         }, 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, setPage]);
 
     const { listarMaterias, eliminarMateria, restaurarMateria } = useAdminMaterias(
         { ...filters, search: debouncedSearch || undefined },
@@ -47,6 +55,13 @@ export function TablaMaterias() {
     );
 
     const { data, isLoading, isError, error, refetch } = listarMaterias;
+
+    const handleEliminar = () => {
+        if (!eliminarConfirm) return;
+        eliminarMateria.mutate(eliminarConfirm.materiaId, {
+            onSuccess: () => setEliminarConfirm(null),
+        });
+    };
 
     const handlePageChange = (p: number) => setPage(p);
     const handleLimitChange = (l: number) => {
@@ -132,7 +147,7 @@ export function TablaMaterias() {
                                             {materia.activo ? (
                                                 <button
                                                     title="Eliminar"
-                                                    onClick={() => eliminarMateria.mutate(materia.materiaId)}
+                                                    onClick={() => setEliminarConfirm(materia)}
                                                     className="text-slate-400 hover:text-neon-red transition-colors"
                                                 >
                                                     <Icon name="delete" className="w-4 h-4" />
@@ -183,6 +198,36 @@ export function TablaMaterias() {
                 sortOptions={SORT_OPTIONS}
                 defaultValues={filters}
             />
+
+            <Modal
+                isOpen={!!eliminarConfirm}
+                onClose={() => setEliminarConfirm(null)}
+                title="Desactivar materia"
+                size="md"
+            >
+                {eliminarConfirm && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-300">
+                            Estás por desactivar la materia <strong className="text-white">{eliminarConfirm.nombre}</strong> ({eliminarConfirm.codigo}).
+                        </p>
+                        <div className="bg-neon-yellow/10 border border-neon-yellow/30 rounded-lg p-3">
+                            <p className="text-sm text-neon-yellow font-medium">Información importante</p>
+                            <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1">
+                                <li>Los datos de progreso de esta materia serán eliminados</li>
+                                <li>Las planificaciones que incluyan esta materia serán eliminadas</li>
+                                <li>Las correlativas asociadas serán eliminadas</li>
+                                <li>Si se restaura la materia, habrá que reasignarla a carreras y rehacer planificaciones</li>
+                            </ul>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="ghost" onClick={() => setEliminarConfirm(null)}>Cancelar</Button>
+                            <Button variant="danger" onClick={handleEliminar} loading={eliminarMateria.isPending}>
+                                Desactivar materia
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

@@ -16,6 +16,10 @@ export function useAdminMaterias(filters?: MateriaAdminFilters, page?: number, l
         mutationFn: (data: CrearMateriaDto) => materiasAdminService.crearMateria(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia'] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Materia creada correctamente', 'success');
         },
         onError: () => {
@@ -23,22 +27,14 @@ export function useAdminMaterias(filters?: MateriaAdminFilters, page?: number, l
         },
     });
 
-    const actualizarMateria = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: ActualizarMateriaDto }) =>
-            materiasAdminService.actualizarMateria(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
-            addNotification('Materia actualizada correctamente', 'success');
-        },
-        onError: () => {
-            addNotification('Error al actualizar la materia', 'error');
-        },
-    });
-
     const eliminarMateria = useMutation({
         mutationFn: (id: number) => materiasAdminService.eliminarMateria(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia'] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Materia desactivada. Progreso, planes y correlativas eliminados.', 'success');
         },
         onError: () => {
@@ -50,6 +46,10 @@ export function useAdminMaterias(filters?: MateriaAdminFilters, page?: number, l
         mutationFn: (id: number) => materiasAdminService.restaurarMateria(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia'] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Materia restaurada correctamente', 'success');
         },
         onError: () => {
@@ -57,27 +57,54 @@ export function useAdminMaterias(filters?: MateriaAdminFilters, page?: number, l
         },
     });
 
+    const actualizarMateria = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: ActualizarMateriaDto }) =>
+            materiasAdminService.actualizarMateria(id, data),
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia', 'detalle', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['materia-detalle', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+            addNotification('Materia actualizada correctamente', 'success');
+        },
+        onError: () => {
+            addNotification('Error al actualizar la materia', 'error');
+        },
+    });
+
     const asignarCorrelativa = useMutation({
         mutationFn: (params: { materiaId: number; data: AsignarCorrelativaDto }) =>
             materiasAdminService.asignarCorrelativa(params.materiaId, params.data),
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia', 'detalle', variables.materiaId] });
+            queryClient.invalidateQueries({ queryKey: ['materia-detalle', variables.materiaId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Correlativa asignada', 'success');
         },
-        onError: () => {
-            addNotification('Error al asignar correlativa', 'error');
+        onError: (error) => {
+            addNotification((error as any)?.response?.data?.message || 'Error al asignar correlativa', 'error');
         },
     });
 
     const eliminarCorrelativa = useMutation({
         mutationFn: (params: { materiaId: number; correlativaId: number; carreraId?: number }) =>
             materiasAdminService.eliminarCorrelativa(params.materiaId, params.correlativaId, params.carreraId),
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materia', 'detalle', variables.materiaId] });
+            queryClient.invalidateQueries({ queryKey: ['materia-detalle', variables.materiaId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Correlativa eliminada', 'success');
         },
-        onError: () => {
-            addNotification('Error al eliminar correlativa', 'error');
+        onError: (error) => {
+            addNotification((error as any)?.response?.data?.message || 'Error al eliminar correlativa', 'error');
         },
     });
 

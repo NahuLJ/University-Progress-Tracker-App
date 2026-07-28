@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
 
 interface ModalProps {
@@ -19,7 +20,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
         xl: 'max-w-4xl',
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div className="flex min-h-full items-center justify-center p-4">
                 <div
@@ -45,6 +46,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
                     <div className="p-4">{children}</div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

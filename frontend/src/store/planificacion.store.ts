@@ -86,7 +86,7 @@ export const usePlanificacionStore = create<PlanificacionState>()(
                 }
 
                 const yaAsignadas = horasAsignadas(materiaId, celdas);
-                if (yaAsignadas + HORAS_POR_BLOQUE > materia.cargaHoraria) {
+                if (yaAsignadas >= materia.cargaHoraria) {
                     useNotificationStore.getState().addNotification(
                         'La materia ya tiene todas sus horas planificadas',
                         'error',

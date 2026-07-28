@@ -6,11 +6,12 @@ import { CrearCarreraModal } from '../components/admin/CrearCarreraModal';
 import { CrearMateriaModal } from '../components/admin/CrearMateriaModal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 type TabKey = 'carreras' | 'materias';
 
 export function AdminPage() {
-    const [tab, setTab] = useState<TabKey>('carreras');
+    const [tab, setTab] = useLocalStorage<TabKey>('admin-tab', 'carreras');
     const [carreraModalOpen, setCarreraModalOpen] = useState(false);
     const [materiaModalOpen, setMateriaModalOpen] = useState(false);
 

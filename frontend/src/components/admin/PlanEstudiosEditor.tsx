@@ -4,13 +4,13 @@ import { carrerasService, materiasAdminService } from '../../services/carreras.s
 import { Select } from '../ui/Select';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { Alert } from '../ui/Alert';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
 import { Modal } from '../ui/Modal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
+import { useNotificationStore } from '../../store/notification.store';
 import type { AgregarMateriaPlanDto } from '../../types/carrera.types';
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
 
 export function PlanEstudiosEditor({ carreraId }: Props) {
     const queryClient = useQueryClient();
+    const addNotification = useNotificationStore((s) => s.addNotification);
     const [materiaId, setMateriaId] = useState(0);
     const [anio, setAnio] = useState(1);
     const [cuatrimestre, setCuatrimestre] = useState(1);
@@ -41,10 +42,19 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             carrerasService.agregarMateriaAlPlan(carreraId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plan-estudios', carreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             setMateriaId(0);
             setAnio(1);
             setCuatrimestre(1);
             setOrden(1);
+            addNotification('Materia agregada al plan', 'success');
+        },
+        onError: (error) => {
+            addNotification((error as any)?.response?.data?.message || 'Error al agregar materia al plan', 'error');
         },
     });
 
@@ -53,7 +63,16 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             carrerasService.quitarMateriaDelPlan(carreraId, carreraMateriaId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plan-estudios', carreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             setQuitarConfirm(null);
+            addNotification('Materia quitada del plan. Progreso y planificaciones eliminados.', 'success');
+        },
+        onError: (error) => {
+            addNotification((error as any)?.response?.data?.message || 'Error al quitar materia del plan', 'error');
         },
     });
 
@@ -130,9 +149,6 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                         <Input label="Cuatrimestre" type="number" min={1} value={cuatrimestre} onChange={(e) => setCuatrimestre(Number(e.target.value))} />
                         <Input label="Orden" type="number" min={1} value={orden} onChange={(e) => setOrden(Number(e.target.value))} />
                     </div>
-                    {agregarMutation.isError && (
-                        <Alert variant="error">No se pudo agregar la materia. Podría estar ya en el plan.</Alert>
-                    )}
                     <Button
                         onClick={() => agregarMutation.mutate({ materiaId, anio, cuatrimestre, orden })}
                         loading={agregarMutation.isPending}
@@ -164,9 +180,6 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                                 <li>Para volver a incluirla, deberás agregarla nuevamente desde cero</li>
                             </ul>
                         </div>
-                        {quitarMutation.isError && (
-                            <Alert variant="error">Error al quitar la materia del plan</Alert>
-                        )}
                         <div className="flex justify-end gap-3 pt-2">
                             <Button variant="ghost" onClick={() => { setQuitarConfirm(null); quitarMutation.reset(); }}>Cancelar</Button>
                             <Button

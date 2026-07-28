@@ -296,7 +296,7 @@ export async function seedCarrerasPrueba(dataSource: DataSource) {
         });
         if (!existeCorr) {
           await correlRepo.save(
-            correlRepo.create({ materia, materiaCorrelativa }),
+            correlRepo.create({ materia, materiaCorrelativa, carrera }),
           );
         }
       }

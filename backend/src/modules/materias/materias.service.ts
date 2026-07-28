@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, DataSource } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Materia } from './entities/materia.entity';
 import { Correlativa } from './entities/correlativa.entity';
 import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
@@ -91,8 +91,8 @@ export class MateriasService {
     const materia = await this.materiaRepo.findOne({
       where: { materiaId: id, activo: true },
       relations: {
-        correlativasRequeridas: { materiaCorrelativa: true },
-        esCorrelativaDe: { materia: true },
+        correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+        esCorrelativaDe: { materia: true, carrera: true },
         planEstudios: { carrera: true },
       },
     });
@@ -102,10 +102,10 @@ export class MateriasService {
     let correlativas = materia.correlativasRequeridas;
     if (carreraId) {
       correlativas = correlativas.filter(
-        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+        (c) => c.carrera.carreraId === carreraId,
       );
       materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
-        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+        (c) => c.carrera.carreraId === carreraId,
       );
     }
 
@@ -234,54 +234,48 @@ export class MateriasService {
         'Materia correlativa no encontrada o desactivada',
       );
 
-    if (dto.carreraId) {
-      const materiaEnPlan = await this.carreraMateriaRepo.findOne({
-        where: {
-          carrera: { carreraId: dto.carreraId },
-          materia: { materiaId },
-        },
-      });
-      const correlativaEnPlan = await this.carreraMateriaRepo.findOne({
-        where: {
-          carrera: { carreraId: dto.carreraId },
-          materia: { materiaId: dto.materiaCorrelativaId },
-        },
-      });
+    const materiaEnPlan = await this.carreraMateriaRepo.findOne({
+      where: {
+        carrera: { carreraId: dto.carreraId },
+        materia: { materiaId },
+      },
+    });
+    const correlativaEnPlan = await this.carreraMateriaRepo.findOne({
+      where: {
+        carrera: { carreraId: dto.carreraId },
+        materia: { materiaId: dto.materiaCorrelativaId },
+      },
+    });
 
-      if (!materiaEnPlan)
-        throw new BadRequestException(
-          'La materia no está en el plan de estudios de esta carrera',
-        );
-      if (!correlativaEnPlan)
-        throw new BadRequestException(
-          'La materia correlativa no está en el plan de estudios de esta carrera',
-        );
+    if (!materiaEnPlan)
+      throw new BadRequestException(
+        'La materia no está en el plan de estudios de esta carrera',
+      );
+    if (!correlativaEnPlan)
+      throw new BadRequestException(
+        'La materia correlativa no está en el plan de estudios de esta carrera',
+      );
 
-      if (materiaEnPlan.anio < correlativaEnPlan.anio) {
-        throw new BadRequestException(
-          'La materia correlativa debe estar en un año anterior o igual',
-        );
-      }
-      if (
-        materiaEnPlan.anio === correlativaEnPlan.anio &&
-        materiaEnPlan.cuatrimestre <= correlativaEnPlan.cuatrimestre
-      ) {
-        throw new BadRequestException(
-          'La materia correlativa debe estar en un cuatrimestre anterior',
-        );
-      }
+    if (materiaEnPlan.anio < correlativaEnPlan.anio) {
+      throw new BadRequestException(
+        'La materia correlativa debe estar en un año anterior o igual',
+      );
     }
-
-    const whereClause: FindOptionsWhere<Correlativa> = {
-      materia: { materiaId },
-      materiaCorrelativa: { materiaId: dto.materiaCorrelativaId },
-    };
-    if (dto.carreraId) {
-      whereClause.carrera = { carreraId: dto.carreraId };
+    if (
+      materiaEnPlan.anio === correlativaEnPlan.anio &&
+      materiaEnPlan.cuatrimestre <= correlativaEnPlan.cuatrimestre
+    ) {
+      throw new BadRequestException(
+        'La materia correlativa debe estar en un cuatrimestre anterior',
+      );
     }
 
     const existente = await this.correlativaRepo.findOne({
-      where: whereClause,
+      where: {
+        materia: { materiaId },
+        materiaCorrelativa: { materiaId: dto.materiaCorrelativaId },
+        carrera: { carreraId: dto.carreraId },
+      },
     });
     if (existente)
       throw new BadRequestException(
@@ -291,7 +285,7 @@ export class MateriasService {
     const entry = this.correlativaRepo.create({
       materia,
       materiaCorrelativa: correlativa,
-      ...(dto.carreraId ? { carrera: { carreraId: dto.carreraId } } : {}),
+      carrera: { carreraId: dto.carreraId },
     });
     return this.correlativaRepo.save(entry);
   }

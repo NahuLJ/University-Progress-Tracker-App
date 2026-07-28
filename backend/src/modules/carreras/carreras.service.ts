@@ -390,6 +390,20 @@ export class CarrerasService {
         'La materia ya está en el plan de estudios',
       );
 
+    const conflictoOrden = await this.carreraMateriaRepo.findOne({
+      where: {
+        carrera: { carreraId },
+        anio: dto.anio,
+        cuatrimestre: dto.cuatrimestre,
+        orden: dto.orden,
+      },
+      relations: { materia: true },
+    });
+    if (conflictoOrden)
+      throw new BadRequestException(
+        `Ya existe una materia en el año ${dto.anio}, cuatrimestre ${dto.cuatrimestre}, orden ${dto.orden}: ${conflictoOrden.materia.nombre}`,
+      );
+
     const entry = this.carreraMateriaRepo.create({
       carrera,
       materia,

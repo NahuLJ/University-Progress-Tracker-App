@@ -119,14 +119,15 @@ frontend/
     ├── context/                   # AuthContext.tsx (AuthProvider) + auth-context.ts + useAuth.ts
     ├── pages/                     # Login, Register, Dashboard, Carreras,
     │                              # CarreraDetail, Progreso, Planificacion
-    ├── components/                # ui/, auth/, dashboard/, carrera/,
-    │                              # progreso/, planificacion/, common/
-    ├── hooks/                     # useAuthForm, useCarreras, usePlanEstudios,
-    │                              # useProgreso, useDashboard, usePlanificacion
-    ├── services/                  # api.ts + services por módulo
-    ├── store/                     # auth.store.ts, planificacion.store.ts
-    ├── types/                     # Interfaces y tipos por dominio
-    └── utils/                     # constants, formato, cn, debounce, fortaleza
+     ├── components/                # ui/, auth/, dashboard/, carrera/,
+     │                              # progreso/, planificacion/, admin/, common/
+     ├── hooks/                     # useAuthForm, useCarreras, usePlanEstudios,
+     │                              # useProgreso, useDashboard, usePlanificacion,
+     │                              # useLocalStorage (hook genérico para persistencia)
+     ├── services/                  # api.ts + services por módulo
+     ├── store/                     # auth.store.ts, planificacion.store.ts
+     ├── types/                     # Interfaces y tipos por dominio
+     └── utils/                     # constants, formato, cn, debounce, fortaleza
 ```
 
 > **Referencia completa:** Ver `docs/frontend-guide.md` — Arquitectura y Estructura de Archivos para el árbol completo y la lista de componentes definidos vs. no implementados.

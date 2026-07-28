@@ -138,6 +138,7 @@ frontend/
     │       └── EmptyState.tsx
     │
     ├── hooks/
+    │   ├── useLocalStorage.ts     # hook genérico para persistir estado en localStorage
     │   ├── useAuthForm.ts        # useLoginForm + useRegisterForm (RHF + Zod + mutation)
     │   ├── useCarreras.ts        # useCarreras() + useInscribir/Desinscribir/Reactivar/EliminarCarrera() + useCarreraActiva()
     │   ├── usePlanEstudios.ts    # useQuery del plan de una carrera

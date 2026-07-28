@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCarreras } from '../../hooks/useAdminCarreras';
 import { Icon } from '../ui/Icon';
@@ -9,6 +9,7 @@ import { Paginador } from '../ui/Paginador';
 import { FiltrosModal, type FiltrosState } from './FiltrosModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { CarreraAdminRow } from '../../types/carrera.types';
 
 const SORT_OPTIONS = [
@@ -20,10 +21,11 @@ const SORT_OPTIONS = [
 
 export function TablaCarreras() {
     const navigate = useNavigate();
+    const isFirstRender = useRef(true);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(20);
+    const [page, setPage] = useLocalStorage<number>('admin-carreras-page', 1);
+    const [limit, setLimit] = useLocalStorage<number>('admin-carreras-limit', 20);
     const [filters, setFilters] = useState<FiltrosState>({
         sortBy: 'nombre',
         sortOrder: 'ASC',
@@ -33,12 +35,16 @@ export function TablaCarreras() {
     const [eliminarConfirm, setEliminarConfirm] = useState<CarreraAdminRow | null>(null);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         const t = setTimeout(() => {
             setDebouncedSearch(search);
             setPage(1);
         }, 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, setPage]);
 
     const { listarCarreras, eliminarCarrera, restaurarCarrera } = useAdminCarreras(
         { ...filters, search: debouncedSearch || undefined },

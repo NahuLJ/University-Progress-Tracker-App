@@ -25,7 +25,7 @@ export class Correlativa {
   @JoinColumn({ name: 'materia_correlativa_id' })
   materiaCorrelativa: Materia;
 
-  @ManyToOne(() => Carrera, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Carrera, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'carrera_id' })
-  carrera?: Carrera;
+  carrera: Carrera;
 }

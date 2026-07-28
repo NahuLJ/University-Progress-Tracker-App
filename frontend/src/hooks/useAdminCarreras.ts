@@ -14,8 +14,11 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
 
     const crearCarrera = useMutation({
         mutationFn: (data: CrearCarreraDto) => carrerasService.crearCarrera(data),
-        onSuccess: () => {
+        onSuccess: (_data, _variables) => {
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['carrera'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Carrera creada correctamente', 'success');
         },
         onError: () => {
@@ -26,8 +29,12 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
     const actualizarCarrera = useMutation({
         mutationFn: ({ id, data }: { id: number; data: ActualizarCarreraDto }) =>
             carrerasService.actualizarCarrera(id, data),
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['carrera', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Carrera actualizada correctamente', 'success');
         },
         onError: () => {
@@ -39,6 +46,10 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
         mutationFn: (id: number) => carrerasService.eliminarCarrera(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['carrera'] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Carrera desactivada', 'success');
         },
         onError: () => {
@@ -50,6 +61,10 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
         mutationFn: (id: number) => carrerasService.restaurarCarrera(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['carrera'] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Carrera restaurada correctamente', 'success');
         },
         onError: () => {
@@ -62,7 +77,10 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
             carrerasService.agregarMateriaAlPlan(params.carreraId, params.data),
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['plan-estudios', variables.carreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Materia agregada al plan', 'success');
         },
         onError: () => {
@@ -75,7 +93,10 @@ export function useAdminCarreras(filters?: CarreraAdminFilters, page?: number, l
             carrerasService.quitarMateriaDelPlan(params.carreraId, params.carreraMateriaId),
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['plan-estudios', variables.carreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
             queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Materia quitada del plan. Progreso y planificaciones eliminados.', 'success');
         },
         onError: () => {

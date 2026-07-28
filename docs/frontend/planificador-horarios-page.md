@@ -88,7 +88,9 @@ Constantes auxiliares en `types/planificacion.types.ts`:
 **`asignarMateria(bloqueId, dia, materiaId)`** asigna **1 bloque** (2h). Si la materia destino ya está
 ocupada por otra distinta, reemplaza (la anterior se agenda en `removidas` si estaba persistida y
 vuelve a disponibles si le quedan horas). La materia permanece en disponibles hasta completar su
-`cargaHoraria`.
+`cargaHoraria`. La validación impide agregar un bloque adicional solo cuando `horasAsignadas`
+≥ `cargaHoraria` (no bloquea si el siguiente bloque puede cubrir las horas restantes, p. ej.,
+una materia de 5h con 2 bloques ya asignados aún permite un 3er bloque para la última hora).
 
 **`moverMateria(sourceKey, destBloqueId, destDia)`** mueve un chip existente entre celdas. La fuente
 se agrega a `removidas` si estaba persistida. Si el destino está ocupado, evicción similar a

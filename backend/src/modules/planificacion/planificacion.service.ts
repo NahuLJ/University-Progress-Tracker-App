@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindOptionsWhere, IsNull } from 'typeorm';
+import { Repository, In, IsNull } from 'typeorm';
 import { PeriodoPlanificacion } from './entities/periodo-planificacion.entity';
 import { MateriaPlanificada } from './entities/materia-planificada.entity';
 import { BloqueHorario } from './entities/bloque-horario.entity';
@@ -384,10 +384,8 @@ export class PlanificacionService {
       if (idsPlanificadasEnTrayectoria.has(materiaId)) continue;
 
       const correlativas = (materia.correlativasRequeridas || []).filter(
-        (c) =>
-          !c.carrera || c.carrera.carreraId === inscripcion.carrera.carreraId,
+        (c) => c.carrera.carreraId === inscripcion.carrera.carreraId,
       );
-
       if (correlativas.length === 0) {
         disponibles.push(materia);
         continue;
@@ -495,7 +493,7 @@ export class PlanificacionService {
       }
 
       const correlativas = (materia.correlativasRequeridas || []).filter(
-        (c) => !c.carrera || c.carrera.carreraId === carreraId,
+        (c) => c.carrera.carreraId === carreraId,
       );
       if (correlativas.length === 0) continue;
 
@@ -535,6 +533,11 @@ export class PlanificacionService {
     const usuarioCarreraId = await this.obtenerUsuarioCarreraId(
       periodo.periodoId,
     );
+    const ucCarrera = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { carrera: true },
+    });
+    const carreraId = ucCarrera?.carrera?.carreraId ?? 0;
 
     const todasLasPlanificaciones = await this.periodoRepo.find({
       where: { trayectoriaId: periodo.trayectoriaId },
@@ -567,6 +570,7 @@ export class PlanificacionService {
       idsCompletadas,
       idsExcluidas,
       impactadas,
+      carreraId,
     );
 
     return impactadas;
@@ -656,6 +660,7 @@ export class PlanificacionService {
     idsCompletadas: Set<number>,
     idsExcluidas: Set<number>,
     impactadas: MateriaImpactada[],
+    carreraId: number,
   ): Promise<void> {
     const hijos = [...mapaPeriodos.values()].filter(
       (p) => p.planificacionOrigenId === periodoPadreId,
@@ -672,8 +677,11 @@ export class PlanificacionService {
 
       for (const mp of hijo.materiasPlanificadas) {
         const correlativas = await this.correlativaRepo.find({
-          where: { materia: { materiaId: mp.materia.materiaId } },
-          relations: { materiaCorrelativa: true, carrera: true },
+          where: {
+            materia: { materiaId: mp.materia.materiaId },
+            carrera: { carreraId },
+          },
+          relations: { materiaCorrelativa: true },
         });
 
         if (correlativas.length === 0) continue;
@@ -708,6 +716,7 @@ export class PlanificacionService {
         idsCompletadas,
         idsExcluidas,
         impactadas,
+        carreraId,
       );
     }
   }
@@ -798,25 +807,19 @@ export class PlanificacionService {
   private async validarCorrelativas(
     usuarioCarreraId: number,
     materiaId: number,
-    carreraId?: number,
+    carreraId: number,
     trayectoriaId?: number,
     periodoId?: number,
   ): Promise<boolean> {
-    const whereClause: FindOptionsWhere<Correlativa> = {
-      materia: { materiaId },
-    };
-    if (carreraId) {
-      whereClause.carrera = { carreraId };
-    }
     const correlativas = await this.correlativaRepo.find({
-      where: whereClause,
-      relations: { materiaCorrelativa: true, carrera: true },
+      where: {
+        materia: { materiaId },
+        carrera: { carreraId },
+      },
+      relations: { materiaCorrelativa: true },
     });
 
     if (correlativas.length === 0) {
-      if (carreraId) {
-        return this.validarCorrelativas(usuarioCarreraId, materiaId);
-      }
       return true;
     }
 

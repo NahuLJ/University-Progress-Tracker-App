@@ -4,7 +4,6 @@ import { materiasAdminService, carrerasService } from '../../services/carreras.s
 import { useAdminMaterias } from '../../hooks/useAdminMaterias';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
-import { Alert } from '../ui/Alert';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
@@ -49,6 +48,8 @@ export function CorrelativasEditor({ carreraId }: Props) {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: materiaQueryKey });
                     queryClient.invalidateQueries({ queryKey: ['plan-estudios', carreraId] });
+                    queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+                    queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
                     setCorrelativaSel(0);
                 },
             },
@@ -62,6 +63,8 @@ export function CorrelativasEditor({ carreraId }: Props) {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: materiaQueryKey });
                     queryClient.invalidateQueries({ queryKey: ['plan-estudios', carreraId] });
+                    queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
+                    queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
                 },
             },
         );
@@ -132,9 +135,6 @@ export function CorrelativasEditor({ carreraId }: Props) {
                                 </option>
                             ))}
                         </Select>
-                        {asignarCorrelativa.isError && (
-                            <Alert variant="error">No se pudo asignar la correlativa. Verificá el orden de año/cuatrimestre.</Alert>
-                        )}
                         <Button
                             onClick={onAsignar}
                             loading={asignarCorrelativa.isPending}

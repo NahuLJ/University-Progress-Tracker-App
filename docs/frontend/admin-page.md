@@ -1,20 +1,24 @@
 # Página Administración (Admin) — Especificación Técnica (implementada)
 
-> **Estado de implementación:** ✅ Completa. Módulo para gestión del catálogo académico accedido vía nav
-> `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 4 tabs (Carreras / Materias / Plan de estudios /
-> Correlativas) con `CrearCarreraModal`, `CrearMateriaModal`, `PlanEstudiosAdmin` y
-> `MateriaCorrelativasAdmin`. Usa `useAdminCarreras`/`useAdminMaterias` (React Query) sobre los servicios
-> `carrerasService`/`materiasAdminService`. Verificado end-to-end contra el backend. ⚠️ El backend aún no
-> aplica `RolesGuard`: cualquier usuario autenticado puede entrar (pendiente de seguridad).
+> **Estado de implementación:** ✅ Completa. Módulo para gestión del catálogo académico
+> accedido vía nav `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 2 tabs (Carreras /
+> Materias) con `CrearCarreraModal`, `CrearMateriaModal`. Las tablas (`TablaCarreras`,
+> `TablaMaterias`) persisten tab activo, página y límite en `localStorage`.
+> Usa `useAdminCarreras`/`useAdminMaterias` (React Query) sobre los servicios
+> `carrerasService`/`materiasAdminService`. Verificado end-to-end contra el backend.
+> ⚠️ El backend aún no aplica `RolesGuard`: cualquier usuario autenticado puede entrar
+> (pendiente de seguridad).
 
 ## Estructura de Componentes (real)
 
 ```
 pages/
-└── AdminPage.tsx               # orquesta tabs + modales de creación
+└── AdminPage.tsx               # orquesta tabs + modales de creación; persiste tab activo en localStorage
 
 components/admin/
-├── AdminTabs.tsx               # tabs: Carreras | Materias | Plan de estudios | Correlativas
+├── AdminTabs.tsx               # tabs: Carreras | Materias
+├── TablaCarreras.tsx           # tabla paginada; persiste page + limit en localStorage
+├── TablaMaterias.tsx           # tabla paginada; persiste page + limit en localStorage
 ├── CrearCarreraModal.tsx       # formulario CrearCarreraDto (RHF + Zod)
 ├── CrearMateriaModal.tsx       # formulario CrearMateriaDto (RHF + Zod)
 ├── PlanEstudiosAdmin.tsx       # seleccionar carrera → ver plan (árbol) → agregar materia
@@ -24,8 +28,9 @@ components/ui/
 ├── Card.tsx · Modal.tsx · Select.tsx · Input.tsx · Button.tsx · Alert.tsx · Badge.tsx
 
 hooks/
-├── useAdminCarreras.ts         # crearCarrera + agregarMateriaAlPlan (mutations)
-└── useAdminMaterias.ts         # listar/crear materias + asignar/quitar correlativas
+├── useLocalStorage.ts           # hook genérico para persistir estado en localStorage
+├── useAdminCarreras.ts          # crearCarrera + agregarMateriaAlPlan (mutations)
+└── useAdminMaterias.ts           # listar/crear materias + asignar/quitar correlativas
 
 services/carreras.service.ts    # carrerasService.* (admin) + materiasAdminService.*
 types/
@@ -39,19 +44,19 @@ types/
 MainLayout
 └── AdminPage
     ├── Header "Administración académica" + descripción
-    ├── AdminTabs (Carreras | Materias | Plan de estudios | Correlativas)
+    ├── AdminTabs (Carreras | Materias) — tab activo persistido en localStorage
     ├── [Tab Carreras]      Card + botón "Nueva carrera" → CrearCarreraModal
+    │                        └── TablaCarreras (page + limit persistidos en localStorage)
     ├── [Tab Materias]      Card + botón "Nueva materia" → CrearMateriaModal
-    ├── [Tab Plan]          PlanEstudiosAdmin
-    │                        ├── Select de carrera
-    │                        ├── Card "Materias en el plan" (árbol Año→Cuatrimestre, con # corr.)
-    │                        └── Card "Agregar materia al plan" (Select materia + año/cuatrimestre/orden)
-    ├── [Tab Correlativas]  MateriaCorrelativasAdmin
-    │                        ├── Card "Seleccionar carrera" (Select carrera, opcional, para filtrar correlativas)
-    │                        ├── Card "Seleccionar materia" (lista + correlativas actuales filtradas por carrera + quitar)
-    │                        └── Card "Agregar correlativa" (Select materia + botón asignar, opcionalmente por carrera)
+    │                        └── TablaMaterias (page + limit persistidos en localStorage)
     └── CrearCarreraModal · CrearMateriaModal
 ```
+
+> **Persistencia:** `AdminPage` lee/escribe el tab activo en `localStorage` bajo clave
+> `admin-tab`. `TablaCarreras` persiste `page` (`admin-carreras-page`) y `limit`
+> (`admin-carreras-limit`). `TablaMaterias` persiste `page` (`admin-materias-page`) y
+> `limit` (`admin-materias-limit`). Al volver de una página de detalle, la última página
+> y el tamaño de página se restauran automáticamente.
 
 ---
 

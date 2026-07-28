@@ -34,10 +34,15 @@ export interface Correlativa {
     materiaId: number;
     materiaCorrelativaId: number;
     materiaCorrelativa: Materia;
+    carrera: {
+        carreraId: number;
+        nombre: string;
+    };
 }
 
 export interface MateriaDetalle extends Materia {
     correlativas: Correlativa[];
+    esCorrelativaDe: Correlativa[];
     carreras?: {
         carreraId: number;
         nombre: string;

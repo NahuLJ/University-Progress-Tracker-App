@@ -486,7 +486,7 @@ export class MateriaPlanificada {
 | Regla | Dónde se aplica |
 |---|---|
 | No puede haber dos materias en el mismo bloque, día y período | Índice único + validación explícita en el Service |
-| Una materia puede ocupar múltiples bloques en distintos días, pero no exceder su `cargaHoraria` semanal | Validación explícita en el Service (cuenta bloques asignados vs `Math.ceil(cargaHoraria / 2)`) |
+| Una materia puede ocupar múltiples bloques en distintos días, pero no exceder su `cargaHoraria` semanal | Backend: `Math.ceil(cargaHoraria / 2)` bloques máximo. Frontend valida `horasAsignadas >= cargaHoraria` antes de impedir agregar otro bloque (permite bloques parciales para cargas horarias impares) |
 | No se puede planificar una materia si no se cumplen sus correlativas | Validación contra `obtenerMateriasDisponibles` (misma lógica que el listado del frontend; considera completadas + planificadas previas en la cadena de ancestros de la trayectoria) |
 | Las materias que se desbloquearían al completar la planificación se calculan en `GET /periodos/:id/materias-desbloqueables` | Endpoint dedicado que compara planificadas + completadas vs. correlativas del plan |
 | Solo existen 7 bloques fijos: 08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22 | Catálogo predefinido en base de datos (seed) |
