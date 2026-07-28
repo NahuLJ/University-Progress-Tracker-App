@@ -1,8 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  Unique,
+} from 'typeorm';
 import { CarreraMateria } from '../../carreras/entities/carrera-materia.entity';
 import { Correlativa } from './correlativa.entity';
 
 @Entity('materia')
+@Unique(['nombre'])
 export class Materia {
   @PrimaryGeneratedColumn()
   materiaId: number;
@@ -21,6 +28,9 @@ export class Materia {
 
   @Column({ type: 'int' })
   creditos: number;
+
+  @Column({ default: true })
+  activo: boolean;
 
   @OneToMany(() => CarreraMateria, (cm) => cm.materia)
   planEstudios: CarreraMateria[];

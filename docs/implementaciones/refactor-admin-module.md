@@ -4,7 +4,7 @@
 
 El módulo admin actual tiene 4 pestañas (Carreras, Materias, Plan de estudios, Correlativas) con una UX mínima
 (listados simples sin búsqueda, filtros ni ordenamiento). Se requiere refactorizar a **2 pestañas** (Carreras,
-Materias) con tabla de datos, buscador, filtros/orden, acciones CRUD, soft-delete y nuevas páginas de
+Materias) con tabla de datos, buscador, filtros/orden, acciones CRUD, baja lógica y nuevas páginas de
 detalle/edición. La gestión del plan de estudios y correlativas se traslada a la página de edición de cada
 carrera.
 
@@ -15,7 +15,7 @@ carrera.
 | 4 tabs (Carreras, Materias, Plan, Correlativas) | 2 tabs (Carreras, Materias) |
 | Listado simple sin búsqueda ni filtros | Tabla con buscador, filtros, ordenamiento y paginación |
 | Sin acciones (solo crear) | Acciones: detalle, editar, eliminar (por fila) |
-| Sin soft-delete | Soft-delete en `carrera` y `materia` (columna `activo`). Hard-delete al quitar materia del plan. |
+| Sin baja lógica | Baja lógica en `carrera` (columna `activo`, datos preservados). Baja lógica con purge en `materia` (columna `activo` + DELETE en cascada). Baja física al quitar materia del plan. |
 | Plan de estudios y correlativas como tabs separados | Plan de estudios y correlativas desde la edición de carrera |
 | Sin página de detalle de materia | Nueva página `MateriaDetailPage` |
 | Sin páginas de edición | Nuevas páginas `CarreraEditPage` y `MateriaEditPage` |
@@ -46,7 +46,7 @@ Misma regla: queries públicas solo devuelven `activo = true`.
 ### 2.3 Migración SQL
 
 ```sql
--- Soft-delete en carrera y materia
+-- Baja lógica: activo en carrera y materia
 ALTER TABLE carrera
     ADD COLUMN activo BOOLEAN NOT NULL DEFAULT TRUE,
     ADD INDEX idx_carrera_activo (activo);
@@ -75,17 +75,28 @@ con mensaje `"Ya existe una carrera/materia con ese nombre"`.
 #### `Carrera` entity
 
 ```typescript
-// Agregar:
-@Column({ default: true })
-activo: boolean;
+// Agregar decoradores (importar Unique de typeorm):
+@Entity('carrera')
+@Unique(['nombre'])              // ← nuevo
+export class Carrera {
+  // ...
+  @Column({ default: true })
+  activo: boolean;               // ← nuevo
+}
+// Alternativa: @Column({ length: 200, unique: true }) sobre nombre
 ```
 
 #### `Materia` entity
 
 ```typescript
-// Agregar:
-@Column({ default: true })
-activo: boolean;
+// Agregar decoradores (importar Unique de typeorm):
+@Entity('materia')
+@Unique(['nombre'])              // ← nuevo (además del unique en codigo)
+export class Materia {
+  // ...
+  @Column({ default: true })
+  activo: boolean;               // ← nuevo
+}
 ```
 
 ### 3.2 Nuevos DTOs
@@ -103,23 +114,23 @@ activo: boolean;
 
 | Método | Ruta | Cambio |
 |---|---|---|
-| `GET` | `/carreras` | **Modificado:** acepta query params `search`, `sortBy`, `sortOrder`, `incluirInactivos`, `page`, `limit`. Respuesta paginada `{ data, total, page, limit, totalPages }`. Por defecto filtra `activo = true`. |
+| `GET` | `/carreras` | **Modificado:** requiere autenticación. Acepta query params `search`, `sortBy`, `sortOrder`, `incluirInactivos`, `page`, `limit`. Respuesta paginada `{ data, total, page, limit, totalPages }`. Por defecto filtra `activo = true`. Sin params, retorna todas las activas (compatibilidad hacia atrás). |
 | `GET` | `/carreras/:id` | **Modificado:** incluye `planEstudios` con datos de plan + correlativas por materia. |
 | `PUT` | `/carreras/:id` | **Nuevo:** actualizar datos de la carrera. |
-| `DELETE` | `/carreras/:id` | **Nuevo:** soft-delete (set `activo = false`). |
+| `DELETE` | `/carreras/:id` | **Nuevo:** baja lógica (set `activo = false`). |
 | `PATCH` | `/carreras/:id/restore` | **Nuevo:** restaurar carrera (set `activo = true`). |
 | `GET` | `/carreras/:id/plan-estudios` | Sin cambios (ya existe). |
 | `POST` | `/carreras/:id/materias` | Sin cambios (ya existe). |
-| `DELETE` | `/carreras/:id/materias/:carreraMateriaId` | **Nuevo:** hard-delete del registro `carrera_materia`. En cascada: DELETE de `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` scoped a esa `(carreraId, materiaId)`. Irreversible. |
+| `DELETE` | `/carreras/:id/materias/:carreraMateriaId` | **Nuevo:** baja física del registro `carrera_materia`. En cascada: DELETE de `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` scoped a esa `(carreraId, materiaId)`. Irreversible. |
 
 #### MateriasController
 
 | Método | Ruta | Cambio |
 |---|---|---|
-| `GET` | `/materias` | **Modificado:** acepta query params `search`, `sortBy`, `sortOrder`, `incluirInactivos`, `page`, `limit`. Respuesta paginada `{ data, total, page, limit, totalPages }`. Por defecto filtra `activo = true`. |
+| `GET` | `/materias` | **Modificado:** requiere autenticación. Acepta query params `search`, `sortBy`, `sortOrder`, `incluirInactivos`, `page`, `limit`. Respuesta paginada `{ data, total, page, limit, totalPages }`. Por defecto filtra `activo = true`. Sin params, retorna todas las activas (compatibilidad hacia atrás). |
 | `GET` | `/materias/:id` | **Modificado:** además de correlativas, devuelve lista de carreras que contienen esta materia (desde `planEstudios`). |
 | `PUT` | `/materias/:id` | **Nuevo:** actualizar datos de la materia. |
-| `DELETE` | `/materias/:id` | **Nuevo:** soft-delete (set `activo = false`). |
+| `DELETE` | `/materias/:id` | **Nuevo:** baja lógica con purge (set `activo = false` + DELETE en cascada de datos relacionados). |
 | `PATCH` | `/materias/:id/restore` | **Nuevo:** restaurar materia (set `activo = true`). |
 | `POST` | `/materias/:id/correlativas` | Sin cambios (ya existe). |
 | `DELETE` | `/materias/:id/correlativas/:correlativaId` | Sin cambios (ya existe). |
@@ -208,6 +219,8 @@ async listar(query: FiltrarMateriasDto): Promise<{
 
 #### `GET /materias/:id` modificado — devolver carreras asociadas
 
+> ℹ️ El método `obtenerConRelaciones()` ya existe en `materias.service.ts` y ya carga `planEstudios: { carrera: true }`. El cambio es mínimo: agregar el mapeo a `carreras[]` en la respuesta.
+
 ```typescript
 async obtenerConRelaciones(id: number, carreraId?: number): Promise<MateriaDetalle> {
   const materia = await this.materiaRepo.findOne({
@@ -235,9 +248,9 @@ async obtenerConRelaciones(id: number, carreraId?: number): Promise<MateriaDetal
 }
 ```
 
-### 3.5 Reglas de soft-delete y hard-delete
+### 3.5 Reglas de borrado (baja lógica y física)
 
-#### Soft-delete de carrera (`carrera.activo = false`)
+#### Baja lógica de carrera (`carrera.activo = false`)
 - NO se eliminan registros relacionados (`usuario_carrera`, `carrera_materia`, `progreso_materia`,
   `periodo_planificacion`, `trayectoria`).
 - **Usuario regular:** la carrera desaparece **completamente** de toda la app:
@@ -250,9 +263,9 @@ async obtenerConRelaciones(id: number, carreraId?: number): Promise<MateriaDetal
   - El `usuario_carrera` existe en BD pero el frontend lo filtra (solo query admin lo trae)
 - **Admin:** puede verla desde AdminPage con `incluirInactivos=true`, y restaurarla.
 
-#### Soft-delete de materia (`materia.activo = false`)
+#### Baja lógica de materia con purge en cascada (`materia.activo = false`)
 
-Mismo comportamiento que carrera: la materia desaparece **completamente** para usuarios.
+> ⚠️ A diferencia de carrera, esta operación **no es un soft-delete puro**: aunque conserva el flag `activo = false` en la tabla `materia`, elimina físicamente todos los datos relacionados. Es una operación destructiva: al restaurar la materia vuelve al catálogo **sin datos asociados**.
 
 En una transacción:
 1. Set `materia.activo = false`.
@@ -265,11 +278,9 @@ En una transacción:
 
 - **Usuario regular:** no la ve en ningún lado: catálogo, plan de estudios, progreso, planificaciones
   ni trayectorias. Es como si nunca hubiera existido.
-- **Admin:** puede verla desde AdminPage con `incluirInactivos=true` y restaurarla.
-- **Al restaurar:** la materia vuelve al catálogo pero sin planes, progreso, correlativas ni
-  planificaciones previas. Si admin quiere incluirla en una carrera, usa "Agregar materia al plan".
+- **Admin:** puede verla desde AdminPage con `incluirInactivos=true` y restaurarla, pero solo recupera el nombre/código — progreso, planes y correlativas se pierden permanentemente.
 
-#### Hard-delete de materia del plan (`DELETE /carreras/:id/materias/:carreraMateriaId`)
+#### Baja física de materia del plan (`DELETE /carreras/:id/materias/:carreraMateriaId`)
 
 Operación irreversible que elimina físicamente:
 
@@ -296,8 +307,9 @@ Operación irreversible que elimina físicamente:
 Si admin quiere incluirla de nuevo, usa el flujo normal "Agregar materia al plan" desde cero.
 
 **Reglas comunes**
-- **Restaurar carrera/materia:** set `activo = true`. Vuelve a aparecer en listados.
-- **Validación al eliminar carrera/materia:** si ya está `activo = false`, retornar `400`.
+- **Restaurar carrera:** set `activo = true`. Vuelve a aparecer en listados con todos sus datos.
+- **Restaurar materia:** set `activo = true`. Vuelve al catálogo pero **sin** planes, progreso, correlativas ni planificaciones previas (se perdieron en el purge).
+- **Validación al desactivar carrera/materia:** si ya está `activo = false`, retornar `400`.
 - **Validación al restaurar:** si ya está `activo = true`, retornar `400`.
 
 ### 3.6 Repercusión en endpoints — mapeo completo
@@ -305,7 +317,7 @@ Si admin quiere incluirla de nuevo, usa el flujo normal "Agregar materia al plan
 Cada endpoint existente debe modificarse para respetar `activo` en `carrera` y `materia`.
 `carrera_materia` no tiene `activo` (se elimina físicamente al quitar del plan).
 
-#### Visibilidad de carrera soft-deleteada para usuarios
+#### Visibilidad de carrera desactivada (baja lógica) para usuarios
 
 Los siguientes endpoints **deben filtrar** `carrera.activo = true` siempre que sean consultados
 por un usuario regular. Los usuarios nunca ven carreras inactivas:
@@ -314,7 +326,7 @@ por un usuario regular. Los usuarios nunca ven carreras inactivas:
 |---|---|
 | `GET /usuarios/:id/carreras` | Agregar `AND c.activo = true` en la relación. |
 | `GET /usuarios/:id/carreras-activas` | Agregar `AND c.activo = true`. |
-| `GET /carreras` (público) | `WHERE c.activo = true` por defecto. |
+| `GET /carreras` (autenticado) | `WHERE c.activo = true` por defecto. Requiere `@ApiBearerAuth()`. Sin query params de paginación retorna array simple de activas (compatibilidad). |
 | `GET /carreras/disponibles/:usuarioId` | Agregar `AND c.activo = true`. |
 | `GET /carreras/:id` | Si `carrera.activo = false`, retornar `404`. |
 | `GET /carreras/:id/plan-estudios` | Validar `carrera.activo = true` o 404. |
@@ -332,7 +344,7 @@ por un usuario regular. Los usuarios nunca ven carreras inactivas:
 | `POST /planificacion/periodos/:id/materias` | Validar que `materia.activo = true`. |
 | `POST /materias/:id/correlativas` | Validar que ambas materias tengan `activo = true`. |
 
-#### Hard-delete de `carrera_materia` — impacto
+#### Baja física de `carrera_materia` — impacto
 
 Al ejecutar `DELETE /carreras/:id/materias/:carreraMateriaId`, se elimina físicamente el registro
 y en cascada todo lo relacionado. No hay filtros adicionales que agregar en otros endpoints:
@@ -385,7 +397,7 @@ hooks/
 services/carreras.service.ts         # Modificado: agregar métodos faltantes
 types/
 ├── carrera.types.ts                 # Modificado: agregar ActualizarCarreraDto, tipos de filtro
-└── materia.types.ts                 # Modificado: agregar MateriaDetalle, tipos de filtro
+└── materia.types.ts                 # Modificado: extender MateriaDetalle (ya existe) + nuevos tipos
 ```
 
 ### 4.2 Refactor de `AdminPage`
@@ -451,7 +463,7 @@ const [limit, setLimit] = useState(20);
 Al hacer clic en un botón "Filtrar" sobre la tabla, se abre `<FiltrosModal>` con:
 
 - **Ordenar por:** select con opciones `Nombre (A-Z)`, `Nombre (Z-A)`, `Duración (menor a mayor)`, `Duración (mayor a menor)`.
-- **Incluir inactivas:** checkbox para mostrar carreras soft-deleteadas (útil para recuperación).
+- **Incluir inactivas:** checkbox para mostrar carreras desactivadas (útil para recuperación).
 - Botones `[Aplicar]` `[Limpiar]`.
 
 #### Acciones (iconos)
@@ -462,7 +474,7 @@ Cada fila tiene 3 botones-icono, reutilizando el componente `<Icon>` del proyect
 |---|---|---|---|
 | `Eye` | `ver` | Detalle | Navega a `/carreras/:id` (reutiliza `CarreraDetailPage` existente) |
 | `Pencil` | `edit` | Editar | Navega a `/admin/carreras/:id/editar` (`CarreraEditPage`) |
-| `Trash2` | `delete` | Eliminar | Modal de confirmación → `DELETE /carreras/:id` (soft-delete). Si ya está inactiva, ocultar y mostrar icono `RefreshCw` con acción "Restaurar". |
+| `Trash2` | `delete` | Eliminar | Modal de confirmación → `DELETE /carreras/:id` (baja lógica). Si ya está inactiva, ocultar y mostrar icono `RefreshCw` con acción "Restaurar". |
 
 Agregar `Eye` y `RefreshCw` a `components/ui/icons.ts`:
 ```typescript
@@ -550,7 +562,7 @@ Mismos iconos que `TablaCarreras`:
 |---|---|---|
 | `ver` | Detalle | Navega a `/admin/materias/:id` (`MateriaDetailPage`) |
 | `edit` | Editar | Navega a `/admin/materias/:id/editar` (`MateriaEditPage`) |
-| `delete` | Eliminar | Modal de confirmación → `DELETE /materias/:id` (soft-delete). Si está inactiva, mostrar `restore` para restaurar. |
+| `delete` | Eliminar | Modal de confirmación → `DELETE /materias/:id` (baja lógica con purge). Si está inactiva, mostrar `restore` para restaurar. |
 
 #### Paginación
 - `<Paginador>` debajo de la tabla con mismo comportamiento que en `TablaCarreras`.
@@ -687,7 +699,9 @@ La gestión de correlativas NO se hace desde acá. Se hace desde la edición de 
 
 ### 4.11 Modificaciones en servicios
 
-#### `carreras.service.ts` — nuevos métodos
+#### `carreras.service.ts` — modificaciones y nuevos métodos
+
+> ⚠️ `obtenerCarrerasDisponibles()` existente (usa `GET /carreras` y espera `CarreraDisponible[]`) debe actualizarse para usar `obtenerCarrerasDisponiblesParaUsuario()` (que ya usa paginación contra `GET /carreras/disponibles/:usuarioId`), o adaptarse a la nueva respuesta paginada.
 
 ```typescript
 async listarCarrerasAdmin(params?: {
@@ -751,9 +765,11 @@ async restaurarMateria(id: number): Promise<Materia> {
 }
 ```
 
-### 4.12 Nuevos tipos
+### 4.12 Tipos nuevos y modificaciones
 
 #### `carrera.types.ts`
+
+> ⚠️ Existe una interfaz `MateriaPlanEstudios` duplicada en `carrera.types.ts` (líneas 45 y 73, una sin `estadoUsuario/nota/tipoAprobacion` y otra con ellos). Se debe eliminar el duplicado y unificar. Además, `Carrera` usa `duracionEstimadaCuatrimestres` mientras el backend devuelve `duracionAnios` — hay que alinear el frontend al backend.
 
 ```typescript
 export interface ActualizarCarreraDto {
@@ -773,6 +789,8 @@ export interface CarreraAdminRow {
 ```
 
 #### `materia.types.ts`
+
+> ⚠️ `MateriaDetalle` ya existe en `materia.types.ts` con `correlativas: Correlativa[]`. Se **modifica** para agregar el campo `carreras[]`. Además, existe una interfaz `Correlativa` duplicada entre `carrera.types.ts` (con `estadoUsuario`, `nota`, `tipoAprobacion`) y `materia.types.ts` (sin esos campos). Se debe unificar en un solo tipo.
 
 ```typescript
 export interface ActualizarMateriaDto {
@@ -857,14 +875,14 @@ usar `addNotification(message, type)` para feedback al usuario.
 |---|---|---|
 | Crear carrera | `"Carrera creada correctamente"` | `"Error al crear la carrera"` |
 | Actualizar carrera | `"Carrera actualizada correctamente"` | `"Error al actualizar la carrera"` |
-| Eliminar carrera (soft-delete) | `"Carrera desactivada"` | `"Error al desactivar la carrera"` |
+| Eliminar carrera (baja lógica) | `"Carrera desactivada"` | `"Error al desactivar la carrera"` |
 | Restaurar carrera | `"Carrera restaurada correctamente"` | `"Error al restaurar la carrera"` |
 | Crear materia | `"Materia creada correctamente"` | `"Error al crear la materia"` |
 | Actualizar materia | `"Materia actualizada correctamente"` | `"Error al actualizar la materia"` |
-| Eliminar materia (soft-delete) | `"Materia desactivada"` | `"Error al desactivar la materia"` |
+| Eliminar materia (baja lógica con purge) | `"Materia desactivada. Progreso, planes y correlativas eliminados."` | `"Error al desactivar la materia"` |
 | Restaurar materia | `"Materia restaurada correctamente"` | `"Error al restaurar la materia"` |
 | Agregar materia al plan | `"Materia agregada al plan"` | `"Error al agregar materia al plan"` |
-| Quitar materia del plan (hard-delete) | `"Materia quitada del plan. Progreso y planificaciones eliminados."` | `"Error al quitar materia del plan"` |
+| Quitar materia del plan (baja física) | `"Materia quitada del plan. Progreso y planificaciones eliminados."` | `"Error al quitar materia del plan"` |
 | Asignar correlativa | `"Correlativa asignada"` | `"Error al asignar correlativa"` |
 | Eliminar correlativa | `"Correlativa eliminada"` | `"Error al eliminar correlativa"` |
 
@@ -904,10 +922,11 @@ Las funcionalidades de `PlanEstudiosAdmin` y `MateriaCorrelativasAdmin` se migra
 
 | Regla | Detalle |
 |---|---|
-| Soft-delete carrera (admin) | `carrera.activo = false`. El usuario no la ve en ningún lado (navbar, dashboard, carreras, progreso, planificaciones, trayectorias). Admin puede verla y restaurarla con `incluirInactivos=true`. |
-| Soft-delete materia (admin) | `materia.activo = false`. En cascada: DELETE de `CarreraMateria`, `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` para **todas las carreras**. El usuario no la ve en ningún lado. Admin puede verla y restaurarla con `incluirInactivos=true`. Al restaurar vuelve sin datos asociados. |
-| Hard-delete materia del plan | `DELETE` físico de `carrera_materia`. En cascada elimina `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` scoped a esa `(carrera, materia)`. Irreversible. Para volver a incluirla, usar "Agregar materia al plan". |
-| Restaurar entidad | `activo = true`. Recupera visibilidad total. |
+| Baja lógica carrera (admin) | `carrera.activo = false`. El usuario no la ve en ningún lado. Admin puede verla y restaurarla con `incluirInactivos=true`. Al restaurar recupera todos los datos asociados. |
+| Baja lógica materia con purge (admin) | `materia.activo = false` + DELETE físico de `CarreraMateria`, `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` para **todas las carreras**. Operación destructiva: al restaurar la materia vuelve al catálogo **sin datos asociados**. |
+| Baja física materia del plan | `DELETE` físico de `carrera_materia`. En cascada elimina `MateriaPlanificada`, `ProgresoMateria` y `Correlativa` scoped a esa `(carrera, materia)`. Irreversible. Para volver a incluirla, usar "Agregar materia al plan". |
+| Restaurar carrera | `activo = true`. Recupera visibilidad total con todos los datos asociados. |
+| Restaurar materia | `activo = true`. Recupera visibilidad en catálogo pero sin planes, progreso, correlativas ni planificaciones (se perdieron en el purge). |
 | Unique nombre carrera | No pueden existir dos carreras con el mismo nombre (validación backend + UNIQUE en BD). |
 | Unique nombre materia | No pueden existir dos materias con el mismo nombre (además del unique ya existente en `codigo`). |
 | Orden y año/cuatrimestre por carrera | `anio`, `cuatrimestre` y `orden` de una materia se almacenan en `carrera_materia` y son **por carrera**. Una misma materia puede estar en 1° año en una carrera y 3° año en otra. |
@@ -956,15 +975,15 @@ Las funcionalidades de `PlanEstudiosAdmin` y `MateriaCorrelativasAdmin` se migra
 - Las rutas de admin para detalle/edición de materia llevan prefijo `/admin/` para distinguirlas de las rutas
   de usuario.
 - El breadcrumb en las páginas de edición/detalle debe permitir navegar hacia atrás: `Admin → Carreras → {nombre} → Editar`.
-- Al soft-deletear una carrera, los usuarios que ya estaban inscriptos pierden todo acceso a ella
+- Al desactivar una carrera (baja lógica), los usuarios que ya estaban inscriptos pierden todo acceso a ella
   (no la ven en navbar, dashboard, carreras, progreso, planificaciones ni trayectorias). Los datos
   en BD persisten (`usuario_carrera`, `progreso_materia`, etc.), pero ningún endpoint de usuario
   los devuelve. Si el admin restaura la carrera, los usuarios recuperan el acceso completo.
-- Al hard-deletear una materia del plan, la operación es **irreversible** y afecta a **todos los
+- Al quitar una materia del plan (baja física), la operación es **irreversible** y afecta a **todos los
   usuarios** de esa carrera. El modal de confirmación debe dejar esto muy claro.
-- La recuperación de carreras/materias soft-deleteadas es exclusiva de admin: botón "Restaurar"
+- La recuperación de carreras/materias desactivadas es exclusiva de admin: botón "Restaurar"
   (icono `RefreshCw`) visible solo cuando `incluirInactivos = true`.
-- A diferencia de `carrera` y `materia`, `carrera_materia` **no** tiene soft-delete. Al quitar
+- A diferencia de `carrera`, `carrera_materia` **no** tiene baja lógica. Al quitar
   una materia del plan se hace `DELETE` físico. Esto simplifica las validaciones: el registro
   simplemente no existe en la BD.
 - Los `anio`, `cuatrimestre` y `orden` de una materia se definen **por carrera** en la tabla pivote

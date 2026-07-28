@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
+  Patch,
   Param,
   Body,
   Query,
@@ -15,7 +17,9 @@ import {
 } from '@nestjs/swagger';
 import { MateriasService } from './materias.service';
 import { CrearMateriaDto } from './dto/crear-materia.dto';
+import { ActualizarMateriaDto } from './dto/actualizar-materia.dto';
 import { AsignarCorrelativaDto } from './dto/asignar-correlativa.dto';
+import { FiltrarMateriasDto } from './dto/filtrar-materias.dto';
 
 @ApiTags('Materias')
 @Controller('materias')
@@ -23,10 +27,11 @@ export class MateriasController {
   constructor(private readonly materiasService: MateriasService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todas las materias del catálogo' })
-  @ApiResponse({ status: 200, description: 'Lista de materias' })
-  async listar() {
-    return this.materiasService.listar();
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar materias con filtros, orden y paginación' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de materias' })
+  async listar(@Query() query?: FiltrarMateriasDto) {
+    return this.materiasService.listar(query);
   }
 
   @Get(':id')
@@ -47,6 +52,34 @@ export class MateriasController {
   @ApiResponse({ status: 400, description: 'Error de validación' })
   async crear(@Body() dto: CrearMateriaDto) {
     return this.materiasService.crear(dto);
+  }
+
+  @Put(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar una materia' })
+  @ApiResponse({ status: 200, description: 'Materia actualizada' })
+  @ApiResponse({ status: 404, description: 'Materia no encontrada' })
+  async actualizar(@Param('id') id: number, @Body() dto: ActualizarMateriaDto) {
+    return this.materiasService.actualizar(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Desactivar materia con purge (baja lógica)' })
+  @ApiResponse({ status: 200, description: 'Materia desactivada' })
+  @ApiResponse({ status: 404, description: 'Materia no encontrada' })
+  async eliminar(@Param('id') id: number) {
+    await this.materiasService.eliminar(id);
+    return { message: 'Materia desactivada exitosamente' };
+  }
+
+  @Patch(':id/restore')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Restaurar materia desactivada' })
+  @ApiResponse({ status: 200, description: 'Materia restaurada' })
+  @ApiResponse({ status: 404, description: 'Materia no encontrada' })
+  async restaurar(@Param('id') id: number) {
+    return this.materiasService.restaurar(id);
   }
 
   @Post(':id/correlativas')

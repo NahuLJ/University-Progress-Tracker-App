@@ -1,8 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  Unique,
+} from 'typeorm';
 import { UsuarioCarrera } from './usuario-carrera.entity';
 import { CarreraMateria } from './carrera-materia.entity';
 
 @Entity('carrera')
+@Unique(['nombre'])
 export class Carrera {
   @PrimaryGeneratedColumn()
   carreraId: number;
@@ -15,6 +22,9 @@ export class Carrera {
 
   @Column({ name: 'duracion_anios', type: 'decimal', precision: 3, scale: 1 })
   duracionAnios: number;
+
+  @Column({ default: true })
+  activo: boolean;
 
   @OneToMany(() => UsuarioCarrera, (uc) => uc.carrera)
   usuarioCarreras: UsuarioCarrera[];

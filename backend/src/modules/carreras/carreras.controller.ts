@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -17,7 +20,9 @@ import {
 } from '@nestjs/swagger';
 import { CarrerasService } from './carreras.service';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
+import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
+import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
 
 @ApiTags('Carreras')
 @Controller('carreras')
@@ -25,10 +30,11 @@ export class CarrerasController {
   constructor(private readonly carrerasService: CarrerasService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todas las carreras' })
-  @ApiResponse({ status: 200, description: 'Lista de carreras' })
-  async listar() {
-    return this.carrerasService.listar();
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar carreras con filtros, orden y paginación' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de carreras' })
+  async listar(@Query() query?: FiltrarCarrerasDto) {
+    return this.carrerasService.listar(query);
   }
 
   @Get('disponibles/:usuarioId')
@@ -80,6 +86,34 @@ export class CarrerasController {
     return this.carrerasService.crear(dto);
   }
 
+  @Put(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar una carrera' })
+  @ApiResponse({ status: 200, description: 'Carrera actualizada' })
+  @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
+  async actualizar(@Param('id') id: number, @Body() dto: ActualizarCarreraDto) {
+    return this.carrerasService.actualizar(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Desactivar carrera (baja lógica)' })
+  @ApiResponse({ status: 200, description: 'Carrera desactivada' })
+  @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
+  async eliminar(@Param('id') id: number) {
+    await this.carrerasService.eliminar(id);
+    return { message: 'Carrera desactivada exitosamente' };
+  }
+
+  @Patch(':id/restore')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Restaurar carrera desactivada' })
+  @ApiResponse({ status: 200, description: 'Carrera restaurada' })
+  @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
+  async restaurar(@Param('id') id: number) {
+    return this.carrerasService.restaurar(id);
+  }
+
   @Post(':id/materias')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Agregar materia al plan de estudios' })
@@ -91,5 +125,18 @@ export class CarrerasController {
     @Body() dto: AgregarMateriaPlanDto,
   ) {
     return this.carrerasService.agregarMateriaAlPlan(id, dto);
+  }
+
+  @Delete(':id/materias/:carreraMateriaId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Quitar materia del plan (baja física)' })
+  @ApiResponse({ status: 200, description: 'Materia quitada del plan' })
+  @ApiResponse({ status: 404, description: 'Registro no encontrado' })
+  async quitarMateria(
+    @Param('id') id: number,
+    @Param('carreraMateriaId') carreraMateriaId: number,
+  ) {
+    await this.carrerasService.quitarMateriaDelPlan(id, carreraMateriaId);
+    return { message: 'Materia quitada del plan exitosamente' };
   }
 }

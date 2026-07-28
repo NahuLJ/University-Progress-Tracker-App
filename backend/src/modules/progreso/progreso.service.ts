@@ -40,9 +40,12 @@ export class ProgresoService {
       order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
     });
 
-    if (ordenPlan.length === 0) return [];
+    const ordenPlanActivo = ordenPlan.filter(
+      (cm) => cm.materia?.activo !== false,
+    );
+    if (ordenPlanActivo.length === 0) return [];
 
-    const materiaIds = ordenPlan.map((cm) => cm.materia.materiaId);
+    const materiaIds = ordenPlanActivo.map((cm) => cm.materia.materiaId);
 
     const progresos = await this.progresoRepo.find({
       where: { usuarioCarrera: { usuarioCarreraId } },
@@ -55,7 +58,7 @@ export class ProgresoService {
       .map((id) => {
         const p = progresoMap.get(id);
         if (!p) return undefined;
-        const cm = ordenPlan.find((o) => o.materia.materiaId === id);
+        const cm = ordenPlanActivo.find((o) => o.materia.materiaId === id);
         return {
           progresoId: p.progresoId,
           materiaId: p.materia.materiaId,
@@ -99,13 +102,16 @@ export class ProgresoService {
       relations: { materia: true },
     });
 
+    const planActivo = planCompleto.filter(
+      (cm) => cm.materia?.activo !== false,
+    );
     const estadoPendiente = await this.estadoRepo.findOne({
       where: { nombre: 'Pendiente' },
     });
     let creados = 0;
     let existentes = 0;
 
-    for (const entry of planCompleto) {
+    for (const entry of planActivo) {
       const yaExiste = await this.progresoRepo.findOne({
         where: {
           usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },

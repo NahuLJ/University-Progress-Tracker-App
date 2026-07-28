@@ -4,14 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Carrera } from './entities/carrera.entity';
 import { CarreraMateria } from './entities/carrera-materia.entity';
 import { Materia } from '../materias/entities/materia.entity';
 import { UsuarioCarrera } from './entities/usuario-carrera.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
+import { MateriaPlanificada } from '../planificacion/entities/materia-planificada.entity';
+import { Correlativa } from '../materias/entities/correlativa.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
+import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
+import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
 
 export interface MateriaPlanItem {
   materiaId: number;
@@ -64,10 +68,46 @@ export class CarrerasService {
     private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
     @InjectRepository(ProgresoMateria)
     private readonly progresoRepo: Repository<ProgresoMateria>,
+    @InjectRepository(MateriaPlanificada)
+    private readonly materiaPlanificadaRepo: Repository<MateriaPlanificada>,
+    @InjectRepository(Correlativa)
+    private readonly correlativaRepo: Repository<Correlativa>,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async listar(): Promise<Carrera[]> {
-    return this.carreraRepo.find({ order: { nombre: 'ASC' } });
+  async listar(query?: FiltrarCarrerasDto): Promise<{
+    data: Carrera[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const qb = this.carreraRepo.createQueryBuilder('c');
+
+    if (!query?.incluirInactivos) {
+      qb.andWhere('c.activo = :activo', { activo: true });
+    }
+
+    if (query?.search) {
+      qb.andWhere('c.nombre LIKE :search', { search: `%${query.search}%` });
+    }
+
+    const sortBy = ['nombre', 'duracionAnios'].includes(query?.sortBy ?? '')
+      ? `c.${query!.sortBy!}`
+      : 'c.nombre';
+    const order = query?.sortOrder === 'DESC' ? 'DESC' : 'ASC';
+    qb.orderBy(sortBy, order);
+
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 20;
+    const total = await qb.getCount();
+    const totalPages = Math.ceil(total / limit);
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return { data, total, page, limit, totalPages };
   }
 
   async obtenerDisponibles(
@@ -89,10 +129,11 @@ export class CarrerasService {
 
     let query = this.carreraRepo
       .createQueryBuilder('c')
+      .andWhere('c.activo = :activo', { activo: true })
       .orderBy('c.nombre', 'ASC');
 
     if (inscritasIds.length > 0) {
-      query = query.where('c.carreraId NOT IN (:...ids)', {
+      query = query.andWhere('c.carreraId NOT IN (:...ids)', {
         ids: inscritasIds,
       });
     }
@@ -109,7 +150,7 @@ export class CarrerasService {
 
   async obtenerConPlan(id: number): Promise<Carrera> {
     const carrera = await this.carreraRepo.findOne({
-      where: { carreraId: id },
+      where: { carreraId: id, activo: true },
       relations: { planEstudios: { materia: true } },
     });
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
@@ -130,7 +171,9 @@ export class CarrerasService {
       }[];
     }[];
   }> {
-    const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
+    const carrera = await this.carreraRepo.findOne({
+      where: { carreraId, activo: true },
+    });
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
     const entries = await this.carreraMateriaRepo.find({
@@ -243,6 +286,61 @@ export class CarrerasService {
 
   async crear(dto: CrearCarreraDto): Promise<Carrera> {
     const carrera = this.carreraRepo.create(dto);
+    try {
+      return await this.carreraRepo.save(carrera);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as Record<string, unknown>).code === 'ER_DUP_ENTRY'
+      ) {
+        throw new BadRequestException('Ya existe una carrera con ese nombre');
+      }
+      throw error;
+    }
+  }
+
+  async actualizar(id: number, dto: ActualizarCarreraDto): Promise<Carrera> {
+    const carrera = await this.carreraRepo.findOne({
+      where: { carreraId: id },
+    });
+    if (!carrera) throw new NotFoundException('Carrera no encontrada');
+    Object.assign(carrera, dto);
+    try {
+      return await this.carreraRepo.save(carrera);
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as Record<string, unknown>).code === 'ER_DUP_ENTRY'
+      ) {
+        throw new BadRequestException('Ya existe una carrera con ese nombre');
+      }
+      throw error;
+    }
+  }
+
+  async eliminar(id: number): Promise<void> {
+    const carrera = await this.carreraRepo.findOne({
+      where: { carreraId: id },
+    });
+    if (!carrera) throw new NotFoundException('Carrera no encontrada');
+    if (!carrera.activo)
+      throw new BadRequestException('La carrera ya está inactiva');
+    carrera.activo = false;
+    await this.carreraRepo.save(carrera);
+  }
+
+  async restaurar(id: number): Promise<Carrera> {
+    const carrera = await this.carreraRepo.findOne({
+      where: { carreraId: id },
+    });
+    if (!carrera) throw new NotFoundException('Carrera no encontrada');
+    if (carrera.activo)
+      throw new BadRequestException('La carrera ya está activa');
+    carrera.activo = true;
     return this.carreraRepo.save(carrera);
   }
 
@@ -250,11 +348,13 @@ export class CarrerasService {
     carreraId: number,
     dto: AgregarMateriaPlanDto,
   ): Promise<CarreraMateria> {
-    const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
+    const carrera = await this.carreraRepo.findOne({
+      where: { carreraId, activo: true },
+    });
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
     const materia = await this.materiaRepo.findOne({
-      where: { materiaId: dto.materiaId },
+      where: { materiaId: dto.materiaId, activo: true },
     });
     if (!materia) throw new NotFoundException('Materia no encontrada');
 
@@ -274,5 +374,64 @@ export class CarrerasService {
       orden: dto.orden,
     });
     return this.carreraMateriaRepo.save(entry);
+  }
+
+  async quitarMateriaDelPlan(
+    carreraId: number,
+    carreraMateriaId: number,
+  ): Promise<void> {
+    const entry = await this.carreraMateriaRepo.findOne({
+      where: { carreraMateriaId, carrera: { carreraId } },
+      relations: { materia: true },
+    });
+    if (!entry) throw new NotFoundException('Registro no encontrado');
+
+    const materiaId = entry.materia.materiaId;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.delete(MateriaPlanificada, {
+        materia: { materiaId },
+        periodo: {
+          usuarioCarrera: { carrera: { carreraId } },
+        },
+      });
+
+      const usuarioCarreras = await queryRunner.manager.find(UsuarioCarrera, {
+        where: { carrera: { carreraId } },
+      });
+      const usuarioCarreraIds = usuarioCarreras.map(
+        (uc) => uc.usuarioCarreraId,
+      );
+      if (usuarioCarreraIds.length > 0) {
+        await queryRunner.manager.delete(ProgresoMateria, {
+          materia: { materiaId },
+          usuarioCarrera: { usuarioCarreraId: usuarioCarreraIds },
+        });
+      }
+
+      await queryRunner.manager.delete(Correlativa, {
+        materia: { materiaId },
+        carrera: { carreraId },
+      });
+      await queryRunner.manager.delete(Correlativa, {
+        materiaCorrelativa: { materiaId },
+        carrera: { carreraId },
+      });
+
+      await queryRunner.manager.delete(CarreraMateria, {
+        carreraMateriaId,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

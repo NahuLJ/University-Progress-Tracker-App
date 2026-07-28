@@ -66,14 +66,20 @@ export class UsuariosService {
     limit: number;
     totalPages: number;
   }> {
-    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
-      where: { usuario: { usuarioId: id } },
-      relations: { carrera: true },
-      order: { fechaInicio: 'DESC' as const },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const qb = this.usuarioCarreraRepo
+      .createQueryBuilder('uc')
+      .innerJoinAndSelect('uc.carrera', 'c')
+      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('c.activo = :activo', { activo: true })
+      .orderBy('uc.fechaInicio', 'DESC');
+
+    const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
     return { data, total, page, limit, totalPages };
   }
 
@@ -88,14 +94,21 @@ export class UsuariosService {
     limit: number;
     totalPages: number;
   }> {
-    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
-      where: { usuario: { usuarioId: id }, activo: true },
-      relations: { carrera: true },
-      order: { fechaInicio: 'DESC' as const },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const qb = this.usuarioCarreraRepo
+      .createQueryBuilder('uc')
+      .innerJoinAndSelect('uc.carrera', 'c')
+      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('uc.activo = :ucActivo', { ucActivo: true })
+      .andWhere('c.activo = :activo', { activo: true })
+      .orderBy('uc.fechaInicio', 'DESC');
+
+    const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
     return { data, total, page, limit, totalPages };
   }
 
@@ -110,14 +123,21 @@ export class UsuariosService {
     limit: number;
     totalPages: number;
   }> {
-    const [data, total] = await this.usuarioCarreraRepo.findAndCount({
-      where: { usuario: { usuarioId: id }, activo: false },
-      relations: { carrera: true },
-      order: { fechaInicio: 'DESC' as const },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const qb = this.usuarioCarreraRepo
+      .createQueryBuilder('uc')
+      .innerJoinAndSelect('uc.carrera', 'c')
+      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('uc.activo = :ucActivo', { ucActivo: false })
+      .andWhere('c.activo = :activo', { activo: true })
+      .orderBy('uc.fechaInicio', 'DESC');
+
+    const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
+    const data = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
     return { data, total, page, limit, totalPages };
   }
 
@@ -126,7 +146,7 @@ export class UsuariosService {
     dto: InscribirCarreraDto,
   ): Promise<UsuarioCarrera> {
     const carrera = await this.carreraRepo.findOne({
-      where: { carreraId: dto.carreraId },
+      where: { carreraId: dto.carreraId, activo: true },
     });
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
 

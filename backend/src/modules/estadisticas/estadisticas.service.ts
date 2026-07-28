@@ -143,8 +143,13 @@ export class EstadisticasService {
       relations: { carrera: true },
     });
 
+    // Filtrar solo carreras activas (no eliminadas lógicamente por admin)
+    const inscripcionesActivas = inscripciones.filter(
+      (i) => i.carrera.activo !== false,
+    );
+
     return Promise.all(
-      inscripciones.map(async (inscripcion) => {
+      inscripcionesActivas.map(async (inscripcion) => {
         const resumen = await this.obtenerResumen(inscripcion.usuarioCarreraId);
         return {
           usuarioCarreraId: inscripcion.usuarioCarreraId,

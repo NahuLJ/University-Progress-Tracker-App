@@ -247,7 +247,7 @@ export class PlanificacionService {
     if (!periodo) throw new NotFoundException('Período no encontrado');
 
     const materia = await this.materiaRepo.findOne({
-      where: { materiaId: dto.materiaId },
+      where: { materiaId: dto.materiaId, activo: true },
     });
     if (!materia) throw new NotFoundException('Materia no encontrada');
 
@@ -379,6 +379,7 @@ export class PlanificacionService {
       const materia = cm.materia;
       const materiaId = materia.materiaId;
 
+      if (!materia.activo) continue;
       if (idsCompletadas.has(materiaId)) continue;
       if (idsPlanificadasEnTrayectoria.has(materiaId)) continue;
 
@@ -482,6 +483,8 @@ export class PlanificacionService {
     for (const cm of planEstudios) {
       const materia = cm.materia;
       const materiaId = materia.materiaId;
+
+      if (!materia.activo) continue;
 
       if (
         idsCompletadas.has(materiaId) ||
