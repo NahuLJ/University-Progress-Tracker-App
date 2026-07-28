@@ -28,7 +28,7 @@ export class MateriasService {
   ) {}
 
   async listar(query?: FiltrarMateriasDto): Promise<{
-    data: Materia[];
+    data: (Materia & { totalCarreras: number })[];
     total: number;
     page: number;
     limit: number;
@@ -58,10 +58,31 @@ export class MateriasService {
     const limit = query?.limit ?? 20;
     const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
-    const data = await qb
+    const dataRaw = await qb
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
+
+    const materiaIds = dataRaw.map((m) => m.materiaId);
+    const conteos: Record<number, number> = {};
+    if (materiaIds.length > 0) {
+      const result: { materiaId: number; cnt: number }[] =
+        await this.carreraMateriaRepo
+          .createQueryBuilder('cm')
+          .select('cm.materia_id', 'materiaId')
+          .addSelect('COUNT(*)', 'cnt')
+          .where('cm.materia_id IN (:...ids)', { ids: materiaIds })
+          .groupBy('cm.materia_id')
+          .getRawMany();
+      for (const r of result) {
+        conteos[r.materiaId] = Number(r.cnt);
+      }
+    }
+
+    const data = dataRaw.map((m) => ({
+      ...m,
+      totalCarreras: conteos[m.materiaId] ?? 0,
+    }));
 
     return { data, total, page, limit, totalPages };
   }
@@ -78,8 +99,9 @@ export class MateriasService {
     if (!materia)
       throw new NotFoundException('Materia no encontrada o desactivada');
 
+    let correlativas = materia.correlativasRequeridas;
     if (carreraId) {
-      materia.correlativasRequeridas = materia.correlativasRequeridas.filter(
+      correlativas = correlativas.filter(
         (c) => !c.carrera || c.carrera.carreraId === carreraId,
       );
       materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
@@ -87,7 +109,10 @@ export class MateriasService {
       );
     }
 
-    return materia;
+    return {
+      ...materia,
+      correlativas,
+    } as Materia & { correlativas: Correlativa[] };
   }
 
   async crear(dto: CrearMateriaDto): Promise<Materia> {
@@ -274,17 +299,9 @@ export class MateriasService {
   async eliminarCorrelativa(
     materiaId: number,
     correlativaId: number,
-    carreraId?: number,
   ): Promise<void> {
-    const whereClause: FindOptionsWhere<Correlativa> = {
-      correlativaId,
-      materia: { materiaId },
-    };
-    if (carreraId) {
-      whereClause.carrera = { carreraId };
-    }
     const correlativa = await this.correlativaRepo.findOne({
-      where: whereClause,
+      where: { correlativaId, materia: { materiaId } },
     });
     if (!correlativa) throw new NotFoundException('Correlativa no encontrada');
     await this.correlativaRepo.remove(correlativa);

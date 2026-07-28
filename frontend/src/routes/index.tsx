@@ -15,6 +15,9 @@ import {
     TrayectoriaPage,
     NotFoundPage,
     AdminPage,
+    CarreraEditPage,
+    MateriaDetailPage,
+    MateriaEditPage,
     SuspenseWrapper,
 } from './lazy-pages';
 
@@ -39,6 +42,9 @@ export const router = createBrowserRouter([
             { path: '/trayectorias', element: <SuspenseWrapper><TrayectoriasPage /></SuspenseWrapper> },
             { path: '/trayectoria/:id', element: <SuspenseWrapper><TrayectoriaPage /></SuspenseWrapper> },
             { path: '/admin', element: <SuspenseWrapper><AdminPage /></SuspenseWrapper> },
+            { path: '/admin/carreras/:id/editar', element: <SuspenseWrapper><CarreraEditPage /></SuspenseWrapper> },
+            { path: '/admin/materias/:id', element: <SuspenseWrapper><MateriaDetailPage /></SuspenseWrapper> },
+            { path: '/admin/materias/:id/editar', element: <SuspenseWrapper><MateriaEditPage /></SuspenseWrapper> },
         ],
     },
     { path: '*', element: <SuspenseWrapper><NotFoundPage /></SuspenseWrapper> },

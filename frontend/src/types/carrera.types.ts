@@ -2,8 +2,8 @@ export interface Carrera {
     carreraId: number;
     nombre: string;
     descripcion: string | null;
-    duracionEstimadaCuatrimestres: number;
-    creditosTotales: number;
+    duracionAnios: number;
+    activo?: boolean;
 }
 
 export interface UsuarioCarrera {
@@ -19,8 +19,8 @@ export interface CarreraDisponible {
     carreraId: number;
     nombre: string;
     descripcion: string | null;
-    duracionEstimadaCuatrimestres: number;
-    creditosTotales: number;
+    duracionAnios: number;
+    creditosTotales?: number;
     inscripto: boolean;
 }
 
@@ -35,25 +35,17 @@ export interface CrearCarreraDto {
     duracionAnios: number;
 }
 
+export interface ActualizarCarreraDto {
+    nombre?: string;
+    descripcion?: string;
+    duracionAnios?: number;
+}
+
 export interface AgregarMateriaPlanDto {
     materiaId: number;
     anio: number;
     cuatrimestre: number;
     orden: number;
-}
-
-export interface MateriaPlanEstudios {
-    materiaId: number;
-    carreraMateriaId: number;
-    nombre: string;
-    codigo: string;
-    descripcion: string | null;
-    cargaHoraria: number;
-    creditos: number;
-    anio: number;
-    cuatrimestre: number;
-    orden: number;
-    correlativas: Correlativa[];
 }
 
 export interface Correlativa {
@@ -85,6 +77,15 @@ export interface MateriaPlanEstudios {
     nota: number | null;
     tipoAprobacion: string | null;
     correlativas: Correlativa[];
+    esCorrelativaDe?: {
+        materiaId: number;
+        nombre: string;
+        codigo: string;
+        creditos: number;
+        estadoUsuario: string | null;
+        nota: number | null;
+        tipoAprobacion: string | null;
+    }[];
 }
 
 export interface PlanEstudios {
@@ -97,4 +98,22 @@ export interface PlanEstudios {
             materias: MateriaPlanEstudios[];
         }[];
     }[];
+}
+
+export interface CarreraAdminRow {
+    carreraId: number;
+    nombre: string;
+    descripcion: string | null;
+    duracionAnios: number;
+    activo: boolean;
+    totalMaterias?: number;
+}
+
+export interface CarreraAdminFilters {
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+    incluirInactivos?: boolean;
+    page?: number;
+    limit?: number;
 }

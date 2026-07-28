@@ -416,8 +416,9 @@ export class MateriasService {
         });
         if (!materia) throw new NotFoundException('Materia no encontrada');
 
+        let correlativas = materia.correlativasRequeridas;
         if (carreraId) {
-            materia.correlativasRequeridas = materia.correlativasRequeridas.filter(
+            correlativas = correlativas.filter(
                 (c) => !c.carrera || c.carrera.carreraId === carreraId,
             );
             materia.esCorrelativaDe = materia.esCorrelativaDe.filter(
@@ -425,7 +426,7 @@ export class MateriasService {
             );
         }
 
-        return materia;
+        return { ...materia, correlativas };
     }
 
     async crear(dto: CrearMateriaDto): Promise<Materia> {
@@ -470,12 +471,10 @@ export class MateriasService {
         return this.correlativaRepo.save(entry);
     }
 
-    async eliminarCorrelativa(materiaId: number, correlativaId: number, carreraId?: number): Promise<void> {
-        const whereClause: any = { correlativaId, materia: { materiaId } };
-        if (carreraId) {
-            whereClause.carrera = { carreraId };
-        }
-        const correlativa = await this.correlativaRepo.findOne({ where: whereClause });
+    async eliminarCorrelativa(materiaId: number, correlativaId: number): Promise<void> {
+        const correlativa = await this.correlativaRepo.findOne({
+            where: { correlativaId, materia: { materiaId } },
+        });
         if (!correlativa) throw new NotFoundException('Correlativa no encontrada');
         await this.correlativaRepo.remove(correlativa);
     }
@@ -564,6 +563,7 @@ export class Carrera {
 ```typescript
 @Entity('carrera_materia')
 @Unique(['carrera', 'materia'])
+@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
 export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;

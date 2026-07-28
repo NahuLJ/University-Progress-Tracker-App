@@ -11,6 +11,7 @@ import { Materia } from '../../materias/entities/materia.entity';
 
 @Entity('carrera_materia')
 @Unique(['carrera', 'materia'])
+@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
 export class CarreraMateria {
   @PrimaryGeneratedColumn()
   carreraMateriaId: number;

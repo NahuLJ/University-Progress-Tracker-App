@@ -106,13 +106,9 @@ export class MateriasController {
   async eliminarCorrelativa(
     @Param('id') id: number,
     @Param('correlativaId') correlativaId: number,
-    @Query('carreraId') carreraId?: number,
+    @Query('carreraId') _carreraId?: number,
   ) {
-    await this.materiasService.eliminarCorrelativa(
-      id,
-      correlativaId,
-      carreraId,
-    );
+    await this.materiasService.eliminarCorrelativa(id, correlativaId);
     return { message: 'Correlativa eliminada exitosamente' };
   }
 }

@@ -1,12 +1,10 @@
 import { cn } from '../../utils/cn';
 
-type TabKey = 'carreras' | 'materias' | 'plan' | 'correlativas';
+type TabKey = 'carreras' | 'materias';
 
 const TABS: { key: TabKey; label: string }[] = [
     { key: 'carreras', label: 'Carreras' },
     { key: 'materias', label: 'Materias' },
-    { key: 'plan', label: 'Plan de estudios' },
-    { key: 'correlativas', label: 'Correlativas' },
 ];
 
 export function AdminTabs({

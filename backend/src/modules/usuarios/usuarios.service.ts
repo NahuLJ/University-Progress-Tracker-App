@@ -69,9 +69,9 @@ export class UsuariosService {
     const qb = this.usuarioCarreraRepo
       .createQueryBuilder('uc')
       .innerJoinAndSelect('uc.carrera', 'c')
-      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('uc.usuario_id = :usuarioId', { usuarioId: id })
       .andWhere('c.activo = :activo', { activo: true })
-      .orderBy('uc.fechaInicio', 'DESC');
+      .orderBy('uc.fecha_inicio', 'DESC');
 
     const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
@@ -97,10 +97,10 @@ export class UsuariosService {
     const qb = this.usuarioCarreraRepo
       .createQueryBuilder('uc')
       .innerJoinAndSelect('uc.carrera', 'c')
-      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('uc.usuario_id = :usuarioId', { usuarioId: id })
       .andWhere('uc.activo = :ucActivo', { ucActivo: true })
       .andWhere('c.activo = :activo', { activo: true })
-      .orderBy('uc.fechaInicio', 'DESC');
+      .orderBy('uc.fecha_inicio', 'DESC');
 
     const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
@@ -126,10 +126,10 @@ export class UsuariosService {
     const qb = this.usuarioCarreraRepo
       .createQueryBuilder('uc')
       .innerJoinAndSelect('uc.carrera', 'c')
-      .andWhere('uc.usuarioId = :usuarioId', { usuarioId: id })
+      .andWhere('uc.usuario_id = :usuarioId', { usuarioId: id })
       .andWhere('uc.activo = :ucActivo', { ucActivo: false })
       .andWhere('c.activo = :activo', { activo: true })
-      .orderBy('uc.fechaInicio', 'DESC');
+      .orderBy('uc.fecha_inicio', 'DESC');
 
     const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);

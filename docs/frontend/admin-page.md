@@ -93,7 +93,7 @@ opcional). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['m
    Si se deja en "Global", las correlativas aplican a todas las carreras (`carrera_id = NULL`).
 2. `Select` de materia del catálogo.
 3. Muestra sus correlativas actuales (vía `obtenerMateria` con `carreraId` opcional) con botón "Quitar"
-   (`eliminarCorrelativa` con `carreraId` opcional). El título "Correlativas actuales" incluye un chip neon-cyan con el total.
+    (`eliminarCorrelativa`). El título "Correlativas actuales" incluye un chip neon-cyan con el total.
 4. `Select` de "materia correlativa" (filtra la propia y las ya asignadas) + botón "Asignar correlativa"
    (`asignarCorrelativa` con `carreraId` opcional). Previene auto-referencia y duplicados (el backend también lo rechaza).
 

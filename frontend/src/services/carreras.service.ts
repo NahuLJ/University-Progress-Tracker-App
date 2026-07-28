@@ -5,9 +5,12 @@ import type {
     PlanEstudios,
     InscribirCarreraDto,
     CrearCarreraDto,
+    ActualizarCarreraDto,
     AgregarMateriaPlanDto,
+    CarreraAdminRow,
+    CarreraAdminFilters,
 } from '../types/carrera.types';
-import type { Materia, CrearMateriaDto, AsignarCorrelativaDto, MateriaDetalle } from '../types/materia.types';
+import type { Materia, CrearMateriaDto, ActualizarMateriaDto, AsignarCorrelativaDto, MateriaDetalle, MateriaAdminRow, MateriaAdminFilters } from '../types/materia.types';
 import type { PaginatedResponse } from '../types/api.types';
 
 export const carrerasService = {
@@ -88,11 +91,39 @@ export const carrerasService = {
     async agregarMateriaAlPlan(carreraId: number, data: AgregarMateriaPlanDto): Promise<void> {
         await api.post(`/carreras/${carreraId}/materias`, data);
     },
+
+    async listarCarrerasAdmin(params?: CarreraAdminFilters): Promise<PaginatedResponse<CarreraAdminRow>> {
+        const response = await api.get('/carreras', { params });
+        return response.data;
+    },
+
+    async actualizarCarrera(id: number, data: ActualizarCarreraDto): Promise<CarreraAdminRow> {
+        const response = await api.put(`/carreras/${id}`, data);
+        return response.data;
+    },
+
+    async eliminarCarrera(id: number): Promise<void> {
+        await api.delete(`/carreras/${id}`);
+    },
+
+    async restaurarCarrera(id: number): Promise<CarreraAdminRow> {
+        const response = await api.patch(`/carreras/${id}/restore`);
+        return response.data;
+    },
+
+    async quitarMateriaDelPlan(carreraId: number, carreraMateriaId: number): Promise<void> {
+        await api.delete(`/carreras/${carreraId}/materias/${carreraMateriaId}`);
+    },
+
+    async obtenerCarrera(id: number): Promise<CarreraAdminRow> {
+        const response = await api.get(`/carreras/${id}`);
+        return response.data;
+    },
 };
 
 export const materiasAdminService = {
-    async listarMaterias(): Promise<Materia[]> {
-        const response = await api.get('/materias');
+    async listarMateriasAdmin(params?: MateriaAdminFilters): Promise<PaginatedResponse<MateriaAdminRow>> {
+        const response = await api.get('/materias', { params });
         return response.data;
     },
 
@@ -105,6 +136,20 @@ export const materiasAdminService = {
 
     async crearMateria(data: CrearMateriaDto): Promise<Materia> {
         const response = await api.post('/materias', data);
+        return response.data;
+    },
+
+    async actualizarMateria(id: number, data: ActualizarMateriaDto): Promise<Materia> {
+        const response = await api.put(`/materias/${id}`, data);
+        return response.data;
+    },
+
+    async eliminarMateria(id: number): Promise<void> {
+        await api.delete(`/materias/${id}`);
+    },
+
+    async restaurarMateria(id: number): Promise<Materia> {
+        const response = await api.patch(`/materias/${id}/restore`);
         return response.data;
     },
 

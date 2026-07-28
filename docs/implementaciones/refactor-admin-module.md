@@ -993,3 +993,138 @@ Las funcionalidades de `PlanEstudiosAdmin` y `MateriaCorrelativasAdmin` se migra
 - Los botones de acción en las tablas son iconos (lucide-react) sin texto, con `title` para
   accesibilidad: "Ver detalle", "Editar", "Eliminar", "Restaurar". Usan el componente `<Icon>`
   con `className` para colores hover: `hover:text-white`, `hover:text-neon-cyan`, `hover:text-neon-red`.
+
+---
+
+## 9. Correcciones posteriores a la implementación
+
+### 9.1 Columnas tipo raw query con snake_case
+
+Al usar TypeORM `QueryBuilder` con `select`, `where`, `groupBy` y `orderBy`, los nombres de columna
+deben coincidir con los de la base de datos, no con los de la entidad. Como no hay `NamingStrategy`
+configurado y algunas columnas tienen nombre explícito via `@JoinColumn({ name: '...' })` o
+`@Column({ name: '...' })`, se corrigieron las siguientes referencias:
+
+| Archivo | Antes | Después |
+|---|---|---|
+| `carreras.service.ts` | `cm.carreraId` | `cm.carrera_id` |
+| `carreras.service.ts` | `c.duracionAnios` | `c.duracion_anios` |
+| `materias.service.ts` | `cm.materiaId` | `cm.materia_id` |
+| `usuarios.service.ts` | `uc.usuarioId` | `uc.usuario_id` |
+| `usuarios.service.ts` | `uc.fechaInicio` | `uc.fecha_inicio` |
+
+### 9.2 Unique constraint en (carrera, anio, cuatrimestre, orden)
+
+Para evitar duplicados de orden dentro del mismo año y cuatrimestre de una carrera, se agregó:
+
+```typescript
+// carrera-materia.entity.ts
+@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
+```
+
+Esto permite múltiples materias en el mismo año y cuatrimestre, pero no con el mismo orden.
+
+### 9.3 Total de materias/carreras en listados admin
+
+Las respuestas de `GET /carreras` y `GET /materias` ahora incluyen conteos agregados:
+
+- **`totalMaterias`** en cada `CarreraAdminRow`: cantidad de materias en el plan de esa carrera.
+  Se obtiene via subquery con `COUNT(*)` agrupado por `carrera_id` en `carrera_materia`.
+- **`totalCarreras`** en cada `MateriaAdminRow`: cantidad de carreras que contienen esa materia.
+  Se obtiene via subquery con `COUNT(*)` agrupado por `materia_id` en `carrera_materia`.
+
+### 9.4 Delete de correlativa sin filtro carrera
+
+El método `eliminarCorrelativa()` originalmente filtraba por `carreraId` en el `where`, pero
+las correlativas pueden tener `carrera_id = NULL`. Al buscarlas con `carrera: { carreraId }`,
+no se encontraban. Se corrigió eliminando el filtro de carrera:
+
+```typescript
+async eliminarCorrelativa(materiaId: number, correlativaId: number): Promise<void> {
+    const correlativa = await this.correlativaRepo.findOne({
+        where: { correlativaId, materia: { materiaId } },
+    });
+    // ...
+}
+```
+
+El `correlativaId` es PK, suficiente para identificar el registro.
+
+### 9.5 Delete de MateriaPlanificada y ProgresoMateria con `In()`
+
+En `quitarMateriaDelPlan()`, el método `queryRunner.manager.delete()` no soporta condiciones
+`where` con más de 1 nivel de relaciones anidadas. Se corrigió usando dos pasos:
+
+```typescript
+// Antes (falla):
+await queryRunner.manager.delete(MateriaPlanificada, {
+    materia: { materiaId },
+    periodo: { usuarioCarrera: { carrera: { carreraId } } },
+});
+
+// Después:
+const periodos = await queryRunner.manager.find(PeriodoPlanificacion, {
+    where: { usuarioCarrera: { carrera: { carreraId } } },
+    select: { periodoId: true },
+});
+const periodoIds = periodos.map((p) => p.periodoId);
+if (periodoIds.length > 0) {
+    await queryRunner.manager.delete(MateriaPlanificada, {
+        materia: { materiaId },
+        periodo: { periodoId: In(periodoIds) },
+    });
+}
+```
+
+También se corrigió el delete de `ProgresoMateria` donde el array de IDs se pasaba suelto
+en lugar de usando `In()`:
+
+```typescript
+// Antes (falla):
+usuarioCarrera: { usuarioCarreraId: usuarioCarreraIds }
+
+// Después:
+usuarioCarrera: { usuarioCarreraId: In(usuarioCarreraIds) }
+```
+
+### 9.6 Modal de confirmación para eliminar carrera
+
+En `TablaCarreras.tsx`, el botón de eliminar ahora abre un modal con advertencia sobre las
+consecuencias de la desactivación (usuarios pierden acceso, datos conservados). Solo al
+confirmar se ejecuta la mutación `eliminarCarrera.mutate()`.
+
+### 9.7 Paginador siempre visible
+
+El `Paginador` se renderiza incluso cuando `totalPages <= 1`, para que el usuario vea el
+total de resultados y pueda cambiar el límite por página. Se eliminó la condición
+`data.totalPages > 1`.
+
+### 9.8 Orden visible en plan de estudios
+
+En `PlanEstudiosEditor`, cada materia en el plan muestra su `orden`:
+
+```tsx
+{m.nombre} <span className="text-slate-500">(orden {m.orden})</span>
+```
+
+### 9.9 Formularios centrados
+
+Tanto `CarreraEditPage` como `MateriaEditPage` centran el formulario con `mx-auto`:
+
+```tsx
+<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-lg mx-auto">
+```
+
+### 9.10 ESLint: argsIgnorePattern para underscore
+
+Se agregó la regla `@typescript-eslint/no-unused-vars` con `argsIgnorePattern: '^_'` en
+`eslint.config.mjs` para permitir parámetros con prefijo underscore sin warning.
+
+### 9.11 Correlativas mapeadas a `correlativas` en respuesta
+
+El backend devuelve `correlativas` en lugar de `correlativasRequeridas` para que coincida
+con la interfaz `MateriaDetalle` del frontend. El mapeo se hace en `obtenerConRelaciones()`:
+
+```typescript
+return { ...materia, correlativas };
+```

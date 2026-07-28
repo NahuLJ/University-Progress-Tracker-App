@@ -166,7 +166,7 @@ export function CarreraDetailPage() {
                     <div className="text-sm text-slate-300">
                         {planEstudios.anios.length} años de estudios
                         • {planEstudios.anios.reduce((acc: number, anio: { cuatrimestres: any[] }) => acc + anio.cuatrimestres.reduce((acc2: number, cuat: { materias: any[] }) => acc2 + cuat.materias.length, 0), 0)} materias totales
-                        • {planEstudios.carrera.creditosTotales} créditos totales
+                        • {planEstudios.materias.reduce((acc: number, m: { creditos: number }) => acc + m.creditos, 0)} créditos totales
                     </div>
                     <div className="flex gap-2">
                         {inscripto ? (

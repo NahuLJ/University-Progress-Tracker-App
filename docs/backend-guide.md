@@ -209,6 +209,8 @@ Tabla pivote `CarreraMateria` con atributos extra (`anio`, `cuatrimestre`, `orde
 ```typescript
 // carrera-materia.entity.ts
 @Entity('carrera_materia')
+@Unique(['carrera', 'materia'])
+@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
 export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;
@@ -456,8 +458,8 @@ async obtenerResumen(usuarioCarreraId: number) {
         .createQueryBuilder()
         .select('AVG(pm.nota)', 'promedio')
         .from(ProgresoMateria, 'pm')
-        .where('pm.usuarioCarreraId = :id', { id: usuarioCarreraId })
-        .andWhere('pm.estadoId = :completada', { completada: 3 })
+        .where('pm.usuario_carrera_id = :id', { id: usuarioCarreraId })
+        .andWhere('pm.estado_id = :completada', { completada: 3 })
         .andWhere('pm.nota IS NOT NULL')
         .getRawOne();
 
@@ -466,10 +468,10 @@ async obtenerResumen(usuarioCarreraId: number) {
         .select('COUNT(*)', 'pendientes')
         .from(CarreraMateria, 'cm')
         .leftJoin(ProgresoMateria, 'pm',
-            'pm.materiaId = cm.materiaId AND pm.usuarioCarreraId = :id',
+            'pm.materia_id = cm.materia_id AND pm.usuario_carrera_id = :id',
             { id: usuarioCarreraId }
         )
-        .where('cm.carreraId = :carreraId', { carreraId })
+        .where('cm.carrera_id = :carreraId', { carreraId })
         .andWhere('(pm.estadoId IS NULL OR pm.estadoId != :completada)', { completada: 3 })
         .getRawOne();
 

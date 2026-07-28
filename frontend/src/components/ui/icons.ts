@@ -21,6 +21,9 @@ import {
     Pencil,
     Trash2,
     ArrowLeft,
+    Eye,
+    RefreshCw,
+    Filter,
 } from 'lucide-react';
 
 export const Icons = {
@@ -46,6 +49,9 @@ export const Icons = {
     edit: Pencil,
     delete: Trash2,
     arrowLeft: ArrowLeft,
+    ver: Eye,
+    restore: RefreshCw,
+    filter: Filter,
 } as const;
 
 export type IconName = keyof typeof Icons;

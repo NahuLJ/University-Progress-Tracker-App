@@ -68,12 +68,16 @@ interface InscribirCarreraDto {
 
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
-| `GET` | `/carreras` | ❌ Público | — | `200`: Carreras[] |
+| `GET` | `/carreras` | ❌ Público (sin params) / ✅ Bearer (con params) | `?search=&sortBy=&sortOrder=&incluirInactivos=&page=&limit=` | Sin params: `200`: `Carrera[]` (solo activas). Con params: `200`: `{ data: CarreraAdminRow[], total, page, limit, totalPages }` donde cada item incluye `totalMaterias: number` |
 | `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | `?page=N&limit=N` | `200`: `{ data: Carreras[], total, page, limit, totalPages }` |
-| `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada |
+| `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada / inactiva |
 | `GET` | `/carreras/:id/plan-estudios` | ❌ Público | `?usuarioCarreraId=N` (opcional) | `200`: Plan con materias + correlativas + `estadoUsuario`/`nota`/`tipoAprobacion` si se provee `usuarioCarreraId` · `404`: No encontrada |
-| `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación |
-| `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Agregada · `400`: Ya existe · `404`: No encontrada |
+| `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación / nombre duplicado |
+| `PUT` | `/carreras/:id` | ✅ Bearer | `ActualizarCarreraDto` | `200`: Actualizada · `400`: Validación · `404`: No encontrada |
+| `DELETE` | `/carreras/:id` | ✅ Bearer | — | `200`: Desactivada (baja lógica, `activo = false`) · `404`: No encontrada |
+| `PATCH` | `/carreras/:id/restore` | ✅ Bearer | — | `200`: Restaurada (`activo = true`) · `404`: No encontrada |
+| `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Agregada · `400`: Ya existe / duplicado orden · `404`: No encontrada |
+| `DELETE` | `/carreras/:id/materias/:carreraMateriaId` | ✅ Bearer | — | `200`: Quitada (baja física con cascada) · `404`: No encontrada |
 
 ### DTOs
 
@@ -82,6 +86,12 @@ interface CrearCarreraDto {
   nombre: string;            // 3-200
   descripcion?: string;
   duracionAnios: number;     // 1-10, acepta 1 decimal
+}
+
+interface ActualizarCarreraDto {
+  nombre?: string;           // 3-200
+  descripcion?: string;
+  duracionAnios?: number;    // 1-10
 }
 
 interface AgregarMateriaPlanDto {
@@ -98,11 +108,14 @@ interface AgregarMateriaPlanDto {
 
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
-| `GET` | `/materias` | ❌ Público | — | `200`: Materias[] |
-| `GET` | `/materias/:id` | ❌ Público | `?carreraId=N` (opcional) | `200`: Materia (correlativas filtradas por carrera si se provee) · `404`: No encontrada |
-| `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Creada · `400`: Validación |
-| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `AsignarCorrelativaDto` (incluye `carreraId` opcional) | `201`: Asignada · `400`: Ya existe / auto-referencial · `404`: No encontrada |
-| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | `?carreraId=N` (opcional) | `200`: Eliminada · `404`: No encontrada |
+| `GET` | `/materias` | ❌ Público (sin params) / ✅ Bearer (con params) | `?search=&sortBy=&sortOrder=&incluirInactivos=&page=&limit=` | Sin params: `200`: `Materia[]` (solo activas). Con params: `200`: `{ data: MateriaAdminRow[], total, page, limit, totalPages }` donde cada item incluye `totalCarreras: number` |
+| `GET` | `/materias/:id` | ❌ Público | `?carreraId=N` (opcional) | `200`: MateriaDetalle (incluye `correlativas[]`, `carreras[]`) · `404`: No encontrada / inactiva |
+| `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Creada · `400`: Validación / código o nombre duplicado |
+| `PUT` | `/materias/:id` | ✅ Bearer | `ActualizarMateriaDto` | `200`: Actualizada · `400`: Validación · `404`: No encontrada |
+| `DELETE` | `/materias/:id` | ✅ Bearer | — | `200`: Desactivada con purge (baja lógica + DELETE en cascada) · `404`: No encontrada |
+| `PATCH` | `/materias/:id/restore` | ✅ Bearer | — | `200`: Restaurada (`activo = true`) · `404`: No encontrada |
+| `POST` | `/materias/:id/correlativas` | ✅ Bearer | `AsignarCorrelativaDto` (incluye `carreraId` opcional) | `201`: Asignada · `400`: Ya existe / auto-referencial / orden inválido · `404`: No encontrada |
+| `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | `?carreraId=N` (opcional, ignorado por backend) | `200`: Eliminada · `404`: No encontrada |
 
 ### DTOs
 
@@ -113,6 +126,14 @@ interface CrearMateriaDto {
   descripcion?: string;
   cargaHoraria: number;     // >= 1
   creditos: number;         // >= 1
+}
+
+interface ActualizarMateriaDto {
+  nombre?: string;          // max 200
+  codigo?: string;          // max 20
+  descripcion?: string;
+  cargaHoraria?: number;    // >= 1
+  creditos?: number;        // >= 1
 }
 
 interface AsignarCorrelativaDto {
@@ -214,36 +235,42 @@ interface ActualizarTrayectoriaDto {
 
 | Método | Ruta | Auth | Body | Respuestas |
 |--------|------|------|------|------------|
-| `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Carrera creada · `400`: Validación |
-| `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Materia en plan · `400`: Ya existe · `404`: No encontrada |
-| `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Materia creada · `400`: Código duplicado |
+| `GET` | `/carreras` | ✅ Bearer | `?search=&sortBy=&sortOrder=&incluirInactivos=&page=&limit=` | `200`: `{ data: CarreraAdminRow[], total, page, limit, totalPages }` |
+| `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Carrera creada · `400`: Validación / nombre duplicado |
+| `PUT` | `/carreras/:id` | ✅ Bearer | `ActualizarCarreraDto` | `200`: Actualizada · `400`: Validación · `404`: No encontrada |
+| `DELETE` | `/carreras/:id` | ✅ Bearer | — | `200`: Desactivada (baja lógica) · `404`: No encontrada |
+| `PATCH` | `/carreras/:id/restore` | ✅ Bearer | — | `200`: Restaurada · `404`: No encontrada |
+| `POST` | `/carreras/:id/materias` | ✅ Bearer | `AgregarMateriaPlanDto` | `201`: Agregada · `400`: Ya existe / duplicado orden · `404`: No encontrada |
+| `DELETE` | `/carreras/:id/materias/:carreraMateriaId` | ✅ Bearer | — | `200`: Quitada (baja física en cascada) · `404`: No encontrada |
+| `GET` | `/materias` | ✅ Bearer | `?search=&sortBy=&sortOrder=&incluirInactivos=&page=&limit=` | `200`: `{ data: MateriaAdminRow[], total, page, limit, totalPages }` |
+| `POST` | `/materias` | ✅ Bearer | `CrearMateriaDto` | `201`: Creada · `400`: Código o nombre duplicado |
+| `PUT` | `/materias/:id` | ✅ Bearer | `ActualizarMateriaDto` | `200`: Actualizada · `400`: Validación · `404`: No encontrada |
+| `DELETE` | `/materias/:id` | ✅ Bearer | — | `200`: Desactivada con purge · `404`: No encontrada |
+| `PATCH` | `/materias/:id/restore` | ✅ Bearer | — | `200`: Restaurada · `404`: No encontrada |
 | `POST` | `/materias/:id/correlativas` | ✅ Bearer | `{ materiaCorrelativaId, carreraId? }` | `201`: Asignada · `400`: Auto-ref / duplicada · `404`: No encontrada |
 | `DELETE` | `/materias/:id/correlativas/:correlativaId` | ✅ Bearer | `?carreraId=N` | `200`: Eliminada · `404`: No encontrada |
-| `GET` | `/materias` | ❌ Público | — | `200`: Catálogo global |
-| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | — | `200`: Plan con correlativas |
 
 ### DTOs
 
 ```typescript
-interface CrearCarreraDto {
-  nombre: string;          // 3-200 chars
-  descripcion?: string;
-  duracionAnios: number;   // 1-10, 1 decimal
+interface CarreraAdminRow {
+  carreraId: number;
+  nombre: string;
+  descripcion: string | null;
+  duracionAnios: number;
+  activo: boolean;
+  totalMaterias: number;
 }
 
-interface AgregarMateriaPlanDto {
+interface MateriaAdminRow {
   materiaId: number;
-  anio: number;            // >= 1
-  cuatrimestre: number;    // >= 1
-  orden: number;           // >= 1
-}
-
-interface CrearMateriaDto {
-  nombre: string;          // <= 200
-  codigo: string;          // <= 20, único
-  descripcion?: string;
-  cargaHoraria: number;    // >= 1
-  creditos: number;        // >= 1
+  nombre: string;
+  codigo: string;
+  descripcion: string | null;
+  cargaHoraria: number;
+  creditos: number;
+  activo: boolean;
+  totalCarreras: number;
 }
 ```
 
@@ -269,12 +296,12 @@ interface CrearMateriaDto {
 |--------|-----------|
 | `auth/` | 3 |
 | `usuarios/` | 8 |
-| `carreras/` | 6 |
-| `materias/` | 5 |
+| `carreras/` | 10 |
+| `materias/` | 9 |
 | `progreso/` | 4 |
 | `planificacion/` | 11 |
 | `trayectorias/` | 6 |
 | `estadisticas/` | 4 |
-| **Total únicos** | **47** |
+| **Total únicos** | **55** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

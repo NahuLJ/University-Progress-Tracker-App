@@ -4,13 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { Carrera } from './entities/carrera.entity';
 import { CarreraMateria } from './entities/carrera-materia.entity';
 import { Materia } from '../materias/entities/materia.entity';
 import { UsuarioCarrera } from './entities/usuario-carrera.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { MateriaPlanificada } from '../planificacion/entities/materia-planificada.entity';
+import { PeriodoPlanificacion } from '../planificacion/entities/periodo-planificacion.entity';
 import { Correlativa } from '../materias/entities/correlativa.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
@@ -76,7 +77,7 @@ export class CarrerasService {
   ) {}
 
   async listar(query?: FiltrarCarrerasDto): Promise<{
-    data: Carrera[];
+    data: (Carrera & { totalMaterias: number })[];
     total: number;
     page: number;
     limit: number;
@@ -92,9 +93,11 @@ export class CarrerasService {
       qb.andWhere('c.nombre LIKE :search', { search: `%${query.search}%` });
     }
 
-    const sortBy = ['nombre', 'duracionAnios'].includes(query?.sortBy ?? '')
-      ? `c.${query!.sortBy!}`
-      : 'c.nombre';
+    const sortField = ['nombre', 'duracionAnios'].includes(query?.sortBy ?? '')
+      ? query!.sortBy!
+      : 'nombre';
+    const sortBy =
+      sortField === 'duracionAnios' ? 'c.duracion_anios' : 'c.nombre';
     const order = query?.sortOrder === 'DESC' ? 'DESC' : 'ASC';
     qb.orderBy(sortBy, order);
 
@@ -102,10 +105,31 @@ export class CarrerasService {
     const limit = query?.limit ?? 20;
     const total = await qb.getCount();
     const totalPages = Math.ceil(total / limit);
-    const data = await qb
+    const dataRaw = await qb
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
+
+    const carreraIds = dataRaw.map((c) => c.carreraId);
+    const conteos: Record<number, number> = {};
+    if (carreraIds.length > 0) {
+      const result: { carreraId: number; cnt: number }[] =
+        await this.carreraMateriaRepo
+          .createQueryBuilder('cm')
+          .select('cm.carrera_id', 'carreraId')
+          .addSelect('COUNT(*)', 'cnt')
+          .where('cm.carrera_id IN (:...ids)', { ids: carreraIds })
+          .groupBy('cm.carrera_id')
+          .getRawMany();
+      for (const r of result) {
+        conteos[r.carreraId] = Number(r.cnt);
+      }
+    }
+
+    const data = dataRaw.map((c) => ({
+      ...c,
+      totalMaterias: conteos[c.carreraId] ?? 0,
+    }));
 
     return { data, total, page, limit, totalPages };
   }
@@ -393,12 +417,17 @@ export class CarrerasService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.delete(MateriaPlanificada, {
-        materia: { materiaId },
-        periodo: {
-          usuarioCarrera: { carrera: { carreraId } },
-        },
+      const periodos = await queryRunner.manager.find(PeriodoPlanificacion, {
+        where: { usuarioCarrera: { carrera: { carreraId } } },
+        select: { periodoId: true },
       });
+      const periodoIds = periodos.map((p) => p.periodoId);
+      if (periodoIds.length > 0) {
+        await queryRunner.manager.delete(MateriaPlanificada, {
+          materia: { materiaId },
+          periodo: { periodoId: In(periodoIds) },
+        });
+      }
 
       const usuarioCarreras = await queryRunner.manager.find(UsuarioCarrera, {
         where: { carrera: { carreraId } },
@@ -409,7 +438,7 @@ export class CarrerasService {
       if (usuarioCarreraIds.length > 0) {
         await queryRunner.manager.delete(ProgresoMateria, {
           materia: { materiaId },
-          usuarioCarrera: { usuarioCarreraId: usuarioCarreraIds },
+          usuarioCarrera: { usuarioCarreraId: In(usuarioCarreraIds) },
         });
       }
 

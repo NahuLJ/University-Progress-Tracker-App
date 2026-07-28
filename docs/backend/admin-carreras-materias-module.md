@@ -38,7 +38,7 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 - `listarMaterias()`
 - `crearMateria(data: CrearMateriaDto)`
 - `asignarCorrelativa(materiaId, data: AsignarCorrelativaDto)`
-- `eliminarCorrelativa(materiaId, correlativaId, carreraId?)`
+- `eliminarCorrelativa(materiaId, correlativaId)`
 
 ## Tipos (ya en `frontend/src/types/`)
 
@@ -83,7 +83,7 @@ frontend/src/
 ### Correlativas
 1. `MateriaCorrelativasAdmin` permite seleccionar una carrera (opcional) y una materia; muestra sus correlativas filtradas por carrera.
 2. Asignar: `asignarCorrelativa(materiaId, { materiaCorrelativaId, carreraId? })`. Si se provee `carreraId`, la correlativa aplica solo a esa carrera.
-3. Quitar: `eliminarCorrelativa(materiaId, correlativaId, carreraId?)`.
+3. Quitar: `eliminarCorrelativa(materiaId, correlativaId)`.
 
 ## Validaciones del lado del cliente (Zod)
 

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { AdminTabs } from '../components/admin/AdminTabs';
+import { TablaCarreras } from '../components/admin/TablaCarreras';
+import { TablaMaterias } from '../components/admin/TablaMaterias';
 import { CrearCarreraModal } from '../components/admin/CrearCarreraModal';
 import { CrearMateriaModal } from '../components/admin/CrearMateriaModal';
-import { PlanEstudiosAdmin } from '../components/admin/PlanEstudiosAdmin';
-import { MateriaCorrelativasAdmin } from '../components/admin/MateriaCorrelativasAdmin';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
-type TabKey = 'carreras' | 'materias' | 'plan' | 'correlativas';
+type TabKey = 'carreras' | 'materias';
 
 export function AdminPage() {
     const [tab, setTab] = useState<TabKey>('carreras');
@@ -28,33 +28,24 @@ export function AdminPage() {
             <AdminTabs active={tab} onChange={setTab} />
 
             {tab === 'carreras' && (
-                <Card className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
+                <Card className="p-6">
+                    <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-semibold text-white">Carreras</h2>
                         <Button onClick={() => setCarreraModalOpen(true)}>Nueva carrera</Button>
                     </div>
-                    <p className="text-sm text-slate-300">
-                        Creá una carrera y luego agregale materias desde la pestaña{' '}
-                        <span className="font-medium text-white">Plan de estudios</span>.
-                    </p>
+                    <TablaCarreras />
                 </Card>
             )}
 
             {tab === 'materias' && (
-                <Card className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
+                <Card className="p-6">
+                    <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-semibold text-white">Materias</h2>
                         <Button onClick={() => setMateriaModalOpen(true)}>Nueva materia</Button>
                     </div>
-                    <p className="text-sm text-slate-300">
-                        Las materias creadas aquí forman el catálogo global y se usan al armar los planes de
-                        estudio.
-                    </p>
+                    <TablaMaterias />
                 </Card>
             )}
-
-            {tab === 'plan' && <PlanEstudiosAdmin />}
-            {tab === 'correlativas' && <MateriaCorrelativasAdmin />}
 
             <CrearCarreraModal
                 isOpen={carreraModalOpen}

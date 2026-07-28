@@ -64,6 +64,8 @@ erDiagram
         int orden
     }
 
+    nota: Unique(carrera_id, anio, cuatrimestre, orden) — evita duplicados de orden en mismo año/cuatrimestre
+
     correlativa {
         int correlativa_id PK
         int materia_id FK

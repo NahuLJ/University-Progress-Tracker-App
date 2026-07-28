@@ -16,6 +16,15 @@ export const TrayectoriaPage = lazy(() => import('../pages/TrayectoriaPage'));
 export const AdminPage = lazy(() =>
     import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
+export const CarreraEditPage = lazy(() =>
+    import('../pages/CarreraEditPage').then((m) => ({ default: m.CarreraEditPage })),
+);
+export const MateriaDetailPage = lazy(() =>
+    import('../pages/MateriaDetailPage').then((m) => ({ default: m.MateriaDetailPage })),
+);
+export const MateriaEditPage = lazy(() =>
+    import('../pages/MateriaEditPage').then((m) => ({ default: m.MateriaEditPage })),
+);
 export const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 export const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
