@@ -15,11 +15,14 @@ export class PeriodoPlanificacion {
   @PrimaryGeneratedColumn()
   periodoId: number;
 
-  @ManyToOne(() => UsuarioCarrera, (uc) => uc.periodos)
+  @ManyToOne(() => UsuarioCarrera, (uc) => uc.periodos, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'usuario_carrera_id' })
   usuarioCarrera: UsuarioCarrera;
 
-  @ManyToOne(() => Trayectoria, (t) => t.planificaciones, { nullable: true })
+  @ManyToOne(() => Trayectoria, (t) => t.planificaciones, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'trayectoria_id' })
   trayectoria?: Trayectoria;
 
@@ -38,7 +41,10 @@ export class PeriodoPlanificacion {
   @Column({ type: 'varchar', length: 100, nullable: false })
   nombre: string;
 
-  @ManyToOne(() => PeriodoPlanificacion, { nullable: true })
+  @ManyToOne(() => PeriodoPlanificacion, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'planificacion_origen_id' })
   planificacionOrigen?: PeriodoPlanificacion;
 

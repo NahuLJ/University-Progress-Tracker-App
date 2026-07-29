@@ -19,11 +19,11 @@ export class UsuarioCarrera {
   @PrimaryGeneratedColumn()
   usuarioCarreraId: number;
 
-  @ManyToOne(() => Usuario, (u) => u.usuarioCarreras)
+  @ManyToOne(() => Usuario, (u) => u.usuarioCarreras, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'usuario_id' })
   usuario: Usuario;
 
-  @ManyToOne(() => Carrera, (c) => c.usuarioCarreras)
+  @ManyToOne(() => Carrera, (c) => c.usuarioCarreras, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'carrera_id' })
   carrera: Carrera;
 

@@ -183,11 +183,11 @@ export class UsuarioCarrera {
     @PrimaryGeneratedColumn()
     usuarioCarreraId: number;
 
-    @ManyToOne(() => Usuario, (usuario) => usuario.usuarioCarreras)
+    @ManyToOne(() => Usuario, (usuario) => usuario.usuarioCarreras, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'usuario_id' })
     usuario: Usuario;
 
-    @ManyToOne(() => Carrera, (carrera) => carrera.usuarioCarreras)
+    @ManyToOne(() => Carrera, (carrera) => carrera.usuarioCarreras, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
     carrera: Carrera;
 
@@ -215,11 +215,11 @@ export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;
 
-    @ManyToOne(() => Carrera, (carrera) => carrera.planEstudios)
+    @ManyToOne(() => Carrera, (carrera) => carrera.planEstudios, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
     carrera: Carrera;
 
-    @ManyToOne(() => Materia, (materia) => materia.planEstudios)
+    @ManyToOne(() => Materia, (materia) => materia.planEstudios, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 
@@ -248,17 +248,17 @@ export class Correlativa {
     @PrimaryGeneratedColumn()
     correlativaId: number;
 
-    @ManyToOne(() => Materia, (materia) => materia.correlativasRequeridas)
+    @ManyToOne(() => Materia, (materia) => materia.correlativasRequeridas, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;                     // Materia que necesita la correlativa
 
-    @ManyToOne(() => Materia, (materia) => materia.esCorrelativaDe)
+    @ManyToOne(() => Materia, (materia) => materia.esCorrelativaDe, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_correlativa_id' })
     materiaCorrelativa: Materia;          // Materia que actúa como requisito
 
-    @ManyToOne(() => Carrera, { nullable: true, onDelete: 'CASCADE' })
+    @ManyToOne(() => Carrera, { nullable: false, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
-    carrera?: Carrera;                    // Carrera específica (opcional). null = global
+    carrera: Carrera;                     // Carrera a la que aplica la correlativa
 }
 ```
 
@@ -307,11 +307,11 @@ export class ProgresoMateria {
     @PrimaryGeneratedColumn()
     progresoId: number;
 
-    @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos)
+    @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'usuario_carrera_id' })
     usuarioCarrera: UsuarioCarrera;
 
-    @ManyToOne(() => Materia)
+    @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 

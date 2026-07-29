@@ -568,11 +568,11 @@ export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;
 
-    @ManyToOne(() => Carrera, (c) => c.planEstudios)
+    @ManyToOne(() => Carrera, (c) => c.planEstudios, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
     carrera: Carrera;
 
-    @ManyToOne(() => Materia, (m) => m.planEstudios)
+    @ManyToOne(() => Materia, (m) => m.planEstudios, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 
@@ -598,16 +598,16 @@ export class Correlativa {
     @PrimaryGeneratedColumn()
     correlativaId: number;
 
-    @ManyToOne(() => Materia, (m) => m.correlativasRequeridas)
+    @ManyToOne(() => Materia, (m) => m.correlativasRequeridas, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 
-    @ManyToOne(() => Materia, (m) => m.esCorrelativaDe)
+    @ManyToOne(() => Materia, (m) => m.esCorrelativaDe, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_correlativa_id' })
     materiaCorrelativa: Materia;
 
-    @ManyToOne(() => Carrera, { nullable: true, onDelete: 'CASCADE' })
+    @ManyToOne(() => Carrera, { nullable: false, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
-    carrera?: Carrera;
+    carrera: Carrera;
 }
 ```

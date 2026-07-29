@@ -113,7 +113,7 @@ Reactivar una inscripción previamente desactivada (soft delete).
 
 ### DELETE /api/usuarios/:id/carreras/:usuarioCarreraId/definitivo
 
-Elimina definitivamente la inscripción y su progreso y planificación asociados. **Solo se elimina el progreso y la planificación de las materias que son exclusivas de esa carrera**; si una materia está compartida con otra carrera activa en la que el usuario está inscripto, su progreso se conserva.
+Elimina definitivamente la inscripción y todos sus datos asociados (progreso, planificaciones, trayectorias) mediante `ON DELETE CASCADE` en las FK.
 
 | Código | Descripción |
 |---|---|
@@ -196,10 +196,6 @@ export class UsuariosService {
         private readonly usuarioCarreraRepo: Repository<UsuarioCarrera>,
         @InjectRepository(Carrera)
         private readonly carreraRepo: Repository<Carrera>,
-        @InjectRepository(CarreraMateria)
-        private readonly carreraMateriaRepo: Repository<CarreraMateria>,
-        @InjectRepository(ProgresoMateria)
-        private readonly progresoRepo: Repository<ProgresoMateria>,
     ) {}
 
     async buscarPorEmail(email: string): Promise<Usuario | null> {
@@ -245,11 +241,9 @@ export class UsuariosService {
     }
 
     async inscribirCarrera(usuarioId: number, dto: InscribirCarreraDto): Promise<UsuarioCarrera> {
-        // 1. Verificar que la carrera existe
         const carrera = await this.carreraRepo.findOne({ where: { carreraId: dto.carreraId } });
         if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
-        // 2. Verificar que no exista una inscripción activa duplicada
         const existente = await this.usuarioCarreraRepo.findOne({
             where: {
                 usuario: { usuarioId },
@@ -259,7 +253,6 @@ export class UsuariosService {
         });
         if (existente) throw new BadRequestException('Ya estás inscripto en esta carrera');
 
-        // 3. Crear la inscripción
         const inscripcion = this.usuarioCarreraRepo.create({
             usuario: { usuarioId },
             carrera,
@@ -278,16 +271,8 @@ export class UsuariosService {
         await this.usuarioCarreraRepo.save(inscripcion);
     }
 
-    async obtenerCarrerasActivas(
-        id: number,
-        page: number = 1,
-        limit: number = 12,
-    ): Promise<{
-        data: UsuarioCarrera[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
+    async obtenerCarrerasActivas(id: number, page: number = 1, limit: number = 12): Promise<{
+        data: UsuarioCarrera[]; total: number; page: number; limit: number; totalPages: number;
     }> {
         const [data, total] = await this.usuarioCarreraRepo.findAndCount({
             where: { usuario: { usuarioId: id }, activo: true },
@@ -299,16 +284,8 @@ export class UsuariosService {
         return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
-    async obtenerCarrerasInactivas(
-        id: number,
-        page: number = 1,
-        limit: number = 12,
-    ): Promise<{
-        data: UsuarioCarrera[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
+    async obtenerCarrerasInactivas(id: number, page: number = 1, limit: number = 12): Promise<{
+        data: UsuarioCarrera[]; total: number; page: number; limit: number; totalPages: number;
     }> {
         const [data, total] = await this.usuarioCarreraRepo.findAndCount({
             where: { usuario: { usuarioId: id }, activo: false },
@@ -333,61 +310,8 @@ export class UsuariosService {
     async eliminarCarreraDefinitivamente(usuarioId: number, usuarioCarreraId: number): Promise<void> {
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId, usuario: { usuarioId } },
-            relations: { carrera: true, progresos: { materia: true }, periodos: { materiasPlanificadas: true } },
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
-
-        // Buscar otras inscripciones activas del usuario para preservar progreso compartido
-        const otrasInscripcionesActivas = await this.usuarioCarreraRepo.find({
-            where: { usuario: { usuarioId }, activo: true },
-            relations: { carrera: true },
-        });
-        const otrasCarrerasIds = otrasInscripcionesActivas
-            .filter((i) => i.usuarioCarreraId !== usuarioCarreraId)
-            .map((i) => i.carrera.carreraId);
-
-        let materiasExclusivasIds: number[] = [];
-        if (otrasCarrerasIds.length > 0) {
-            const materiasDeEstaCarrera = await this.carreraMateriaRepo.find({
-                where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
-                relations: { materia: true },
-            });
-            const materiasIdsDeEstaCarrera = materiasDeEstaCarrera.map((cm) => cm.materia.materiaId);
-            const materiasCompartidas = await this.carreraMateriaRepo.find({
-                where: { carrera: { carreraId: In(otrasCarrerasIds) }, materia: { materiaId: In(materiasIdsDeEstaCarrera) } },
-                relations: { materia: true },
-            });
-            const materiasCompartidasIds = new Set(materiasCompartidas.map((cm) => cm.materia.materiaId));
-            materiasExclusivasIds = materiasIdsDeEstaCarrera.filter((id) => !materiasCompartidasIds.has(id));
-        } else {
-            const materiasDeEstaCarrera = await this.carreraMateriaRepo.find({
-                where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
-                relations: { materia: true },
-            });
-            materiasExclusivasIds = materiasDeEstaCarrera.map((cm) => cm.materia.materiaId);
-        }
-
-        if (inscripcion.progresos?.length) {
-            const progresosAEliminar = inscripcion.progresos.filter(
-                (p) => materiasExclusivasIds.includes(p.materia.materiaId),
-            );
-            if (progresosAEliminar.length > 0) {
-                await this.progresoRepo.remove(progresosAEliminar);
-            }
-        }
-        if (inscripcion.periodos?.length) {
-            for (const periodo of inscripcion.periodos) {
-                if (periodo.materiasPlanificadas?.length) {
-                    const materiasAEliminar = periodo.materiasPlanificadas.filter(
-                        (mp) => materiasExclusivasIds.includes(mp.materia.materiaId),
-                    );
-                    if (materiasAEliminar.length > 0) {
-                        await this.usuarioCarreraRepo.manager.remove(materiasAEliminar);
-                    }
-                }
-            }
-            await this.usuarioCarreraRepo.manager.remove(inscripcion.periodos);
-        }
 
         await this.usuarioCarreraRepo.remove(inscripcion);
     }
@@ -435,11 +359,11 @@ export class UsuarioCarrera {
     @PrimaryGeneratedColumn()
     usuarioCarreraId: number;
 
-    @ManyToOne(() => Usuario, (u) => u.usuarioCarreras)
+    @ManyToOne(() => Usuario, (u) => u.usuarioCarreras, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'usuario_id' })
     usuario: Usuario;
 
-    @ManyToOne(() => Carrera, (c) => c.usuarioCarreras)
+    @ManyToOne(() => Carrera, (c) => c.usuarioCarreras, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'carrera_id' })
     carrera: Carrera;
 
@@ -457,5 +381,8 @@ export class UsuarioCarrera {
 
     @OneToMany(() => PeriodoPlanificacion, (pp) => pp.usuarioCarrera)
     periodos: PeriodoPlanificacion[];
+
+    @OneToMany(() => Trayectoria, (t) => t.usuarioCarrera)
+    trayectorias: Trayectoria[];
 }
 ```

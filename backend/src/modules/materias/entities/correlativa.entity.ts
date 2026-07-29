@@ -16,12 +16,14 @@ export class Correlativa {
   correlativaId: number;
 
   @Index('IDX_correlativa_materia_id')
-  @ManyToOne(() => Materia, (m) => m.correlativasRequeridas)
+  @ManyToOne(() => Materia, (m) => m.correlativasRequeridas, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'materia_id' })
   materia: Materia;
 
   @Index('IDX_correlativa_materia_correlativa_id')
-  @ManyToOne(() => Materia, (m) => m.esCorrelativaDe)
+  @ManyToOne(() => Materia, (m) => m.esCorrelativaDe, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'materia_correlativa_id' })
   materiaCorrelativa: Materia;
 

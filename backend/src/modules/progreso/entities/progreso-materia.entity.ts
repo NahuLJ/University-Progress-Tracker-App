@@ -16,11 +16,13 @@ export class ProgresoMateria {
   @PrimaryGeneratedColumn()
   progresoId: number;
 
-  @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos)
+  @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'usuario_carrera_id' })
   usuarioCarrera: UsuarioCarrera;
 
-  @ManyToOne(() => Materia)
+  @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'materia_id' })
   materia: Materia;
 

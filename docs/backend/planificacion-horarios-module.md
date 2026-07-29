@@ -46,8 +46,7 @@ Crea un nuevo período de planificación. Si `trayectoriaId` está presente vali
 
 ### DELETE /api/planificacion/periodos/:id
 
-Elimina un período de planificación y todas sus materias asignadas.
-Si el período tiene continuaciones (hijos en la trayectoria), se eliminan recursivamente todos los descendientes.
+Elimina un período de planificación. Las `MateriaPlanificada` asociadas se eliminan por `ON DELETE CASCADE` en la FK. Si el período tiene continuaciones (hijos en la trayectoria), se eliminan en cascada por `ON DELETE CASCADE` en `planificacion_origen_id`.
 
 | Código | Descripción |
 |---|---|
@@ -399,9 +398,23 @@ export class PeriodoPlanificacion {
     @PrimaryGeneratedColumn()
     periodoId: number;
 
-    @ManyToOne(() => UsuarioCarrera, (uc) => uc.periodos)
+    @ManyToOne(() => UsuarioCarrera, (uc) => uc.periodos, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'usuario_carrera_id' })
     usuarioCarrera: UsuarioCarrera;
+
+    @ManyToOne(() => Trayectoria, (t) => t.planificaciones, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'trayectoria_id' })
+    trayectoria?: Trayectoria;
+
+    @Column({ name: 'trayectoria_id', type: 'int', nullable: true })
+    trayectoriaId: number | null;
+
+    @ManyToOne(() => PeriodoPlanificacion, { nullable: true, onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'planificacion_origen_id' })
+    planificacionOrigen?: PeriodoPlanificacion;
+
+    @Column({ name: 'planificacion_origen_id', type: 'int', nullable: true })
+    planificacionOrigenId: number | null;
 
     @Column({ type: 'int' })
     anio: number;
@@ -409,24 +422,10 @@ export class PeriodoPlanificacion {
     @Column({ type: 'enum', enum: ['Verano', '1er Cuatrimestre', '2do Cuatrimestre'] })
     instancia: string;
 
-    @Column({ length: 100, nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: false })
     nombre: string;
 
-    @ManyToOne(() => Trayectoria, { nullable: true })
-    @JoinColumn({ name: 'trayectoria_id' })
-    trayectoria?: Trayectoria;
-
-    @Column({ name: 'trayectoria_id', nullable: true })
-    trayectoriaId?: number;
-
-    @ManyToOne(() => PeriodoPlanificacion, { nullable: true })
-    @JoinColumn({ name: 'planificacion_origen_id' })
-    planificacionOrigen?: PeriodoPlanificacion;
-
-    @Column({ name: 'planificacion_origen_id', nullable: true })
-    planificacionOrigenId?: number;
-
-    @OneToMany(() => PeriodoPlanificacion, pp => pp.planificacionOrigen)
+    @OneToMany(() => PeriodoPlanificacion, (pp) => pp.planificacionOrigen)
     continuaciones: PeriodoPlanificacion[];
 
     @OneToMany(() => MateriaPlanificada, (mp) => mp.periodo, { cascade: true })
@@ -462,11 +461,11 @@ export class MateriaPlanificada {
     @PrimaryGeneratedColumn()
     planificacionId: number;
 
-    @ManyToOne(() => PeriodoPlanificacion, (pp) => pp.materiasPlanificadas)
+    @ManyToOne(() => PeriodoPlanificacion, (pp) => pp.materiasPlanificadas, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'periodo_id' })
     periodo: PeriodoPlanificacion;
 
-    @ManyToOne(() => Materia)
+    @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 
@@ -496,5 +495,8 @@ export class MateriaPlanificada {
 | Al listar con `independientes=true` se filtran períodos con `trayectoria_id IS NULL` | Usa `IsNull()` de TypeORM |
 | Al crear en una trayectoria, validar orden cronológico | `validarOrdenCronologico` |
 | Al crear con `planificacionOrigenId`, solo validar contra el origen (fork) | `validarOrdenCronologico` con `planificacionOrigenId` |
-| La FK `trayectoria_id` tiene `ON DELETE CASCADE` | Eliminación en cascada al borrar trayectoria |
-| La FK `planificacion_origen_id` tiene `ON DELETE SET NULL` | Al eliminar un periodo padre, los hijos se desvinculan (y se eliminan recursivamente vía `eliminarDescendientes`) |
+| La FK `usuario_carrera_id` tiene `ON DELETE CASCADE` | Eliminación en cascada al borrar inscripción |
+| La FK `trayectoria_id` tiene `ON DELETE SET NULL` | Al eliminar una trayectoria, los períodos se desvinculan (no se eliminan) |
+| La FK `planificacion_origen_id` tiene `ON DELETE CASCADE` | Al eliminar un período padre, los hijos se eliminan en cascada |
+| La FK `periodo_id` en `materia_planificada` tiene `ON DELETE CASCADE` | Al eliminar un período, sus materias planificadas se eliminan |
+| La FK `materia_id` en `materia_planificada` tiene `ON DELETE CASCADE` | Al eliminar una materia, sus planificaciones se eliminan |

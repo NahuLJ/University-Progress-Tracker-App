@@ -16,11 +16,13 @@ export class MateriaPlanificada {
   @PrimaryGeneratedColumn()
   planificacionId: number;
 
-  @ManyToOne(() => PeriodoPlanificacion, (pp) => pp.materiasPlanificadas)
+  @ManyToOne(() => PeriodoPlanificacion, (pp) => pp.materiasPlanificadas, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'periodo_id' })
   periodo: PeriodoPlanificacion;
 
-  @ManyToOne(() => Materia)
+  @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'materia_id' })
   materia: Materia;
 

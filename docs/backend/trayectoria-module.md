@@ -35,7 +35,7 @@ export class Trayectoria {
     @PrimaryGeneratedColumn()
     trayectoriaId: number;
 
-    @ManyToOne(() => UsuarioCarrera)
+    @ManyToOne(() => UsuarioCarrera, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'usuario_carrera_id' })
     usuarioCarrera: UsuarioCarrera;
 
@@ -56,14 +56,14 @@ export class Trayectoria {
 ## Entidad PeriodoPlanificacion (campos agregados)
 
 ```typescript
-@ManyToOne(() => Trayectoria, { nullable: true })
+@ManyToOne(() => Trayectoria, (t) => t.planificaciones, { nullable: true, onDelete: 'SET NULL' })
 @JoinColumn({ name: 'trayectoria_id' })
 trayectoria?: Trayectoria;
 
 @Column({ name: 'trayectoria_id', nullable: true })
 trayectoriaId?: number;
 
-@ManyToOne(() => PeriodoPlanificacion, { nullable: true })
+@ManyToOne(() => PeriodoPlanificacion, { nullable: true, onDelete: 'CASCADE' })
 @JoinColumn({ name: 'planificacion_origen_id' })
 planificacionOrigen?: PeriodoPlanificacion;
 
@@ -162,4 +162,4 @@ El mismo patrón se aplica en `obtenerMateriasDesbloqueables()`.
 
 ### Eliminación en cascada
 
-La FK `planificacion_origen_id → periodo_planificacion.periodo_id` y `trayectoria_id → trayectoria.trayectoria_id` usan `ON DELETE CASCADE`. La BD elimina automáticamente toda la subrama descendiente.
+Todas las FK involucradas usan `ON DELETE CASCADE`, excepto `trayectoria_id` en `periodo_planificacion` que usa `ON DELETE SET NULL` (al eliminar una trayectoria los períodos se desvinculan pero no se eliminan). La BD elimina automáticamente toda la subrama descendiente de períodos vía `planificacion_origen_id` con `ON DELETE CASCADE`.

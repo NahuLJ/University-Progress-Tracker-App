@@ -196,27 +196,10 @@ export class PlanificacionService {
   async eliminarPeriodo(id: number): Promise<void> {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId: id },
-      relations: { materiasPlanificadas: true },
     });
     if (!periodo) throw new NotFoundException('Período no encontrado');
 
-    await this.eliminarDescendientes(id);
-
-    await this.materiaPlanificadaRepo.remove(periodo.materiasPlanificadas);
     await this.periodoRepo.remove(periodo);
-  }
-
-  private async eliminarDescendientes(periodoId: number): Promise<void> {
-    const hijos = await this.periodoRepo.find({
-      where: { planificacionOrigenId: periodoId },
-      relations: { materiasPlanificadas: true },
-    });
-
-    for (const hijo of hijos) {
-      await this.eliminarDescendientes(hijo.periodoId);
-      await this.materiaPlanificadaRepo.remove(hijo.materiasPlanificadas);
-      await this.periodoRepo.remove(hijo);
-    }
   }
 
   async listarBloques(): Promise<BloqueHorario[]> {

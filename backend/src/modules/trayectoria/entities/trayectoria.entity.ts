@@ -14,7 +14,9 @@ export class Trayectoria {
   @PrimaryGeneratedColumn()
   trayectoriaId: number;
 
-  @ManyToOne(() => UsuarioCarrera, (uc) => uc.trayectorias)
+  @ManyToOne(() => UsuarioCarrera, (uc) => uc.trayectorias, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'usuario_carrera_id' })
   usuarioCarrera: UsuarioCarrera;
 

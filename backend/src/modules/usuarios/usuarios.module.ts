@@ -5,19 +5,9 @@ import { UsuariosService } from './usuarios.service';
 import { Usuario } from './entities/usuario.entity';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { Carrera } from '../carreras/entities/carrera.entity';
-import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
-import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Usuario,
-      UsuarioCarrera,
-      Carrera,
-      CarreraMateria,
-      ProgresoMateria,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Usuario, UsuarioCarrera, Carrera])],
   controllers: [UsuariosController],
   providers: [UsuariosService],
   exports: [UsuariosService],

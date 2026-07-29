@@ -48,8 +48,8 @@ erDiagram
 
     usuario_carrera {
         int usuario_carrera_id PK
-        int usuario_id FK
-        int carrera_id FK
+        int usuario_id FK "ON DELETE CASCADE"
+        int carrera_id FK "ON DELETE CASCADE"
         date fecha_inicio
         date fecha_fin
         boolean activo
@@ -57,8 +57,8 @@ erDiagram
 
     carrera_materia {
         int carrera_materia_id PK
-        int carrera_id FK
-        int materia_id FK
+        int carrera_id FK "ON DELETE CASCADE"
+        int materia_id FK "ON DELETE CASCADE"
         int anio
         int cuatrimestre
         int orden
@@ -68,9 +68,9 @@ erDiagram
 
     correlativa {
         int correlativa_id PK
-        int materia_id FK
-        int materia_correlativa_id FK
-        int carrera_id FK "NULLABLE — correlativa global (NULL) o de una carrera específica"
+        int materia_id FK "ON DELETE CASCADE"
+        int materia_correlativa_id FK "ON DELETE CASCADE"
+        int carrera_id FK "NOT NULL — ON DELETE CASCADE"
     }
 
     estado_materia {
@@ -80,8 +80,8 @@ erDiagram
 
     progreso_materia {
         int progreso_id PK
-        int usuario_carrera_id FK
-        int materia_id FK
+        int usuario_carrera_id FK "ON DELETE CASCADE"
+        int materia_id FK "ON DELETE CASCADE"
         int estado_id FK
         int nota
         enum tipo_aprobacion
@@ -91,7 +91,9 @@ erDiagram
 
     periodo_planificacion {
         int periodo_id PK
-        int usuario_carrera_id FK
+        int usuario_carrera_id FK "ON DELETE CASCADE"
+        int trayectoria_id FK "NULL — ON DELETE SET NULL"
+        int planificacion_origen_id FK "NULL — ON DELETE CASCADE"
         int anio
         enum instancia
         varchar nombre
@@ -105,8 +107,8 @@ erDiagram
 
     materia_planificada {
         int planificacion_id PK
-        int periodo_id FK
-        int materia_id FK
+        int periodo_id FK "ON DELETE CASCADE"
+        int materia_id FK "ON DELETE CASCADE"
         int bloque_id FK
         enum dia_semana
     }
@@ -166,8 +168,8 @@ Tabla pivote para la relación **Muchos a Muchos** entre `usuario` y `carrera`. 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `usuario_carrera_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `usuario_id` | `INT` | `FK → usuario.usuario_id` `NOT NULL` | Referencia al usuario |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` | Referencia a la carrera |
+| `usuario_id` | `INT` | `FK → usuario.usuario_id` `NOT NULL` `ON DELETE CASCADE` | Referencia al usuario |
+| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la carrera |
 | `fecha_inicio` | `DATE` | `NOT NULL` | Fecha en que el usuario comenzó la carrera |
 | `fecha_fin` | `DATE` | `NULL` | Fecha de egreso (se completa al recibirse) |
 | `activo` | `BOOLEAN` | `NOT NULL` `DEFAULT TRUE` | Indica si el vínculo usuario-carrera sigue vigente |
@@ -183,8 +185,8 @@ Tabla pivote para la relación **Muchos a Muchos** entre `carrera` y `materia`. 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `carrera_materia_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` | Referencia a la carrera |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Referencia a la materia |
+| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la carrera |
+| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la materia |
 | `anio` | `INT` | `NOT NULL` `CHECK (anio > 0)` | Año sugerido en el plan (1, 2, 3…) |
 | `cuatrimestre` | `INT` | `NOT NULL` `CHECK (cuatrimestre IN (1,2))` | Cuatrimestre sugerido (1 o 2) |
 | `orden` | `INT` | `NOT NULL` | Número de orden de la materia dentro del plan (ej. "Materia 1", "Materia 2") |
@@ -195,14 +197,14 @@ Tabla pivote para la relación **Muchos a Muchos** entre `carrera` y `materia`. 
 
 ### 6. `correlativa`
 
-Tabla pivote para la relación **Muchos a Muchos** auto-referenciada sobre `materia`. Cada fila indica que una materia (`materia_id`) requiere haber aprobado otra materia (`materia_correlativa_id`) como correlativa previa. Opcionalmente puede asociarse a una carrera específica: si `carrera_id` es `NULL`, la correlativa es global (aplica a todas las carreras); si tiene un valor, solo aplica a esa carrera.
+Tabla pivote para la relación **Muchos a Muchos** auto-referenciada sobre `materia`. Cada fila indica que una materia (`materia_id`) requiere haber aprobado otra materia (`materia_correlativa_id`) como correlativa previa. Asociada a una carrera específica mediante `carrera_id`.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `correlativa_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia que **requiere** la correlativa |
-| `materia_correlativa_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia que **es** la correlativa (requisito previo) |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NULL` | Carrera específica (opcional). `NULL` = global |
+| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que **requiere** la correlativa |
+| `materia_correlativa_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que **es** la correlativa (requisito previo) |
+| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Carrera a la que aplica la correlativa |
 
 **Índice único:** `(materia_id, materia_correlativa_id, carrera_id)` — evita pares duplicados para la misma carrera (o para global cuando carrera_id es NULL).
 
@@ -234,8 +236,8 @@ Registro del avance académico de un usuario en una materia específica dentro d
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `progreso_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` | Vinculación del usuario con la carrera |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia evaluada |
+| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` `ON DELETE CASCADE` | Vinculación del usuario con la carrera |
+| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia evaluada |
 | `estado_id` | `INT` | `FK → estado_materia.estado_id` `NOT NULL` `DEFAULT 1` | Estado actual: Pendiente (1), En Proceso (2) o Completada (3) |
 | `nota` | `INT` | `CHECK (nota >= 4 AND nota <= 10)` `NULL` | Calificación numérica entera (4-10). **Obligatoria** solo cuando `estado_id = 3` (Completada) |
 | `tipo_aprobacion` | `ENUM('Final','Promocion')` | `NULL` | Tipo de aprobación: `Final` (examen final) o `Promocion` (promoción directa). Obligatorio cuando `estado_id = 3` |
@@ -250,12 +252,14 @@ Registro del avance académico de un usuario en una materia específica dentro d
 
 ### 9. `periodo_planificacion`
 
-Representa un período académico planificado por un usuario dentro de una carrera (verano, 1.er cuatrimestre o 2.º cuatrimestre de un año determinado). Un mismo usuario puede tener múltiples planificaciones para el mismo año e instancia (ej. dos variantes de horario para el mismo cuatrimestre).
+Representa un período académico planificado por un usuario dentro de una carrera (verano, 1.er cuatrimestre o 2.º cuatrimestre de un año determinado). Un mismo usuario puede tener múltiples planificaciones para el mismo año e instancia (ej. dos variantes de horario para el mismo cuatrimestre). Opcionalmente puede asociarse a una `trayectoria` y a un período `planificacion_origen` para forks.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `periodo_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del período |
-| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` | Usuario y carrera a la que pertenece la planificación |
+| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` `ON DELETE CASCADE` | Usuario y carrera a la que pertenece la planificación |
+| `trayectoria_id` | `INT` | `FK → trayectoria.trayectoria_id` `NULL` `ON DELETE SET NULL` | Trayectoria a la que pertenece (opcional) |
+| `planificacion_origen_id` | `INT` | `FK → periodo_planificacion.periodo_id` `NULL` `ON DELETE CASCADE` | Período origen del fork (opcional) |
 | `anio` | `INT` | `NOT NULL` | Año académico (ej. 2026) |
 | `instancia` | `ENUM('Verano','1er Cuatrimestre','2do Cuatrimestre')` | `NOT NULL` | Instancia temporal del período |
 | `nombre` | `VARCHAR(100)` | `NULL` | Nombre opcional para distinguir múltiples planificaciones (ej. "Variante A", "Plan con inglés") |
@@ -295,8 +299,8 @@ Asigna una materia a un bloque horario y día específico dentro de un período 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `planificacion_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `periodo_id` | `INT` | `FK → periodo_planificacion.periodo_id` `NOT NULL` | Período al que pertenece esta planificación |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` | Materia que se planifica |
+| `periodo_id` | `INT` | `FK → periodo_planificacion.periodo_id` `NOT NULL` `ON DELETE CASCADE` | Período al que pertenece esta planificación |
+| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que se planifica |
 | `bloque_id` | `INT` | `FK → bloque_horario.bloque_id` `NOT NULL` | Bloque horario asignado |
 | `dia_semana` | `ENUM('Lunes','Martes','Miércoles','Jueves','Viernes','Sábado')` | `NOT NULL` | Día de la semana en que se cursa la materia |
 
