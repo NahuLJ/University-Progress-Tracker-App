@@ -69,8 +69,12 @@ interface AnioAccordionProps {
     onMateriaClick: (materia: any) => void;
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    cuatrimestresOpen: Record<number, boolean>;
-    onCuatrimestreOpenChange: (cuatrimestre: number, open: boolean) => void;
+    cuatrimestresOpen: Record<string, boolean>;
+    onCuatrimestreOpenChange: (key: string, open: boolean) => void;
+}
+
+function cuatrimestreKey(anio: number, cuatrimestre: number): string {
+    return `${anio}-${cuatrimestre}`;
 }
 
 function AnioAccordion({ anio, onMateriaClick, isOpen, onOpenChange, cuatrimestresOpen, onCuatrimestreOpenChange }: AnioAccordionProps) {
@@ -79,11 +83,11 @@ function AnioAccordion({ anio, onMateriaClick, isOpen, onOpenChange, cuatrimestr
             <div className="space-y-2">
                 {anio.cuatrimestres.map((cuatrimestre) => (
                     <CuatrimestreAccordion
-                        key={cuatrimestre.cuatrimestre}
+                        key={cuatrimestreKey(anio.anio, cuatrimestre.cuatrimestre)}
                         cuatrimestre={cuatrimestre}
                         onMateriaClick={onMateriaClick}
-                        isOpen={cuatrimestresOpen[cuatrimestre.cuatrimestre] ?? false}
-                        onOpenChange={(open) => onCuatrimestreOpenChange(cuatrimestre.cuatrimestre, open)}
+                        isOpen={cuatrimestresOpen[cuatrimestreKey(anio.anio, cuatrimestre.cuatrimestre)] ?? false}
+                        onOpenChange={(open) => onCuatrimestreOpenChange(cuatrimestreKey(anio.anio, cuatrimestre.cuatrimestre), open)}
                     />
                 ))}
             </div>
@@ -100,16 +104,16 @@ interface PlanEstudiosTreeProps {
 
 export function PlanEstudiosTree({ planEstudios, onMateriaClick, expandirSignal = 0, contraerSignal = 0 }: PlanEstudiosTreeProps) {
     const [aniosOpen, setAniosOpen] = useState<Record<number, boolean>>({});
-    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<number, boolean>>({});
+    const [cuatrimestresOpen, setCuatrimestresOpen] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (expandirSignal > 0) {
             const newAnios: Record<number, boolean> = {};
-            const newCuatrimestres: Record<number, boolean> = {};
+            const newCuatrimestres: Record<string, boolean> = {};
             planEstudios.anios.forEach((anio) => {
                 newAnios[anio.anio] = true;
                 anio.cuatrimestres.forEach((cuat) => {
-                    newCuatrimestres[cuat.cuatrimestre] = true;
+                    newCuatrimestres[cuatrimestreKey(anio.anio, cuat.cuatrimestre)] = true;
                 });
             });
             setAniosOpen(newAnios);

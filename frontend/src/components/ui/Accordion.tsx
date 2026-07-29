@@ -53,7 +53,7 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
-            <div className={cn('overflow-hidden', isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0')}>
+            <div className={cn('overflow-hidden transition-all duration-300', isOpen ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0')}>
                 <div className="p-4">{children}</div>
             </div>
         </div>
