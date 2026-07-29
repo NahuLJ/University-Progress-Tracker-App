@@ -48,7 +48,16 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
         const anio = planificacionOrigenId && origenAnio !== undefined
             ? origenInstancia === '2do Cuatrimestre' ? origenAnio + 1 : origenAnio
             : new Date().getFullYear();
-        form.reset({ anio, instancia: '1er Cuatrimestre', nombre: '' });
+
+        const instancia = (() => {
+            if (origenAnio === undefined || origenInstancia === undefined) return '1er Cuatrimestre';
+            if (anio > origenAnio) return 'Verano';
+            const ordenOrigen = ORDEN_INSTANCIA[origenInstancia];
+            const disponibles = INSTANCIAS.filter((i) => ORDEN_INSTANCIA[i] > ordenOrigen);
+            return disponibles[0] ?? '1er Cuatrimestre';
+        })();
+
+        form.reset({ anio, instancia, nombre: '' });
     }, [isOpen, planificacionOrigenId, origenAnio, origenInstancia, form]);
 
     const anioSeleccionado = form.watch('anio');

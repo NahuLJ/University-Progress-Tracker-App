@@ -4,6 +4,10 @@
 > accedido vía nav `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 2 tabs (Carreras /
 > Materias) con `CrearCarreraModal`, `CrearMateriaModal`. Las tablas (`TablaCarreras`,
 > `TablaMaterias`) persisten tab activo, página y límite en `localStorage`.
+> Cada fila se renderiza como **card independiente** (no `<table>`) con chips neon-cyan para
+> códigos, pills `rounded-full` para metadatos y botones de acción con `hover:bg`.
+> El código de materia usa `<Badge variant="info">` (chip neon-cyan).
+> El nombre de la fila **no es clickeable**; la navegación al detalle es solo por botón "Ver".
 > Usa `useAdminCarreras`/`useAdminMaterias` (React Query) sobre los servicios
 > `carrerasService`/`materiasAdminService`. Verificado end-to-end contra el backend.
 > ⚠️ El backend aún no aplica `RolesGuard`: cualquier usuario autenticado puede entrar
@@ -57,6 +61,8 @@ MainLayout
 > (`admin-carreras-limit`). `TablaMaterias` persiste `page` (`admin-materias-page`) y
 > `limit` (`admin-materias-limit`). Al volver de una página de detalle, la última página
 > y el tamaño de página se restauran automáticamente.
+> El debounce de búsqueda usa `search === debouncedSearch` (en lugar del patrón `isFirstRender`)
+> para evitar reseteo de página al montar el componente en `<StrictMode>`.
 
 ---
 

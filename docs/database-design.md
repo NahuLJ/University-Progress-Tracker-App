@@ -1,30 +1,31 @@
 # Diseño de Base de Datos — Sistema de Seguimiento de Carreras Universitarias
 
-
-> ✅ **Implementado en `backend/`** — Código completo y compilando sin errores.
+> ✅ **Implementado en `backend/`** — 12 entidades TypeORM, migraciones sincronizadas con la base de datos.
 
 ## Diagrama Entidad-Relación (ERD)
 
 ```mermaid
 erDiagram
-    usuario ||--o{ usuario_carrera : "se inscribe en"
+    usuario ||--o{ usuario_carrera : "se inscribe"
     carrera ||--o{ usuario_carrera : "es cursada por"
-    carrera ||--o{ carrera_materia : "contiene"
+    carrera ||--o{ carrera_materia : "contiene en plan"
     materia ||--o{ carrera_materia : "pertenece a"
-    materia ||--o{ correlativa : "requiere como correlativa"
-    materia ||--o{ correlativa : "es correlativa de"
+    materia ||--o{ correlativa : "requiere"
+    materia ||--o{ correlativa : "es requisito de"
     usuario_carrera ||--o{ progreso_materia : "registra avance"
     materia ||--o{ progreso_materia : "es evaluada en"
     estado_materia ||--o{ progreso_materia : "clasifica"
     usuario_carrera ||--o{ periodo_planificacion : "planifica"
+    usuario_carrera ||--o{ trayectoria : "define"
+    trayectoria ||--o{ periodo_planificacion : "contiene"
     periodo_planificacion ||--o{ materia_planificada : "contiene"
-    materia ||--o{ materia_planificada : "es planificada en"
-    bloque_horario ||--o{ materia_planificada : "asigna horario"
+    materia ||--o{ materia_planificada : "es asignada en"
+    bloque_horario ||--o{ materia_planificada : "tiene horario"
 
     usuario {
         int usuario_id PK
         varchar nombre
-        varchar email
+        varchar email UK
         varchar password_hash
         datetime fecha_registro
         boolean activo
@@ -32,24 +33,26 @@ erDiagram
 
     carrera {
         int carrera_id PK
-        varchar nombre
+        varchar nombre UK
         text descripcion
         decimal duracion_anios
+        boolean activo
     }
 
     materia {
         int materia_id PK
         varchar nombre
-        varchar codigo
+        varchar codigo UK
         text descripcion
         int carga_horaria
         int creditos
+        boolean activo
     }
 
     usuario_carrera {
         int usuario_carrera_id PK
-        int usuario_id FK "ON DELETE CASCADE"
-        int carrera_id FK "ON DELETE CASCADE"
+        int usuario_id FK
+        int carrera_id FK
         date fecha_inicio
         date fecha_fin
         boolean activo
@@ -57,31 +60,29 @@ erDiagram
 
     carrera_materia {
         int carrera_materia_id PK
-        int carrera_id FK "ON DELETE CASCADE"
-        int materia_id FK "ON DELETE CASCADE"
+        int carrera_id FK
+        int materia_id FK
         int anio
         int cuatrimestre
         int orden
     }
 
-    nota: Unique(carrera_id, anio, cuatrimestre, orden) — evita duplicados de orden en mismo año/cuatrimestre
-
     correlativa {
         int correlativa_id PK
-        int materia_id FK "ON DELETE CASCADE"
-        int materia_correlativa_id FK "ON DELETE CASCADE"
-        int carrera_id FK "NOT NULL — ON DELETE CASCADE"
+        int materia_id FK
+        int materia_correlativa_id FK
+        int carrera_id FK
     }
 
     estado_materia {
         int estado_id PK
-        varchar nombre
+        varchar nombre UK
     }
 
     progreso_materia {
         int progreso_id PK
-        int usuario_carrera_id FK "ON DELETE CASCADE"
-        int materia_id FK "ON DELETE CASCADE"
+        int usuario_carrera_id FK
+        int materia_id FK
         int estado_id FK
         int nota
         enum tipo_aprobacion
@@ -91,12 +92,19 @@ erDiagram
 
     periodo_planificacion {
         int periodo_id PK
-        int usuario_carrera_id FK "ON DELETE CASCADE"
-        int trayectoria_id FK "NULL — ON DELETE SET NULL"
-        int planificacion_origen_id FK "NULL — ON DELETE CASCADE"
+        int usuario_carrera_id FK
+        int trayectoria_id FK
+        int planificacion_origen_id FK
         int anio
         enum instancia
         varchar nombre
+    }
+
+    trayectoria {
+        int trayectoria_id PK
+        int usuario_carrera_id FK
+        varchar nombre
+        timestamp creado_en
     }
 
     bloque_horario {
@@ -107,8 +115,8 @@ erDiagram
 
     materia_planificada {
         int planificacion_id PK
-        int periodo_id FK "ON DELETE CASCADE"
-        int materia_id FK "ON DELETE CASCADE"
+        int periodo_id FK
+        int materia_id FK
         int bloque_id FK
         enum dia_semana
     }
@@ -120,106 +128,106 @@ erDiagram
 
 ### 1. `usuario`
 
-Almacena los datos de cada usuario registrado en el sistema.
-
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `usuario_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del usuario |
-| `nombre` | `VARCHAR(150)` | `NOT NULL` | Nombre completo del usuario |
-| `email` | `VARCHAR(200)` | `NOT NULL` `UNIQUE` | Correo electrónico, usado para inicio de sesión |
-| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Hash de la contraseña (bcrypt / argon2) |
-| `fecha_registro` | `DATETIME` | `NOT NULL` `DEFAULT CURRENT_TIMESTAMP` | Momento en que se creó la cuenta |
-| `activo` | `BOOLEAN` | `NOT NULL` `DEFAULT TRUE` | Indica si la cuenta está habilitada |
+| `usuario_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `nombre` | `VARCHAR(150)` | `NOT NULL` | Nombre completo |
+| `email` | `VARCHAR(200)` | `NOT NULL UNIQUE` | Email de inicio de sesión |
+| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Hash bcrypt/argon2 |
+| `fecha_registro` | `DATETIME` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Fecha de alta |
+| `activo` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Cuenta habilitada |
 
 ---
 
 ### 2. `carrera`
 
-Catálogo de carreras universitarias disponibles en el sistema.
-
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `carrera_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único de la carrera |
-| `nombre` | `VARCHAR(200)` | `NOT NULL` | Nombre oficial de la carrera (ej. "Ingeniería en Sistemas") |
-| `descripcion` | `TEXT` | — | Descripción o detalle adicional de la carrera |
-| `duracion_anios` | `DECIMAL(3,1)` | `NOT NULL` | Duración estimada en años (ej. 3.5 para 3 años y medio) |
+| `carrera_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `nombre` | `VARCHAR(200)` | `NOT NULL UNIQUE` | Nombre oficial |
+| `descripcion` | `TEXT` | `NULL` | Descripción |
+| `duracion_anios` | `DECIMAL(3,1)` | `NOT NULL` | Duración en años (ej. 3.5) |
+| `activo` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Soft delete |
 
 ---
 
 ### 3. `materia`
 
-Catálogo de materias ofrecidas por las distintas carreras.
-
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `materia_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único de la materia |
-| `nombre` | `VARCHAR(200)` | `NOT NULL` | Nombre de la materia (ej. "Álgebra Lineal") |
-| `codigo` | `VARCHAR(20)` | `NOT NULL` `UNIQUE` | Código alfanumérico institucional (ej. "MAT101") |
-| `descripcion` | `TEXT` | — | Contenidos mínimos o descripción |
-| `carga_horaria` | `INT` | `NOT NULL` | Cantidad total de horas de la materia |
-| `creditos` | `INT` | `NOT NULL` | Cantidad de créditos que otorga la materia |
+| `materia_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `nombre` | `VARCHAR(200)` | `NOT NULL` | Nombre de la materia |
+| `codigo` | `VARCHAR(20)` | `NOT NULL UNIQUE` | Código alfanumérico (ej. "MAT101") |
+| `descripcion` | `TEXT` | `NULL` | Contenidos mínimos |
+| `carga_horaria` | `INT` | `NOT NULL` | Horas totales |
+| `creditos` | `INT` | `NOT NULL` | Créditos que otorga |
+| `activo` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Soft delete |
 
 ---
 
 ### 4. `usuario_carrera`
 
-Tabla pivote para la relación **Muchos a Muchos** entre `usuario` y `carrera`. Un usuario puede estar cursando una o más carreras simultáneamente.
+Tabla pivote M:N entre `usuario` y `carrera`.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `usuario_carrera_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `usuario_id` | `INT` | `FK → usuario.usuario_id` `NOT NULL` `ON DELETE CASCADE` | Referencia al usuario |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la carrera |
-| `fecha_inicio` | `DATE` | `NOT NULL` | Fecha en que el usuario comenzó la carrera |
-| `fecha_fin` | `DATE` | `NULL` | Fecha de egreso (se completa al recibirse) |
-| `activo` | `BOOLEAN` | `NOT NULL` `DEFAULT TRUE` | Indica si el vínculo usuario-carrera sigue vigente |
+| `usuario_carrera_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `usuario_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Referencia al usuario |
+| `carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Referencia a la carrera |
+| `fecha_inicio` | `DATE` | `NOT NULL` | Fecha de inicio |
+| `fecha_fin` | `DATE` | `NULL` | Fecha de egreso |
+| `activo` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Vigencia del vínculo |
 
-**Índice único:** `(usuario_id, carrera_id)` — evita inscripciones duplicadas.
+**Índices únicos:**
+- `(usuario_id, carrera_id)` — evita inscripciones duplicadas.
 
 ---
 
 ### 5. `carrera_materia` — Plan de Estudios
 
-Tabla pivote para la relación **Muchos a Muchos** entre `carrera` y `materia`. Define el plan de estudios: qué materias pertenecen a cada carrera y en qué orden, año y cuatrimestre sugerido se ubican.
+Tabla pivote M:N entre `carrera` y `materia`. Define qué materias pertenecen a cada carrera con su ubicación en el plan.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `carrera_materia_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la carrera |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Referencia a la materia |
-| `anio` | `INT` | `NOT NULL` `CHECK (anio > 0)` | Año sugerido en el plan (1, 2, 3…) |
-| `cuatrimestre` | `INT` | `NOT NULL` `CHECK (cuatrimestre IN (1,2))` | Cuatrimestre sugerido (1 o 2) |
-| `orden` | `INT` | `NOT NULL` | Número de orden de la materia dentro del plan (ej. "Materia 1", "Materia 2") |
+| `carrera_materia_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Referencia a la carrera |
+| `materia_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Referencia a la materia |
+| `anio` | `INT` | `NOT NULL CHECK (> 0)` | Año sugerido (1, 2, 3…) |
+| `cuatrimestre` | `INT` | `NOT NULL CHECK (IN (1,2))` | Cuatrimestre sugerido |
+| `orden` | `INT` | `NOT NULL` | Número de orden |
 
-**Índice único:** `(carrera_id, materia_id)` — evita que una misma materia se asigne dos veces a la misma carrera.
+**Índices únicos:**
+- `(carrera_id, materia_id)` — evita materias duplicadas en la misma carrera.
+- `(carrera_id, anio, cuatrimestre, orden)` — evita órdenes duplicados en el mismo año/cuatrimestre.
 
 ---
 
 ### 6. `correlativa`
 
-Tabla pivote para la relación **Muchos a Muchos** auto-referenciada sobre `materia`. Cada fila indica que una materia (`materia_id`) requiere haber aprobado otra materia (`materia_correlativa_id`) como correlativa previa. Asociada a una carrera específica mediante `carrera_id`.
+Tabla pivote M:N auto-referenciada sobre `materia`. Indica que una materia (`materia_id`) requiere haber aprobado otra (`materia_correlativa_id`), dentro de una carrera específica.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `correlativa_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que **requiere** la correlativa |
-| `materia_correlativa_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que **es** la correlativa (requisito previo) |
-| `carrera_id` | `INT` | `FK → carrera.carrera_id` `NOT NULL` `ON DELETE CASCADE` | Carrera a la que aplica la correlativa |
+| `correlativa_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `materia_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Materia que **requiere** la correlativa |
+| `materia_correlativa_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Materia **requisito** |
+| `carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Carrera a la que aplica |
 
-**Índice único:** `(materia_id, materia_correlativa_id, carrera_id)` — evita pares duplicados para la misma carrera (o para global cuando carrera_id es NULL).
+**Índices:**
+- `IDX_correlativa_materia_id` sobre `materia_id`.
+- `IDX_correlativa_materia_correlativa_id` sobre `materia_correlativa_id`.
+- **Único:** `(materia_id, materia_correlativa_id, carrera_id)`.
 
 ---
 
 ### 7. `estado_materia`
 
-Catálogo de estados posibles para el progreso de una materia. Tabla de dominio que reemplaza un `ENUM` y permite escalabilidad futura.
+Catálogo de estados del progreso (reemplaza un `ENUM`).
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `estado_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del estado |
-| `nombre` | `VARCHAR(20)` | `NOT NULL` `UNIQUE` | Nombre del estado: `Pendiente`, `En Proceso`, `Completada` |
-
-**Valores predefinidos:**
+| `estado_id` | `INT` | `PK AUTO_INCREMENT` | Identificador |
+| `nombre` | `VARCHAR(20)` | `NOT NULL UNIQUE` | `Pendiente`, `En Proceso`, `Completada` |
 
 | estado_id | nombre |
 |---|---|
@@ -231,54 +239,61 @@ Catálogo de estados posibles para el progreso de una materia. Tabla de dominio 
 
 ### 8. `progreso_materia`
 
-Registro del avance académico de un usuario en una materia específica dentro de una carrera determinada.
+Registro del avance de un usuario en una materia dentro de una carrera.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `progreso_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` `ON DELETE CASCADE` | Vinculación del usuario con la carrera |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia evaluada |
-| `estado_id` | `INT` | `FK → estado_materia.estado_id` `NOT NULL` `DEFAULT 1` | Estado actual: Pendiente (1), En Proceso (2) o Completada (3) |
-| `nota` | `INT` | `CHECK (nota >= 4 AND nota <= 10)` `NULL` | Calificación numérica entera (4-10). **Obligatoria** solo cuando `estado_id = 3` (Completada) |
-| `tipo_aprobacion` | `ENUM('Final','Promocion')` | `NULL` | Tipo de aprobación: `Final` (examen final) o `Promocion` (promoción directa). Obligatorio cuando `estado_id = 3` |
-| `fecha_completado` | `DATE` | `NULL` | Fecha en que se completó la materia (solo si `estado_id = 3`) |
-| `fecha_actualizacion` | `DATETIME` | `NOT NULL` `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` | Última modificación del registro |
+| `progreso_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `usuario_carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Vinculación usuario-carrera |
+| `materia_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Materia evaluada |
+| `estado_id` | `INT` | `FK NOT NULL DEFAULT 1` | Pendiente/En Proceso/Completada |
+| `nota` | `INT` | `CHECK (4–10) NULL` | Nota (obligatoria si estado = Completada) |
+| `tipo_aprobacion` | `ENUM('Final','Promocion')` | `NULL` | Tipo de aprobación (obligatorio si estado = Completada) |
+| `fecha_completado` | `DATE` | `NULL` | Fecha de completado |
+| `fecha_actualizacion` | `DATETIME` | `NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE` | Última modificación |
 
-**Índice único:** `(usuario_carrera_id, materia_id)` — un usuario dentro de una carrera tiene un único progreso por materia.
-
-**Nota:** La obligatoriedad de `nota` y `tipo_aprobacion` cuando `estado_id = 3` debe enforcederse a nivel de aplicación o mediante `CHECK` condicional; si el motor lo soporta, se puede añadir `CHECK (estado_id <> 3 OR (nota IS NOT NULL AND tipo_aprobacion IS NOT NULL))`.
+**Índice único:** `(usuario_carrera_id, materia_id)` — un progreso por materia por inscripción.
 
 ---
 
 ### 9. `periodo_planificacion`
 
-Representa un período académico planificado por un usuario dentro de una carrera (verano, 1.er cuatrimestre o 2.º cuatrimestre de un año determinado). Un mismo usuario puede tener múltiples planificaciones para el mismo año e instancia (ej. dos variantes de horario para el mismo cuatrimestre). Opcionalmente puede asociarse a una `trayectoria` y a un período `planificacion_origen` para forks.
+Período académico planificado (Verano, 1.er Cuatrimestre, 2.º Cuatrimestre). Un usuario puede tener múltiples planificaciones para un mismo año/instancia (variantes). Opcionalmente asociado a una `trayectoria` y un `planificacion_origen` para forks.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `periodo_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del período |
-| `usuario_carrera_id` | `INT` | `FK → usuario_carrera.usuario_carrera_id` `NOT NULL` `ON DELETE CASCADE` | Usuario y carrera a la que pertenece la planificación |
-| `trayectoria_id` | `INT` | `FK → trayectoria.trayectoria_id` `NULL` `ON DELETE SET NULL` | Trayectoria a la que pertenece (opcional) |
-| `planificacion_origen_id` | `INT` | `FK → periodo_planificacion.periodo_id` `NULL` `ON DELETE CASCADE` | Período origen del fork (opcional) |
-| `anio` | `INT` | `NOT NULL` | Año académico (ej. 2026) |
-| `instancia` | `ENUM('Verano','1er Cuatrimestre','2do Cuatrimestre')` | `NOT NULL` | Instancia temporal del período |
-| `nombre` | `VARCHAR(100)` | `NULL` | Nombre opcional para distinguir múltiples planificaciones (ej. "Variante A", "Plan con inglés") |
+| `periodo_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `usuario_carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Usuario + carrera |
+| `trayectoria_id` | `INT` | `FK NULL ON DELETE SET NULL` | Trayectoria asociada |
+| `planificacion_origen_id` | `INT` | `FK NULL ON DELETE CASCADE` | Período origen del fork |
+| `anio` | `INT` | `NOT NULL` | Año académico |
+| `instancia` | `ENUM('Verano','1er Cuatrimestre','2do Cuatrimestre')` | `NOT NULL` | Instancia temporal |
+| `nombre` | `VARCHAR(100)` | `NOT NULL` | Nombre para distinguir variantes (ej. "Variante A") |
 
 ---
 
-### 10. `bloque_horario`
+### 10. `trayectoria`
 
-Catálogo de bloques fijos de 2 horas, desde las 08:00 hasta las 22:00. Evita la redundancia de almacenar hora_inicio / hora_fin en cada materia planificada.
+Define una trayectoria académica (secuencia de planificaciones). Un `usuario_carrera` puede tener múltiples trayectorias (bifurcaciones).
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `bloque_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del bloque |
-| `hora_inicio` | `TIME` | `NOT NULL` | Hora de inicio del bloque (ej. `08:00:00`) |
-| `hora_fin` | `TIME` | `NOT NULL` | Hora de fin del bloque (ej. `10:00:00`) |
+| `trayectoria_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `usuario_carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Usuario + carrera |
+| `nombre` | `VARCHAR(150)` | `NOT NULL` | Nombre de la trayectoria |
+| `creado_en` | `TIMESTAMP` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Fecha de creación |
 
-**Índice único:** `(hora_inicio, hora_fin)` — evita bloques duplicados.
+---
 
-**Bloques predefinidos:**
+### 11. `bloque_horario`
+
+Catálogo de 7 bloques fijos de 2h (08:00–22:00).
+
+| Atributo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| `bloque_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `hora_inicio` | `TIME` | `NOT NULL` | Ej. `08:00:00` |
+| `hora_fin` | `TIME` | `NOT NULL` | Ej. `10:00:00` |
 
 | bloque_id | hora_inicio | hora_fin |
 |---|---|---|
@@ -292,19 +307,19 @@ Catálogo de bloques fijos de 2 horas, desde las 08:00 hasta las 22:00. Evita la
 
 ---
 
-### 11. `materia_planificada`
+### 12. `materia_planificada`
 
-Asigna una materia a un bloque horario y día específico dentro de un período de planificación.
+Asigna una materia a un bloque horario y día dentro de un período.
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `planificacion_id` | `INT` | `PK` `AUTO_INCREMENT` | Identificador único del registro |
-| `periodo_id` | `INT` | `FK → periodo_planificacion.periodo_id` `NOT NULL` `ON DELETE CASCADE` | Período al que pertenece esta planificación |
-| `materia_id` | `INT` | `FK → materia.materia_id` `NOT NULL` `ON DELETE CASCADE` | Materia que se planifica |
-| `bloque_id` | `INT` | `FK → bloque_horario.bloque_id` `NOT NULL` | Bloque horario asignado |
-| `dia_semana` | `ENUM('Lunes','Martes','Miércoles','Jueves','Viernes','Sábado')` | `NOT NULL` | Día de la semana en que se cursa la materia |
+| `planificacion_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
+| `periodo_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Período de planificación |
+| `materia_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Materia planificada |
+| `bloque_id` | `INT` | `FK NOT NULL` | Bloque horario |
+| `dia_semana` | `ENUM('Lunes','Martes','Miércoles','Jueves','Viernes','Sábado')` | `NOT NULL` | Día de cursada |
 
-**Índice único:** `(periodo_id, bloque_id, dia_semana)` — no pueden solaparse dos materias en el mismo bloque horario, mismo día y mismo período.
+**Índice único:** `(periodo_id, bloque_id, dia_semana)` — no solapar materias en el mismo bloque/día/período.
 
 ---
 
@@ -335,7 +350,7 @@ SELECT
     CEIL(
         COUNT(DISTINCT CASE WHEN em.nombre IS NULL OR em.nombre != 'Completada' THEN cm.carrera_materia_id END)
         /
-        NULLIF( -- máximo de materias por cuatrimestre según el plan
+        NULLIF(
             (SELECT MAX(materias_por_cuatrimestre)
              FROM (
                  SELECT COUNT(*) AS materias_por_cuatrimestre
@@ -360,9 +375,10 @@ GROUP BY uc.usuario_carrera_id, uc.carrera_id;
 
 ## Resumen de Convenciones
 
-- **Claves primarias (PK):** `INT` con `AUTO_INCREMENT` y nombre `{tabla}_id`.
-- **Claves foráneas (FK):** `INT NOT NULL` con nombre explícito y `REFERENCES` a la PK correspondiente.
-- **Relaciones Muchos a Muchos:** Resueltas con tablas pivote (`usuario_carrera`, `carrera_materia`, `correlativa`).
-- **Catálogos fijos:** `estado_materia` se modela como tabla en lugar de `ENUM` para flexibilidad.
-- **ENUM:** Se usa solo en atributos con valores pequeños y estables (`instancia`, `dia_semana`).
-- **Índices únicos compuestos:** Toda tabla pivote incluye un `UNIQUE` sobre sus FK para evitar duplicados.
+- **PK:** `INT AUTO_INCREMENT` con nombre `{tabla}_id`.
+- **FK:** `INT NOT NULL` con nombre explícito y `REFERENCES` a la PK correspondiente.
+- **M:N:** Tablas pivote (`usuario_carrera`, `carrera_materia`, `correlativa`).
+- **Catálogos:** `estado_materia` como tabla (no `ENUM`).
+- **ENUM:** Solo para valores pequeños y estables (`instancia`, `dia_semana`, `tipo_aprobacion`).
+- **Índices únicos compuestos:** Toda tabla pivote incluye un `UNIQUE` sobre sus FK.
+- **Soft delete:** `activo` booleano en `usuario`, `carrera`, `materia`, `usuario_carrera`.

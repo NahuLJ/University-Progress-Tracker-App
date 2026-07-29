@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Accordion } from '../ui/Accordion';
+import { Badge } from '../ui/Badge';
 import { StatusBadge } from '../ui/StatusBadge';
 import type { PlanEstudios } from '../../types/carrera.types';
 
@@ -22,7 +23,7 @@ function MateriaRow({ materia, onClick }: MateriaRowProps) {
                     <span className="font-medium truncate text-slate-100">{materia.nombre}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                    <span className="font-mono">{materia.codigo}</span>
+                    <Badge variant="info" size="sm">{materia.codigo}</Badge>
                     <span>•</span>
                     <span>{materia.cargaHoraria}h/sem</span>
                     <span>•</span>

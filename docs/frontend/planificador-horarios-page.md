@@ -155,7 +155,10 @@ ocupadas y vacías. Los textos de los chips tienen `truncate` para no desbordar.
 ### NuevoPeriodoModal
 
 Formulario RHF + Zod: `anio` (2020–2030), `instancia` (Verano / 1er Cuatrimestre / 2do Cuatrimestre),
-`nombre` opcional. Al confirmar llama a `crearPeriodo`.
+`nombre` opcional. Cuando se abre para continuar una planificación (`planificacionOrigenId` presente),
+la instancia por defecto se computa según el origen: si el año avanza (origen = 2do Cuatrimestre)
+se preselecciona `Verano`; si es el mismo año, se preselecciona la primera instancia disponible
+después del origen. Al confirmar llama a `crearPeriodo`.
 
 ### EditarPeriodoModal
 

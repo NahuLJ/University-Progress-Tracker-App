@@ -11,6 +11,7 @@
 > (alineado a la derecha). En vista árbol, la card "Plan de estudios" tiene en su header los botones
 > **Expandir todo / Contraer todo**. En vista tabla, se muestra como **grid** agrupado por Año → Cuatrimestre,
 > con columnas Nro | Código | Materia | Créditos | Carga Horaria | Estado.
+> El código de materia se muestra como `<Badge variant="info">` chip neon-cyan en ambas vistas.
 > Incluye botón **Volver a carreras** arriba del todo. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
 > una materia. **Las correlativas ahora muestran su estado real (Pendiente/En Proceso/Completada) con nota y tipo si corresponde**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
@@ -89,7 +90,7 @@ Ruta /carreras
 
  Ruta /carreras/:id
 └── CarreraDetailPage
-    ├── Botón "Volver a carreras" (Icon arrowLeft)
+    ├── Botón arrowLeft (navigate(-1), sin texto)
     ├── Header: nombre + descripción + badge Inscripto/Desinscripto
     │   ├── Si inscripto: "Desinscribirse" + "Eliminar" (abre modales)
     │   ├── Si desinscripto: "Volver a inscribirse" + "Eliminar definitivamente"
@@ -164,8 +165,9 @@ export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?
 
 Usa `Accordion` anidados (controlados vía props `open`/`onOpenChange`): `AnioAccordion`
 (1° Año, 2° Año, …) → `CuatrimestreAccordion` (1° Cuatrimestre, …) → `MateriaRow`. Cada materia
-muestra orden, nombre, código, créditos y carga horaria, y un `StatusBadge` con el estado del usuario
-(`estadoUsuario` como string directo). El componente recibe `expandirSignal` / `contraerSignal`
+muestra orden, nombre, código (como `<Badge variant="info">` chip neon-cyan), créditos y carga
+horaria, y un `StatusBadge` con el estado del usuario (`estadoUsuario` como string directo).
+El componente recibe `expandirSignal` / `contraerSignal`
 (números) que disparan expandir/contraer todo vía `useEffect`. Click en una materia abre
 `MateriaDetailModal`. Los botones "Expandir todo / Contraer todo" viven en el header de la card
 "Plan de estudios" (en `CarreraDetailPage`), no dentro del árbol.
@@ -195,7 +197,7 @@ y disponibles, y cierra el modal.
 | Click "Desinscribirse" (detail) | Abre `DesinscribirCarreraModal` (confirmación simple) → DELETE + snackbar + reset store |
 | Click "Eliminar" (detail) | Abre modal de confirmación hard delete → DELETE definitivo + snackbar + reset store |
 | Click "Volver a inscribirse" | Abre modal de confirmación → PATCH reactivar + snackbar |
-| Click "Volver a carreras" | `navigate('/carreras')` desde CarreraDetailPage |
+| Click arrowLeft | `navigate(-1)` desde CarreraDetailPage (vuelve a la página anterior) |
 | Cambio árbol/tabla | Switch visual (toggle entre cards, a la derecha) |
 | Expandir/Contraer todo | Botones en el header de "Plan de estudios" (solo vista árbol) |
 | "Ver más" en CarrerasPage | `fetchNextPage()` de `useInfiniteQuery`, carga siguiente página |

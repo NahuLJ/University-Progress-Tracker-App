@@ -120,11 +120,10 @@ export function CarreraDetailPage() {
         <div className="space-y-6">
             <button
                 type="button"
-                onClick={() => navigate('/carreras')}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                onClick={() => navigate(-1)}
+                className="text-slate-400 hover:text-white transition-colors"
             >
                 <Icon name="arrowLeft" className="w-5 h-5" />
-                <span>Volver a carreras</span>
             </button>
 <Card>
                 <div className="flex justify-between items-start mb-4">
@@ -302,7 +301,7 @@ export function CarreraDetailPage() {
                                             {cuatrimestre.materias.map(materia => (
                                                 <div key={materia.materiaId} className="grid grid-cols-12 gap-2 px-6 py-3 items-center hover:bg-base-700/50 border-b border-base-600">
                                                     <span className="col-span-1 text-center text-slate-300 text-sm">{materia.orden}</span>
-                                                    <span className="col-span-2 text-center font-mono text-sm text-slate-300">{materia.codigo}</span>
+                                                    <span className="col-span-2 flex justify-center"><Badge variant="info" size="sm">{materia.codigo}</Badge></span>
                                                     <span className="col-span-3 text-center">
                                                         <button
                                                             onClick={() => setMateriaSeleccionada(materia)}

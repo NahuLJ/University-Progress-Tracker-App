@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminCarreras } from '../../hooks/useAdminCarreras';
 import { Icon } from '../ui/Icon';
@@ -21,7 +21,6 @@ const SORT_OPTIONS = [
 
 export function TablaCarreras() {
     const navigate = useNavigate();
-    const isFirstRender = useRef(true);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useLocalStorage<number>('admin-carreras-page', 1);
@@ -35,16 +34,13 @@ export function TablaCarreras() {
     const [eliminarConfirm, setEliminarConfirm] = useState<CarreraAdminRow | null>(null);
 
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
+        if (search === debouncedSearch) return;
         const t = setTimeout(() => {
             setDebouncedSearch(search);
             setPage(1);
         }, 300);
         return () => clearTimeout(t);
-    }, [search, setPage]);
+    }, [search, debouncedSearch, setPage]);
 
     const { listarCarreras, eliminarCarrera, restaurarCarrera } = useAdminCarreras(
         { ...filters, search: debouncedSearch || undefined },
@@ -89,89 +85,69 @@ export function TablaCarreras() {
             {isError && <QueryError error={error} onRetry={() => refetch()} />}
 
             {data && (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-base-600 text-slate-400 text-left">
-                                <th className="py-3 px-4 font-medium">Nombre</th>
-                                <th className="py-3 px-4 font-medium">Descripción</th>
-                                <th className="py-3 px-4 font-medium">Duración</th>
-                                <th className="py-3 px-4 font-medium">Materias</th>
-                                {filters.incluirInactivos && <th className="py-3 px-4 font-medium">Estado</th>}
-                                <th className="py-3 px-4 font-medium">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.data.map((carrera: CarreraAdminRow) => (
-                                <tr key={carrera.carreraId} className="border-b border-base-700/50 hover:bg-base-700/30 transition-colors">
-                                    <td className="py-3 px-4">
-                                        <button
-                                            onClick={() => navigate(`/carreras/${carrera.carreraId}`)}
-                                            className="text-neon-cyan hover:underline text-left"
-                                        >
-                                            {carrera.nombre}
-                                        </button>
-                                    </td>
-                                    <td className="py-3 px-4 text-slate-300 max-w-xs truncate">
-                                        {carrera.descripcion ?? '-'}
-                                    </td>
-                                    <td className="py-3 px-4 text-slate-300">{carrera.duracionAnios} años</td>
-                                    <td className="py-3 px-4">
-                                        <Badge variant="info" size="sm">{carrera.totalMaterias ?? 0}</Badge>
-                                    </td>
-                                    {filters.incluirInactivos && (
-                                        <td className="py-3 px-4">
-                                            <Badge variant={carrera.activo ? 'success' : 'danger'} size="sm">
-                                                {carrera.activo ? 'Activa' : 'Inactiva'}
-                                            </Badge>
-                                        </td>
-                                    )}
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                title="Ver detalle"
-                                                onClick={() => navigate(`/carreras/${carrera.carreraId}`)}
-                                                className="text-slate-400 hover:text-white transition-colors"
-                                            >
-                                                <Icon name="ver" className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                title="Editar"
-                                                onClick={() => navigate(`/admin/carreras/${carrera.carreraId}/editar`)}
-                                                className="text-slate-400 hover:text-neon-cyan transition-colors"
-                                            >
-                                                <Icon name="edit" className="w-4 h-4" />
-                                            </button>
-                                            {carrera.activo ? (
-                                                <button
-                                                    title="Eliminar"
-                                                    onClick={() => setEliminarConfirm(carrera)}
-                                                    className="text-slate-400 hover:text-neon-red transition-colors"
-                                                >
-                                                    <Icon name="delete" className="w-4 h-4" />
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    title="Restaurar"
-                                                    onClick={() => restaurarCarrera.mutate(carrera.carreraId)}
-                                                    className="text-slate-400 hover:text-neon-cyan transition-colors"
-                                                >
-                                                    <Icon name="restore" className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {data.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={filters.incluirInactivos ? 6 : 5} className="py-8 text-center text-slate-400">
-                                        No se encontraron carreras
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div className="space-y-2">
+                    {data.data.map((carrera: CarreraAdminRow) => (
+                        <div
+                            key={carrera.carreraId}
+                            className="flex items-center gap-4 bg-base-800/30 border border-base-700/50 rounded-lg px-5 py-4 hover:bg-base-800/50 hover:border-base-600/50 transition-all"
+                        >
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{carrera.nombre}</p>
+                                <p className="text-xs text-slate-400 truncate mt-0.5">{carrera.descripcion ?? '-'}</p>
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-xs text-slate-400 bg-base-800/80 px-2.5 py-1 rounded-full border border-base-700/50">
+                                    {carrera.duracionAnios} años
+                                </span>
+                                <Badge variant="info" size="sm">{carrera.totalMaterias ?? 0} materias</Badge>
+                                {filters.incluirInactivos && (
+                                    <Badge variant={carrera.activo ? 'success' : 'danger'} size="sm">
+                                        {carrera.activo ? 'Activa' : 'Inactiva'}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0 border-l border-base-700/50 pl-3">
+                                <button
+                                    title="Ver detalle"
+                                    onClick={() => navigate(`/carreras/${carrera.carreraId}`)}
+                                    className="p-2 text-slate-400 hover:text-white hover:bg-base-700/60 rounded-lg transition-all"
+                                >
+                                    <Icon name="ver" className="w-4 h-4" />
+                                </button>
+                                <button
+                                    title="Editar"
+                                    onClick={() => navigate(`/admin/carreras/${carrera.carreraId}/editar`)}
+                                    className="p-2 text-slate-400 hover:text-neon-cyan hover:bg-base-700/60 rounded-lg transition-all"
+                                >
+                                    <Icon name="edit" className="w-4 h-4" />
+                                </button>
+                                {carrera.activo ? (
+                                    <button
+                                        title="Eliminar"
+                                        onClick={() => setEliminarConfirm(carrera)}
+                                        className="p-2 text-slate-400 hover:text-neon-red hover:bg-base-700/60 rounded-lg transition-all"
+                                    >
+                                        <Icon name="delete" className="w-4 h-4" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        title="Restaurar"
+                                        onClick={() => restaurarCarrera.mutate(carrera.carreraId)}
+                                        className="p-2 text-slate-400 hover:text-neon-cyan hover:bg-base-700/60 rounded-lg transition-all"
+                                    >
+                                        <Icon name="restore" className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {data.data.length === 0 && (
+                        <div className="py-8 text-center text-slate-400">
+                            No se encontraron carreras
+                        </div>
+                    )}
                 </div>
             )}
 
