@@ -12,7 +12,7 @@
 | **2do Cuatrimestre** | | | | | |
 | 6 | Inglés | ING | - | 2 | 4 |
 | 7 | Programación Estructurada | PE | Introducción a lógica y Problemas Computacionales | 6 | 7 |
-| 8 | Matemática para Informática 2 | MP2 | Matemática para Informática 1 | 4 | 7 |
+| 8 | Matemática para Informática 2 | MPI2 | Matemática para Informática 1 | 4 | 7 |
 | 9 | Lenguajes Informáticos 1 | LI1 | Introducción a lógica y Problemas Computacionales | 4 | 7 |
 | 10 | Organización de Computadoras 2 | OR2 | Organización de las Computadoras 1 | 4 | 5 |
 | **2do Año** | | | | | |

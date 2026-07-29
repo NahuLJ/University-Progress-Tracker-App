@@ -71,7 +71,7 @@ const CARRERA = {
       correlativas: ['ILYPC'],
     },
     {
-      codigo: 'MP2',
+      codigo: 'MPI2',
       nombre: 'Matemática para Informática 2',
       cargaHoraria: 4,
       creditos: 7,
@@ -133,7 +133,7 @@ const CARRERA = {
       creditos: 5,
       anio: 2,
       cuatrimestre: 1,
-      correlativas: ['MP2'],
+      correlativas: ['MPI2'],
     },
     {
       codigo: 'RD',
@@ -226,7 +226,7 @@ const CARRERA = {
       creditos: 5,
       anio: 3,
       cuatrimestre: 1,
-      correlativas: ['MP2'],
+      correlativas: ['MPI2'],
     },
     {
       codigo: 'EPT',
@@ -264,7 +264,7 @@ const CARRERA = {
       creditos: 5,
       anio: 3,
       cuatrimestre: 2,
-      correlativas: ['MP2', 'POO2', 'ALG'],
+      correlativas: ['MPI2', 'POO2', 'ALG'],
     },
     {
       codigo: 'AS1',
