@@ -162,7 +162,7 @@ export function TrayectoriaPage() {
                     />
                 </div>
             ) : arbol && arbol.periodo ? (
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 min-w-0">
                     <ArbolTrayectoria
                         nodo={arbol}
                         onNavigate={(pid) => navigate(`/planificacion/${pid}`)}

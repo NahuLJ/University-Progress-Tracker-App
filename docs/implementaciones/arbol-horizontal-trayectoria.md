@@ -13,7 +13,8 @@ Eliminar la vista de "Línea de tiempo" del detalle de trayectoria, y reemplazar
 | Archivo | Tipo de cambio |
 |---|---|
 | `frontend/src/components/planificacion/ArbolTrayectoria.tsx` | Reescritura completa |
-| `frontend/src/pages/TrayectoriaPage.tsx` | Simplificación (eliminar timeline, ajustar layout y skeleton) |
+| `frontend/src/pages/TrayectoriaPage.tsx` | Simplificación (eliminar timeline, ajustar layout y skeleton) + `min-w-0` |
+| `frontend/src/layouts/MainLayout.tsx` | `<main>` pasa a `flex-1 min-w-0` (permite scroll horizontal del contenido) |
 | `frontend/src/types/planificacion.types.ts` | Sin cambios (ya existe todo lo necesario) |
 | `frontend/src/components/planificacion/PlanificacionCard.tsx` | Sin cambios (se reusa patrón visual, no el componente) |
 
@@ -45,7 +46,7 @@ Cada nodo se renderiza como una card, y sus hijos se muestran a la derecha conec
 
 ```
 <div> (contenedor drag-to-scroll)
-  └── <div> (flex-row interno, min-w-max)
+  └── <div> (flex-row interno, w-max min-w-full pr-16)
        └── <TreeNode> (recursivo)
             ├── Card del nodo actual
             └── [si tiene hijos:]
@@ -142,13 +143,15 @@ const [isDragging, setIsDragging] = useState(false);
 const dragInfo = useRef({ startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, moved: false });
 
 const handlePointerDown = (e: React.PointerEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    if (e.button !== 0) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     dragInfo.current = {
         startX: e.clientX - rect.left,
         startY: e.clientY - rect.top,
-        scrollLeft: containerRef.current.scrollLeft,
-        scrollTop: containerRef.current.scrollTop,
+        scrollLeft: el.scrollLeft,
+        scrollTop: el.scrollTop,
         moved: false,
     };
 
@@ -174,10 +177,12 @@ const handlePointerDown = (e: React.PointerEvent) => {
         setIsDragging(false);
         document.removeEventListener('pointermove', handleMove);
         document.removeEventListener('pointerup', handleUp);
+        document.removeEventListener('pointercancel', handleUp);
     };
 
     document.addEventListener('pointermove', handleMove);
     document.addEventListener('pointerup', handleUp);
+    document.addEventListener('pointercancel', handleUp);
 };
 ```
 
@@ -185,33 +190,33 @@ const handlePointerDown = (e: React.PointerEvent) => {
 ```tsx
 <div
     ref={containerRef}
-    className={`overflow-auto scrollbar-none h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none pb-2`}
+    className={`overflow-auto scrollbar-none touch-none h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none pb-8`}
     onPointerDown={handlePointerDown}
 >
 ```
 
 **Inner container:**
 ```tsx
-<div className="inline-flex items-start gap-0 p-4 min-w-[120%]">
+<div className="inline-flex items-start gap-0 p-4 w-max min-w-full pr-16">
     {/* nodo raíz y sus hijos recursivamente */}
 </div>
 ```
+
+> **Rueda del mouse:** a diferencia de iteraciones previas, **no** hay handler `wheel` custom. El scroll con la rueda es **exclusivamente vertical** (comportamiento nativo de `overflow: auto`). El único mecanismo de scroll horizontal es el **drag-to-scroll** (o trackpad). Se descartaron los handlers `wheel` que traducían `deltaY` a `scrollLeft` porque el usuario reportó que interferían con el scroll vertical del viewport.
 
 ### Detalles técnicos del drag
 
 | Aspecto | Detalle |
 |---|---|
 | Eventos | Pointer Events (`onPointerDown`) con listeners globales en `document` |
+| Botón | Solo botón izquierdo (`if (e.button !== 0) return`) |
 | Captura | Sin `setPointerCapture` (los clicks en botones funcionan normalmente) |
 | Umbral de arrastre | 4px de movimiento antes de activar el modo drag |
 | Scroll ejes | Ambos ejes (X e Y), fórmula `scrollPos = startPos - delta` (direct manipulation) |
 | Multiplicador | 1:1 (sin aceleración) |
 | Coordenadas | `clientX`/`clientY` (viewport-relative, coherente con `getBoundingClientRect`) |
-| Ratón y táctil | Pointer Events cubren ambos |
-
-### Scroll con rueda del mouse
-
-`overflow: auto` permite el scroll nativo con la rueda del mouse. Las scrollbars están ocultas con la clase `scrollbar-none`:
+| Ratón y táctil | Pointer Events cubren ambos; `touch-none` desactiva el scroll nativo táctil sobre el contenedor |
+| Finalización | Se escuchan `pointerup` y `pointercancel` para limpiar listeners |
 
 ---
 
@@ -241,7 +246,7 @@ La página usa flex layout full-viewport con `body overflow: hidden` para elimin
       <EmptyState ... />
     </div>
   ) : arbol && arbol.periodo ? (
-    <div class="flex-1 min-h-0">
+    <div class="flex-1 min-h-0 min-w-0">
       <ArbolTrayectoria ... />
     </div>
   ) : null}
@@ -249,6 +254,15 @@ La página usa flex layout full-viewport con `body overflow: hidden` para elimin
   <NuevoPeriodoModal ... />
 </div>
 ```
+
+**Fix `min-w-0` (scroll horizontal):** Sin `min-w-0`, la cadena de flex items del layout se expande al ancho del contenido del árbol (`min-width: auto` = min-content). En la práctica `main` (en `MainLayout.tsx`) y el wrapper `flex-1 min-h-0` llegaban a medir el ancho completo del árbol (p. ej. 5558px), por lo que el contenedor de scroll **no tenía overflow horizontal** (`scrollWidth == clientWidth`), las planificaciones de las ramas derechas quedaban clipadas y el drag no desplazaba nada. Con `min-w-0` en ambos eslabones (`main` con `flex-1 min-w-0`, y el wrapper con `flex-1 min-h-0 min-w-0`), el contenedor conserva el ancho del viewport, el árbol desborda y el drag alcanza el scroll máximo real.
+
+Además, el inner container usa `w-max min-w-full pr-16`:
+- `w-max`: el wrapper mide exactamente el ancho natural del árbol (crece con la cantidad de cards).
+- `min-w-full`: en árboles más angostos que el contenedor, el wrapper cubre el 100% (sin romper el layout).
+- `pr-16`: margen de panning fijo a la derecha para que la última card nunca quede pegada al borde.
+
+Evolución (descartada): `min-w-[120%]` y `min-w-[calc(100%+10rem)]` fijaban un ancho mínimo arbitrario que podía exceder al árbol real, dejando cards fuera del scroll alcanzable.
 
 **Nota:** Las variables `sortedPlanificaciones` y `origenPeriod` se mantuvieron en el código final porque:
 - `sortedPlanificaciones.length` se usa para el contador de planificaciones en el header
@@ -329,9 +343,9 @@ Card → click "+ Continuar" → onContinuar(periodoId) → handleContinuar(peri
 ### 5.3 Drag-to-scroll
 
 ```
-Usuario hace pointerdown en el contenedor →
+Usuario hace pointerdown (botón izquierdo) en el contenedor →
   registra posición inicial (clientX/clientY vs rect), scrollLeft y scrollTop →
-  agrega listeners pointermove/pointerup en document →
+  agrega listeners pointermove/pointerup/pointercancel en document →
   Usuario mueve el puntero →
   si |dx| > 4px o |dy| > 4px: marca como arrastre activo, previene default →
   mientras arrastra: containerRef.scrollLeft = startScrollLeft - dx →
@@ -364,11 +378,13 @@ Usuario hace pointerdown en el contenedor →
 
 ### 6.3 Scroll container
 
-- `overflow: auto`: scroll nativo en ambos ejes (ruedita del mouse para X e Y)
-- `scrollbar-none`: oculta las barras de scroll visualmente (scroll solo con drag o ruedita)
+- `overflow: auto`: scroll nativo en ambos ejes
+- `scrollbar-none`: oculta las barras de scroll visualmente (el scroll horizontal es solo con drag; el vertical con la rueda)
+- `touch-none`: desactiva el scroll nativo táctil sobre el contenedor (lo maneja el drag con Pointer Events)
 - `cursor-grab` / `cursor-grabbing`: feedback visual del drag
 - `select-none`: evita selección de texto durante el drag
-- `min-w-[120%]` en el inner container: garantiza scroll horizontal incluso con árboles pequeños
+- `pb-8`: padding inferior para que la última fila de cards no quede pegada al borde inferior
+- `w-max min-w-full pr-16` en el inner container: ancho natural del árbol (`w-max`), mínimo 100% del contenedor (`min-w-full`) y margen de panning a la derecha (`pr-16`). El área de scroll **crece con la cantidad de cards** y, cuando el árbol entra completo en pantalla, conserva un pequeño margen para que el mouse pueda desplazarlo. Evolución descartada: `min-w-[120%]` / `min-w-[calc(100%+10rem)]` fijaban un mínimo arbitrario que excedía al árbol real y dejaba cards inalcanzables.
 
 **Nota:** El scroll es bidireccional (X e Y) porque algunas trayectorias con muchas bifurcaciones pueden requerir scroll vertical. A diferencia de la versión inicial (que usaba `overflow-y-hidden`), la implementación final permite scroll vertical natural.
 
@@ -385,8 +401,8 @@ Usuario hace pointerdown en el contenedor →
 | Drag con mouse/touch | El contenedor se desplaza en X e Y |
 | Click "Ver planificación" | Navega a `/planificacion/:id` |
 | Click "+ Continuar" | Abre `NuevoPeriodoModal` con el periodo como origen |
-| Pantalla angosta / viewport pequeño | Scroll horizontal disponible (drag + ruedita, barras ocultas) |
-| Scroll con ruedita del mouse | Scroll nativo X e Y (overflow: auto + scrollbar-none) |
+| Pantalla angosta / viewport pequeño | Scroll horizontal disponible (drag, barras ocultas) |
+| Scroll con ruedita del mouse | Scroll **vertical** nativo (sin handler wheel custom) |
 | Card con muchas materias | Altura natural, no truncar contenido |
 | Card sin materias | Muestra "Sin materias planificadas" en itálica |
 

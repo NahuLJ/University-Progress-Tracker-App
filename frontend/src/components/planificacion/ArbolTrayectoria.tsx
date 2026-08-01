@@ -87,7 +87,7 @@ function NodoArbol({
     const periodo = nodo.periodo;
 
     return (
-        <div className="flex items-center gap-0">
+        <div className="flex items-center gap-0 shrink-0">
             <PeriodoCard
                 periodo={periodo}
                 onVerClick={() => onNavigate(periodo.periodoId)}
@@ -95,14 +95,14 @@ function NodoArbol({
             />
 
             {nodo.hijos.length > 0 && (
-                <div className="flex items-stretch gap-0">
+                <div className="flex items-stretch gap-0 shrink-0">
                     <div className="w-6 flex items-center">
                         <div className="w-full h-px bg-neon-cyan/40" />
                     </div>
 
-                    <div className="border-l-2 border-neon-cyan/40 py-2 pl-4 flex flex-col gap-4">
+                    <div className="border-l-2 border-neon-cyan/40 py-2 pl-4 flex flex-col gap-4 shrink-0">
                         {nodo.hijos.map((hijo, idx) => (
-                            <div key={hijo.periodo?.periodoId ?? idx} className="flex items-center gap-0">
+                            <div key={hijo.periodo?.periodoId ?? idx} className="flex items-center gap-0 shrink-0">
                                 <div className="w-4 flex items-center">
                                     <div className="w-full h-px bg-neon-cyan/40" />
                                 </div>
@@ -126,13 +126,15 @@ export function ArbolTrayectoria({ nodo, onNavigate, onContinuar }: ArbolTrayect
     const dragInfo = useRef({ startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, moved: false });
 
     const handlePointerDown = (e: React.PointerEvent) => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
+        if (e.button !== 0) return;
+        const el = containerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
         dragInfo.current = {
             startX: e.clientX - rect.left,
             startY: e.clientY - rect.top,
-            scrollLeft: containerRef.current.scrollLeft,
-            scrollTop: containerRef.current.scrollTop,
+            scrollLeft: el.scrollLeft,
+            scrollTop: el.scrollTop,
             moved: false,
         };
 
@@ -158,10 +160,12 @@ export function ArbolTrayectoria({ nodo, onNavigate, onContinuar }: ArbolTrayect
             setIsDragging(false);
             document.removeEventListener('pointermove', handleMove);
             document.removeEventListener('pointerup', handleUp);
+            document.removeEventListener('pointercancel', handleUp);
         };
 
         document.addEventListener('pointermove', handleMove);
         document.addEventListener('pointerup', handleUp);
+        document.addEventListener('pointercancel', handleUp);
     };
 
     if (!nodo.periodo) return null;
@@ -169,10 +173,10 @@ export function ArbolTrayectoria({ nodo, onNavigate, onContinuar }: ArbolTrayect
     return (
         <div
             ref={containerRef}
-            className={`overflow-auto scrollbar-none h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none pb-2`}
+            className={`overflow-auto scrollbar-none touch-none h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none pb-8`}
             onPointerDown={handlePointerDown}
         >
-            <div className="inline-flex items-start gap-0 p-4 min-w-[120%]">
+            <div className="inline-flex items-start gap-0 p-4 w-max min-w-full pr-16">
                 <NodoArbol
                     nodo={nodo}
                     onNavigate={onNavigate}

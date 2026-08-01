@@ -112,16 +112,18 @@ Las cards se conectan con elementos CSS:
 - Barra vertical: `border-l-2 border-neon-cyan/40`
 - Conectores a cada hijo: `w-4 h-px bg-neon-cyan/40`
 
-El contenedor tiene `overflow: auto` con `scrollbar-none` (las barras de scroll están ocultas; el scroll es solo con mouse/touch). El drag usa Pointer Events con listeners en `document` (sin `setPointerCapture` para no interferir con clicks en botones). Se aplica un umbral de 4px de movimiento para distinguir click de arrastre.
+El contenedor tiene `overflow: auto` con `scrollbar-none` (las barras de scroll están ocultas) y `touch-none` (desactiva el scroll nativo táctil). El scroll **horizontal es solo con drag** (Pointer Events, botón izquierdo, listeners en `document` sin `setPointerCapture` para no interferir con clicks en botones; se escuchan `pointerup` y `pointercancel`). Se aplica un umbral de 4px de movimiento para distinguir click de arrastre. La rueda del mouse conserva el scroll **vertical** nativo: no hay handler `wheel` custom.
 
-Para garantizar scroll horizontal incluso con árboles pequeños, el contenido interno usa `min-w-[120%]`.
+El contenedor interno usa `w-max min-w-full pr-16`: `w-max` mide el ancho natural del árbol (crece con la cantidad de cards), `min-w-full` asegura que en árboles pequeños el wrapper cubra el 100% del contenedor, y `pr-16` da un margen de panning a la derecha. Esto garantiza que `scrollWidth` refleje el árbol real y que la última card siempre sea alcanzable (se descartaron `min-w-[120%]` y `min-w-[calc(100%+10rem)]`, que fijaban un ancho mínimo arbitrario mayor al árbol y dejaban cards inaccesibles).
+
+Para que el scroll horizontal funcione, la cadena de flex items del layout debe respetar el ancho del viewport: `main` en `MainLayout.tsx` usa `flex-1 min-w-0` y el wrapper del árbol usa `flex-1 min-h-0 min-w-0`. Sin `min-w-0`, `min-width: auto` expande esos flex items al ancho del árbol y el contenedor pierde el overflow horizontal (las ramas derechas quedan clipadas e inaccesibles).
 
 ### Layout de página
 
 Para evitar scrollbars del navegador:
 - `TrayectoriaPage` inyecta `document.body.style.overflow = 'hidden'` al montar, lo restaura al desmontar.
 - El root de página usa `h-screen overflow-hidden flex flex-col gap-6` con margen negativo para alinear con la sidebar.
-- El árbol se envuelve en `flex-1 min-h-0` para ocupar el espacio restante.
+- El árbol se envuelve en `flex-1 min-h-0 min-w-0` para ocupar el espacio restante (y `main` del `MainLayout` usa `flex-1 min-w-0`, ver nota de scroll arriba).
 - El skeleton replica el mismo layout.
 
 ## NuevoPeriodoModal
