@@ -24,7 +24,6 @@ Si hay conflictos, deben aparecer los errores en un **modal** en el frontend.
 | `backend/src/modules/carreras/carreras.service.ts` | **Modificado** — actualizar validación de `agregarMateriaAlPlan` (orden único en toda la carrera + validación de correlativas de periodos anteriores) y agregar método `actualizarMateriaEnPlan` con validaciones |
 | `backend/src/modules/carreras/carreras.controller.ts` | **Modificado** — agregar endpoint `PUT /:id/materias/:carreraMateriaId` |
 | `backend/src/modules/carreras/carreras.module.ts` | **Sin cambios** (ya importa todo lo necesario) |
-| `backend/src/database/migrations/` | **Nuevo** — migración para cambiar el unique constraint |
 
 ### Frontend
 
@@ -37,22 +36,6 @@ Si hay conflictos, deben aparecer los errores en un **modal** en el frontend.
 ---
 
 ## 3. Backend
-
-### 3.0 Migración de base de datos
-
-Cambiar el unique constraint de `CarreraMateria` para que `orden` sea único por carrera (no por año/cuatrimestre):
-
-```sql
--- Eliminar el unique constraint anterior
-ALTER TABLE carrera_materia
-    DROP INDEX idx_carrera_materia_carrera_id_anio_cuatrimestre_orden;
-
--- Agregar el nuevo unique constraint
-ALTER TABLE carrera_materia
-    ADD CONSTRAINT uk_carrera_materia_carrera_id_orden UNIQUE (carrera_id, orden);
-```
-
-> El nombre del índice a eliminar puede variar según la configuración de TypeORM/MySQL. Verificar el nombre exacto con `SHOW INDEX FROM carrera_materia` antes de ejecutar.
 
 ### 3.1 Nuevo DTO: `ActualizarMateriaPlanDto`
 

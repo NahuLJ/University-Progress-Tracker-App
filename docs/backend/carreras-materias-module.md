@@ -403,7 +403,7 @@ export class CarrerasService {
         const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
         if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
-        const materia = await this.materiaRepo.findOne({ where: { materiaId: dto.materiaId } });
+        const materia = await this.materiaRepo.findOne({ where: { materiaId: dto.materiaId }, relations: { correlativasRequeridas: { materiaCorrelativa: true } } });
         if (!materia) throw new NotFoundException('Materia no encontrada');
 
         const existente = await this.carreraMateriaRepo.findOne({

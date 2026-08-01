@@ -388,6 +388,7 @@ export class CarrerasService {
 
     const materia = await this.materiaRepo.findOne({
       where: { materiaId: dto.materiaId, activo: true },
+      relations: { correlativasRequeridas: { materiaCorrelativa: true } },
     });
     if (!materia) throw new NotFoundException('Materia no encontrada');
 
@@ -427,7 +428,8 @@ export class CarrerasService {
 
       const esPeriodoPosterior =
         cmCorrelativa.anio > dto.anio ||
-        (cmCorrelativa.anio === dto.anio && cmCorrelativa.cuatrimestre >= dto.cuatrimestre);
+        (cmCorrelativa.anio === dto.anio &&
+          cmCorrelativa.cuatrimestre >= dto.cuatrimestre);
 
       if (esPeriodoPosterior) {
         throw new BadRequestException(
