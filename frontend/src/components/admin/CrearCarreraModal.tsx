@@ -56,9 +56,11 @@ export function CrearCarreraModal({ isOpen, onClose, onSuccess }: CrearCarreraMo
                     {...form.register('nombre')}
                 />
                 <Input
-                    label="Descripción (opcional)"
+                    label="Descripción (opcional, máx. 500 caracteres)"
                     placeholder="Breve descripción de la carrera"
                     error={form.formState.errors.descripcion?.message}
+                    textarea
+                    maxLength={500}
                     {...form.register('descripcion')}
                 />
                 <Input

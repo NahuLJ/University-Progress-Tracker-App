@@ -25,8 +25,12 @@ components/admin/
 ├── TablaMaterias.tsx           # tabla paginada; persiste page + limit en localStorage
 ├── CrearCarreraModal.tsx       # formulario CrearCarreraDto (RHF + Zod)
 ├── CrearMateriaModal.tsx       # formulario CrearMateriaDto (RHF + Zod)
-├── PlanEstudiosAdmin.tsx       # seleccionar carrera → ver plan (árbol) → agregar materia
-└── MateriaCorrelativasAdmin.tsx# selector de carrera + materia → ver/asignar/quitar correlativas (por carrera o global)
+├── PlanEstudiosEditor.tsx      # gestión de plan de estudios: lista con chip de código,
+│                                 # modal para agregar materia, modal de confirmación para quitar
+├── CorrelativasEditor.tsx      # gestión de correlativas: selector de materia con chip,
+│                                 # modal para asignar correlativa, modal de confirmación para eliminar
+├── CarreraEditTabs.tsx         # tabs: Datos generales | Plan de estudios | Correlativas
+└── FiltrosModal.tsx            # filtros y ordenamiento (usa Select personalizado)
 
 components/ui/
 ├── Card.tsx · Modal.tsx · Select.tsx · Input.tsx · Button.tsx · Alert.tsx · Badge.tsx
@@ -34,7 +38,7 @@ components/ui/
 hooks/
 ├── useLocalStorage.ts           # hook genérico para persistir estado en localStorage
 ├── useAdminCarreras.ts          # crearCarrera + agregarMateriaAlPlan (mutations)
-└── useAdminMaterias.ts           # listar/crear materias + asignar/quitar correlativas
+└── useAdminMaterias.ts         # listar/crear materias + asignar/quitar correlativas
 
 services/carreras.service.ts    # carrerasService.* (admin) + materiasAdminService.*
 types/
@@ -53,7 +57,7 @@ MainLayout
     │                        └── TablaCarreras (page + limit persistidos en localStorage)
     ├── [Tab Materias]      Card + botón "Nueva materia" → CrearMateriaModal
     │                        └── TablaMaterias (page + limit persistidos en localStorage)
-    └── CrearCarreraModal · CrearMateriaModal
+    ├── CrearCarreraModal · CrearMateriaModal
 ```
 
 > **Persistencia:** `AdminPage` lee/escribe el tab activo en `localStorage` bajo clave
@@ -84,29 +88,50 @@ MainLayout
 ## Comportamiento UX/UI
 
 ### CrearCarreraModal
-RHF + Zod (`nombre` 3–200, `descripcion` opcional, `duracionAnios` 1–10). Al guardar invoca
+RHF + Zod (`nombre` 3–200, `descripcion` opcional ≤500, `duracionAnios` 1–10). Al guardar invoca
 `useAdminCarreras().crearCarrera` → invalida `['carreras','disponibles']` (el catálogo de carreras se
-refresca en el selector del plan).
+refresca en el selector del plan). El campo descripción es un `<textarea>` auto-creciente con
+contador de caracteres.
 
 ### CrearMateriaModal
 RHF + Zod (`nombre`, `codigo` ≤20, `cargaHoraria` ≥1 entero, `creditos` ≥1 entero, `descripcion`
-opcional). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['materias','catalogo']`.
+opcional ≤500). Al guardar invoca `useAdminMaterias().crearMateria` → invalida `['materias','catalogo']`.
+El campo descripción es un `<textarea>` auto-creciente con contador de caracteres.
 
-### PlanEstudiosAdmin
-1. `Select` de carrera (datos reales de `obtenerCarrerasDisponibles`).
-2. `Card` izquierda: árbol Año→Cuatrimestre con las materias del plan (`obtenerPlanEstudios`) y la
-   cantidad de correlativas por materia. El título "Materias en el plan" incluye un chip neon-cyan con el total de materias.
-3. `Card` derecha: elige una materia del catálogo que **no** esté ya en el plan + `anio`/`cuatrimestre`/
-   `orden`, y llama `agregarMateriaAlPlan`. Al éxito, invalida la query del plan.
+### PlanEstudiosEditor (en CarreraEditPage, tab "Plan de estudios")
+1. **Lista de materias** en el plan organizada por Año → Cuatrimestre. Cada materia se muestra como
+   `{nro} - {nombre}` con `<Badge variant="info">` (chip neon-cyan) para el código. Botón "Quitar"
+   abre modal de confirmación con advertencia de irreversibilidad.
+2. **Botón "Agregar materia"** abre un `<Modal>` con:
+   - `Select` del catálogo de materias disponibles (dropdown personalizado con scroll, max 192px)
+   - Campos `Año`, `Cuatrimestre`, `Nro` (input numéricos)
+   - Botones Cancelar / Agregar al plan
+3. Al agregar exitosamente, se invalidan las queries de plan, progreso y planificación.
 
-### MateriaCorrelativasAdmin
-1. `Select` de carrera (opcional). Si se selecciona, las correlativas se asignan/filtran por esa carrera.
-   Si se deja en "Global", las correlativas aplican a todas las carreras (`carrera_id = NULL`).
-2. `Select` de materia del catálogo.
-3. Muestra sus correlativas actuales (vía `obtenerMateria` con `carreraId` opcional) con botón "Quitar"
-    (`eliminarCorrelativa`). El título "Correlativas actuales" incluye un chip neon-cyan con el total.
-4. `Select` de "materia correlativa" (filtra la propia y las ya asignadas) + botón "Asignar correlativa"
-   (`asignarCorrelativa` con `carreraId` opcional). Previene auto-referencia y duplicados (el backend también lo rechaza).
+### CorrelativasEditor (en CarreraEditPage, tab "Correlativas")
+1. **Seleccionar materia** — `Select` del plan. Al seleccionar, muestra las correlativas actuales
+   con `<Badge variant="info">` para el código de cada correlativa. Botón "Eliminar" abre modal
+   de confirmación.
+2. **Botón "Agregar correlativa"** (habilitado solo con materia seleccionada) abre un `<Modal>` con:
+   - `Select` de materias posibles (excluye la materia actual y las ya asignadas)
+   - Botones Cancelar / Asignar correlativa
+3. Al asignar/eliminar exitosamente, se invalidan las queries relevantes.
+
+### Select personalizado (reemplaza `<select>` nativo)
+El componente `Select` (`components/ui/Select.tsx`) reemplaza el `<select>` nativo por un dropdown
+personalizado con:
+- Trigger button estilizado con tema oscuro (bg-base-800, border-base-500, focus ring neon-cyan)
+- Lista de opciones con `max-h-48 overflow-y-auto scrollbar-thin` (altura máxima fija de ~192px)
+- Opciones resaltadas al hover (bg-base-700) y seleccionadas (bg-base-700 + text-neon-cyan)
+- Flecha caret SVG personalizada
+- Compatible con `label`, `error`, `placeholder`, `disabled`, `maxLength`
+
+### Input con textarea auto-creciente
+El componente `Input` (`components/ui/Input.tsx`) soporta un prop `textarea` que renderiza un
+`<textarea>` en lugar de `<input>`:
+- Auto-crecimiento vertical: ajusta `height` al `scrollHeight` en cada `onInput`
+- `maxLength` opcional: muestra contador "Límite: X caracteres" debajo del campo
+- Cuando `textarea` no está activo, se comporta como `<input>` estándar
 
 ### Validaciones del Lado del Cliente (Zod)
 

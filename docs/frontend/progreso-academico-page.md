@@ -21,7 +21,7 @@ components/progreso/
 └── index.tsx                   # barrel export
 
 components/ui/
-├── Card.tsx · Skeleton.tsx · Button.tsx · Accordion.tsx · Icon.tsx
+├── Card.tsx · Skeleton.tsx · Button.tsx · Accordion.tsx · Icon.tsx · Select.tsx
 
 hooks/
 ├── useProgreso.ts              # useQuery + useMutation + auto-init + filtros (estado/búsqueda)
@@ -157,12 +157,9 @@ Columnas: Nro (1) | Materia (3) | Código (2) | Créd. (1) | Estado (2) | Nota (
 
 ### EditarProgresoModal
 
-Modal con select de estado, y condicionalmente nota (input numérico) y tipo (select Final/Promoción).
-Validaciones:
-- Promoción requiere nota ≥ 7
-- Final requiere nota ≥ 4
-- Borde rojo en nota si no cumple mínimo según tipo seleccionado
-- Errores se limpian al cambiar cualquier campo
+Modal con `Select` de estado (dropdown personalizado), y condicionalmente nota (input numérico) y tipo (`Select` Final/Promoción).
+Valida que la nota cumpla el mínimo según el tipo seleccionado (7 para Promoción, 4 para Final).
+Los `Select` usan el componente personalizado con dropdown de altura fija y scroll.
 
 ---
 

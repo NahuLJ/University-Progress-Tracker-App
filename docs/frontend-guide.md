@@ -88,8 +88,8 @@ frontend/
     │   │   ├── Card.tsx
     │   │   ├── Modal.tsx
     │   │   ├── Badge.tsx
-    │   │   ├── Select.tsx
-    │   │   ├── Input.tsx
+│   │   ├── Select.tsx         # dropdown personalizado (reemplaza <select> nativo)
+│   │   ├── Input.tsx          # soporta textarea auto-creciente + maxLength
     │   │   ├── Alert.tsx
     │   │   ├── ProgressBar.tsx
     │   │   ├── Skeleton.tsx
@@ -233,8 +233,17 @@ El interceptor de response, ante un `401`, limpia el store y redirige a `/login`
 ### 3. Formularios (React Hook Form + Zod)
 
 Se usa RHF + Zod en: `useAuthForm` (login/registro), `MateriaProgresoRow` (estado/nota/tipo),
-`InscribirCarreraModal`, `NuevoPeriodoModal`. El schema de progreso valida que al estar
-"Completada" existan `nota` (4–10) y `tipoAprobacion` (Final/Promocion).
+`InscribirCarreraModal`, `NuevoPeriodoModal`, `CarreraEditPage`, `MateriaEditPage`.
+El schema de progreso valida que al estar "Completada" existan `nota` (4–10) y
+`tipoAprobacion` (Final/Promocion).
+
+**`Input` componente** (`components/ui/Input.tsx`): soporta `textarea` para `<textarea>`
+auto-creciente (ajusta altura al `scrollHeight` en cada `onInput`) y `maxLength` para
+mostrar límite de caracteres.
+
+**`Select` componente** (`components/ui/Select.tsx`): reemplaza el `<select>` nativo por un
+dropdown personalizado con lista de opciones de altura fija (`max-h-48 overflow-y-auto`)
+y scrollbar estilizado.
 
 ### 4. Calendario de Bloques Horarios
 
@@ -303,6 +312,10 @@ Toda mutación muestra snackbar de éxito/error y resetea la carrera activa del 
   `rounded-full` para metadatos y botones de acción con `hover:bg-base-700/60`. El nombre no es
   clickeable; la navegación al detalle es solo por botón "Ver". El código de materia usa
   `<Badge variant="info">` en tabla admin y en ambas vistas del plan de estudios (árbol y tabla).
+  La página de edición de carrera (`/admin/carreras/:id/editar`) usa tabs independientes
+  (Datos generales / Plan de estudios / Correlativas). Los formularios de descripción usan
+  `<textarea>` auto-creciente con límite de 500 caracteres. Los selects usan el componente
+  `Select` personalizado con dropdown de altura fija y scroll.
   El debounce de búsqueda evita el patrón `isFirstRender` para ser compatible con `<StrictMode>`.
   El backend aún no aplica `RolesGuard`, por lo que cualquier usuario autenticado puede accederlo.
 - **Código muerto eliminado:** `PeriodoSelector`, `VistaSemanalHeader`, `VistaHorariosHeader`,

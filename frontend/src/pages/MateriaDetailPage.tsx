@@ -84,7 +84,6 @@ export function MateriaDetailPage() {
 
             <Card title="Información general">
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="text-slate-400">Nombre:</span> <span className="text-white">{materia.nombre}</span></div>
                     <div>
                         <span className="text-slate-400">Código:</span>{' '}
                         <Badge variant="info">{materia.codigo}</Badge>

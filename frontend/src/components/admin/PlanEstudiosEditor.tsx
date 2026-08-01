@@ -20,11 +20,12 @@ interface Props {
 export function PlanEstudiosEditor({ carreraId }: Props) {
     const queryClient = useQueryClient();
     const addNotification = useNotificationStore((s) => s.addNotification);
+    const [agregarOpen, setAgregarOpen] = useState(false);
     const [materiaId, setMateriaId] = useState(0);
     const [anio, setAnio] = useState(1);
     const [cuatrimestre, setCuatrimestre] = useState(1);
-    const [orden, setOrden] = useState(1);
-    const [quitarConfirm, setQuitarConfirm] = useState<{ carreraMateriaId: number; nombre: string; codigo: string } | null>(null);
+    const [nro, setNro] = useState(1);
+    const [quitarConfirm, setQuitarConfirm] = useState<{ carreraMateriaId: number; nombre: string; codigo: string; orden: number } | null>(null);
 
     const plan = useQuery({
         queryKey: ['plan-estudios', carreraId],
@@ -50,7 +51,8 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             setMateriaId(0);
             setAnio(1);
             setCuatrimestre(1);
-            setOrden(1);
+            setNro(1);
+            setAgregarOpen(false);
             addNotification('Materia agregada al plan', 'success');
         },
         onError: (error) => {
@@ -82,12 +84,21 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
     );
     const totalMaterias = materiasEnPlan.length;
 
+    const onAgregar = () => {
+        agregarMutation.mutate({ materiaId, anio, cuatrimestre, orden: nro });
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                    <h3 className="font-semibold text-white">Materias en el plan</h3>
-                    <Badge variant="info">{totalMaterias}</Badge>
+            <Card className="p-4 lg:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-white">Materias en el plan</h3>
+                        <Badge variant="info">{totalMaterias}</Badge>
+                    </div>
+                    <Button size="sm" onClick={() => setAgregarOpen(true)}>
+                        Agregar materia
+                    </Button>
                 </div>
                 {plan.isLoading && <LoadingSpinner />}
                 {plan.isError && <QueryError error={plan.error} onRetry={() => plan.refetch()} />}
@@ -108,12 +119,15 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                                                     className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2"
                                                 >
                                                     <span className="text-sm text-slate-200">
-                                                        {m.nombre} <span className="text-slate-500">(orden {m.orden})</span> <span className="text-slate-400">({m.codigo})</span>
+                                                        <span className="font-mono text-slate-400">{m.orden}</span>
+                                                        <span className="mx-1 text-slate-500">-</span>
+                                                        {m.nombre}
+                                                        <Badge variant="info" size="sm" className="ml-2">{m.codigo}</Badge>
                                                     </span>
                                                     <button
                                                         title="Quitar del plan"
-                                                        onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo })}
-                                                        className="text-slate-400 hover:text-neon-red transition-colors"
+                                                        onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo, orden: m.orden })}
+                                                        className="text-slate-400 hover:text-neon-red transition-colors ml-3"
                                                     >
                                                         <Icon name="delete" className="w-4 h-4" />
                                                     </button>
@@ -128,9 +142,13 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                 )}
             </Card>
 
-            <Card className="p-4">
-                <h3 className="font-semibold text-white mb-3">Agregar materia al plan</h3>
-                <div className="space-y-3">
+            <Modal
+                isOpen={agregarOpen}
+                onClose={() => { setAgregarOpen(false); agregarMutation.reset(); }}
+                title="Agregar materia al plan"
+                size="md"
+            >
+                <div className="space-y-4">
                     <Select
                         label="Materia"
                         value={materiaId}
@@ -147,18 +165,18 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                     <div className="grid grid-cols-3 gap-3">
                         <Input label="Año" type="number" min={1} value={anio} onChange={(e) => setAnio(Number(e.target.value))} />
                         <Input label="Cuatrimestre" type="number" min={1} value={cuatrimestre} onChange={(e) => setCuatrimestre(Number(e.target.value))} />
-                        <Input label="Orden" type="number" min={1} value={orden} onChange={(e) => setOrden(Number(e.target.value))} />
+                        <Input label="Nro" type="number" min={1} value={nro} onChange={(e) => setNro(Number(e.target.value))} />
                     </div>
-                    <Button
-                        onClick={() => agregarMutation.mutate({ materiaId, anio, cuatrimestre, orden })}
-                        loading={agregarMutation.isPending}
-                        disabled={materiaId === 0}
-                        className="w-full"
-                    >
-                        Agregar al plan
-                    </Button>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="ghost" onClick={() => { setAgregarOpen(false); agregarMutation.reset(); }}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={onAgregar} loading={agregarMutation.isPending} disabled={materiaId === 0}>
+                            Agregar al plan
+                        </Button>
+                    </div>
                 </div>
-            </Card>
+            </Modal>
 
             <Modal
                 isOpen={!!quitarConfirm}
@@ -168,9 +186,14 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             >
                 {quitarConfirm && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-300">
-                            Estás por quitar <strong className="text-white">{quitarConfirm.codigo} - {quitarConfirm.nombre}</strong> del plan de estudios.
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
+                            <span className="text-sm text-slate-200">
+                                <span className="font-mono text-slate-400">{quitarConfirm.orden}</span>
+                                <span className="mx-1 text-slate-500">-</span>
+                                {quitarConfirm.nombre}
+                                <Badge variant="info" size="sm" className="ml-2">{quitarConfirm.codigo}</Badge>
+                            </span>
+                        </div>
                         <div className="bg-neon-red/10 border border-neon-red/30 rounded-lg p-3">
                             <p className="text-sm text-neon-red font-medium">Esta acción es irreversible</p>
                             <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1">

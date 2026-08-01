@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Select } from '../ui/Select';
 
 export interface FiltrosState {
     sortBy: string;
@@ -47,21 +48,20 @@ export function FiltrosModal({ isOpen, onClose, onApply, sortOptions, defaultVal
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">Ordenar por</label>
-                    <select
+                    <Select
                         value={`${sortBy}-${sortOrder}`}
                         onChange={(e) => {
                             const [sb, so] = e.target.value.split('-');
                             setSortBy(sb);
                             setSortOrder(so as 'ASC' | 'DESC');
                         }}
-                        className="w-full px-3 py-2 bg-base-800/80 border border-base-500 rounded text-slate-100"
                     >
                         {sortOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
                         ))}
-                    </select>
+                    </Select>
                 </div>
                 <div className="flex items-center gap-2">
                     <input

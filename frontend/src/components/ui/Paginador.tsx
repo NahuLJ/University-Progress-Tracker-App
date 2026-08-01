@@ -1,3 +1,5 @@
+import { Select } from './Select';
+
 interface PaginadorProps {
     page: number;
     limit: number;
@@ -52,15 +54,14 @@ export function Paginador({ page, limit, total, totalPages, onPageChange, onLimi
                         ),
                     )}
                 </div>
-                <select
-                    value={limit}
+                <Select
+                    value={String(limit)}
                     onChange={(e) => onLimitChange(Number(e.target.value))}
-                    className="ml-2 px-2 py-1 text-sm bg-base-800 border border-base-500 rounded text-slate-300"
                 >
                     <option value={20}>20</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
-                </select>
+                </Select>
             </div>
         </div>
     );

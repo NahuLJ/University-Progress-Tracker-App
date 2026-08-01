@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
+import { Modal } from '../ui/Modal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
 
@@ -18,6 +19,8 @@ export function CorrelativasEditor({ carreraId }: Props) {
     const queryClient = useQueryClient();
     const [materiaId, setMateriaId] = useState(0);
     const [correlativaSel, setCorrelativaSel] = useState(0);
+    const [agregarOpen, setAgregarOpen] = useState(false);
+    const [eliminarConfirm, setEliminarConfirm] = useState<{ correlativaId: number; nombre: string; codigo: string } | null>(null);
     const materiaQueryKey = ['materia', materiaId, carreraId];
 
     const { asignarCorrelativa, eliminarCorrelativa } = useAdminMaterias();
@@ -51,20 +54,23 @@ export function CorrelativasEditor({ carreraId }: Props) {
                     queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
                     queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
                     setCorrelativaSel(0);
+                    setAgregarOpen(false);
                 },
             },
         );
     };
 
-    const onEliminar = (correlativaId: number) => {
+    const onConfirmarEliminar = () => {
+        if (!eliminarConfirm) return;
         eliminarCorrelativa.mutate(
-            { materiaId, correlativaId, carreraId },
+            { materiaId, correlativaId: eliminarConfirm.correlativaId, carreraId },
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: materiaQueryKey });
                     queryClient.invalidateQueries({ queryKey: ['plan-estudios', carreraId] });
                     queryClient.invalidateQueries({ queryKey: ['carreras', 'admin'] });
                     queryClient.invalidateQueries({ queryKey: ['materias', 'admin'] });
+                    setEliminarConfirm(null);
                 },
             },
         );
@@ -75,10 +81,19 @@ export function CorrelativasEditor({ carreraId }: Props) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                    <h3 className="font-semibold text-white">Seleccionar materia</h3>
-                    {materiaId > 0 && <Badge variant="info">{correlativasExistentes.length} correlativa(s)</Badge>}
+            <Card className="p-4 lg:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-white">Seleccionar materia</h3>
+                        {materiaId > 0 && <Badge variant="info">{correlativasExistentes.length} correlativa(s)</Badge>}
+                    </div>
+                    <Button
+                        size="sm"
+                        onClick={() => setAgregarOpen(true)}
+                        disabled={materiaId === 0 || posibles.length === 0}
+                    >
+                        Agregar correlativa
+                    </Button>
                 </div>
                 <Select label="Materia" value={materiaId} onChange={(e) => { setMateriaId(Number(e.target.value)); setCorrelativaSel(0); }}>
                     <option value={0}>Seleccioná una materia</option>
@@ -100,12 +115,13 @@ export function CorrelativasEditor({ carreraId }: Props) {
                             {correlativasExistentes.map((c) => (
                                 <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
                                     <span className="text-sm text-slate-200">
-                                        {c.materiaCorrelativa.nombre} <span className="text-slate-400">({c.materiaCorrelativa.codigo})</span>
+                                        {c.materiaCorrelativa.nombre}
+                                        <Badge variant="info" size="sm" className="ml-2">{c.materiaCorrelativa.codigo}</Badge>
                                     </span>
                                     <button
                                         title="Eliminar correlativa"
-                                        onClick={() => onEliminar(c.correlativaId)}
-                                        className="text-slate-400 hover:text-neon-red transition-colors"
+                                        onClick={() => setEliminarConfirm({ correlativaId: c.correlativaId, nombre: c.materiaCorrelativa.nombre, codigo: c.materiaCorrelativa.codigo })}
+                                        className="text-slate-400 hover:text-neon-red transition-colors ml-3"
                                     >
                                         <Icon name="delete" className="w-4 h-4" />
                                     </button>
@@ -116,36 +132,78 @@ export function CorrelativasEditor({ carreraId }: Props) {
                 )}
             </Card>
 
-            <Card className="p-4">
-                <h3 className="font-semibold text-white mb-3">Agregar correlativa</h3>
+            <Modal
+                isOpen={agregarOpen}
+                onClose={() => { setAgregarOpen(false); asignarCorrelativa.reset(); }}
+                title="Agregar correlativa"
+                size="md"
+            >
                 {materiaId === 0 ? (
                     <p className="text-sm text-slate-400">Seleccioná una materia para gestionar sus correlativas.</p>
                 ) : (
-                    <div className="space-y-3">
-                        <Select
-                            label="Materia correlativa"
-                            value={correlativaSel}
-                            onChange={(e) => setCorrelativaSel(Number(e.target.value))}
-                            disabled={posibles.length === 0}
-                        >
-                            <option value={0}>{posibles.length === 0 ? 'No hay materias disponibles' : 'Seleccioná una materia'}</option>
-                            {posibles.map((m) => (
-                                <option key={m.materiaId} value={m.materiaId}>
-                                    {m.nombre} ({m.codigo})
-                                </option>
-                            ))}
-                        </Select>
-                        <Button
-                            onClick={onAsignar}
-                            loading={asignarCorrelativa.isPending}
-                            disabled={correlativaSel === 0}
-                            className="w-full"
-                        >
-                            Asignar correlativa
-                        </Button>
+                    <div className="space-y-4">
+                        <div className="p-3 bg-base-800/50 rounded-lg border border-base-600">
+                            <p className="text-sm font-medium text-slate-300 mb-1">Materia seleccionada</p>
+                            <p className="text-white">{materiasDelPlan.find((m) => m.materiaId === materiaId)?.nombre}</p>
+                        </div>
+                        {posibles.length === 0 ? (
+                            <p className="text-sm text-slate-400">No hay materias disponibles para asignar como correlativas.</p>
+                        ) : (
+                            <Select
+                                label="Materia correlativa"
+                                value={correlativaSel}
+                                onChange={(e) => setCorrelativaSel(Number(e.target.value))}
+                            >
+                                <option value={0}>Seleccioná una materia</option>
+                                {posibles.map((m) => (
+                                    <option key={m.materiaId} value={m.materiaId}>
+                                        {m.nombre} ({m.codigo})
+                                    </option>
+                                ))}
+                            </Select>
+                        )}
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button type="button" variant="ghost" onClick={() => { setAgregarOpen(false); asignarCorrelativa.reset(); }}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={onAsignar} loading={asignarCorrelativa.isPending} disabled={correlativaSel === 0 || posibles.length === 0}>
+                                Asignar correlativa
+                            </Button>
+                        </div>
                     </div>
                 )}
-            </Card>
+            </Modal>
+
+            <Modal
+                isOpen={!!eliminarConfirm}
+                onClose={() => { setEliminarConfirm(null); eliminarCorrelativa.reset(); }}
+                title="Eliminar correlativa"
+                size="md"
+            >
+                {eliminarConfirm && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
+                            <span className="text-sm text-slate-200">
+                                {eliminarConfirm.nombre}
+                                <Badge variant="info" size="sm" className="ml-2">{eliminarConfirm.codigo}</Badge>
+                            </span>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                            Estás por eliminar esta materia como correlativa. Los estudiantes podrán cursar la materia seleccionada sin haberla aprobado.
+                        </p>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="ghost" onClick={() => { setEliminarConfirm(null); eliminarCorrelativa.reset(); }}>Cancelar</Button>
+                            <Button
+                                variant="danger"
+                                onClick={onConfirmarEliminar}
+                                loading={eliminarCorrelativa.isPending}
+                            >
+                                Eliminar correlativa
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

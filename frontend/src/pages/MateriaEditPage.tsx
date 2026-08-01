@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,14 +38,19 @@ export function MateriaEditPage() {
 
     const form = useForm<MateriaForm>({
         resolver: zodResolver(materiaSchema),
-        values: materia ? {
-            nombre: materia.nombre,
-            codigo: materia.codigo,
-            descripcion: materia.descripcion ?? '',
-            cargaHoraria: materia.cargaHoraria,
-            creditos: materia.creditos,
-        } : undefined,
     });
+
+    useEffect(() => {
+        if (materia) {
+            form.reset({
+                nombre: materia.nombre,
+                codigo: materia.codigo,
+                descripcion: materia.descripcion ?? '',
+                cargaHoraria: materia.cargaHoraria,
+                creditos: materia.creditos,
+            });
+        }
+    }, [materia, form]);
 
     const onSubmit = (data: MateriaForm) => {
         actualizarMateria.mutate(
@@ -77,8 +83,10 @@ export function MateriaEditPage() {
                 </div>
             </div>
 
-            <Card className="p-6">
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-lg mx-auto">
+            <Card className="p-6 max-w-xl mx-auto">
+                <h2 className="text-xl font-bold text-white mb-1 border-l-4 border-neon-cyan pl-3">Datos generales</h2>
+                <p className="text-sm text-slate-400 mb-4 pl-3">Información de la materia</p>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <Input
                         label="Nombre"
                         placeholder="Ej. Álgebra Lineal"
@@ -92,9 +100,11 @@ export function MateriaEditPage() {
                         {...form.register('codigo')}
                     />
                     <Input
-                        label="Descripción (opcional)"
+                        label="Descripción (opcional, máx. 500 caracteres)"
                         placeholder="Breve descripción de la materia"
                         error={form.formState.errors.descripcion?.message}
+                        textarea
+                        maxLength={500}
                         {...form.register('descripcion')}
                     />
                     <Input
@@ -112,7 +122,7 @@ export function MateriaEditPage() {
                         {...form.register('creditos')}
                     />
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="ghost" onClick={() => navigate(`/admin/materias/${materiaId}`)}>Cancelar</Button>
+                        <Button type="button" variant="ghost" onClick={() => navigate(`/admin/materias/${materiaId}`)}>Cancelar</Button>
                         <Button type="submit" loading={actualizarMateria.isPending}>Guardar cambios</Button>
                     </div>
                 </form>

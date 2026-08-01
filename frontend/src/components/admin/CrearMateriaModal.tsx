@@ -66,9 +66,11 @@ export function CrearMateriaModal({ isOpen, onClose, onSuccess }: CrearMateriaMo
                     {...form.register('codigo')}
                 />
                 <Input
-                    label="Descripción (opcional)"
+                    label="Descripción (opcional, máx. 500 caracteres)"
                     placeholder="Breve descripción de la materia"
                     error={form.formState.errors.descripcion?.message}
+                    textarea
+                    maxLength={500}
                     {...form.register('descripcion')}
                 />
                 <div className="grid grid-cols-2 gap-4">

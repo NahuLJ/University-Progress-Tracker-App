@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button';
+import { Select } from '../ui/Select';
 
 interface CompletarMateriaModalProps {
     isOpen: boolean;
@@ -44,15 +45,14 @@ export function CompletarMateriaModal({ isOpen, onClose, materiaNombre, onConfir
 
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1">Tipo de aprobación</label>
-                        <select
+                        <Select
                             value={tipoAprobacion}
                             onChange={(e) => setTipoAprobacion(e.target.value)}
-                            className="w-full border border-base-500 bg-base-800/80 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60"
                         >
                             <option value="">Seleccioná tipo</option>
                             <option value="Final">Final</option>
                             <option value="Promocion">Promoción</option>
-                        </select>
+                        </Select>
                     </div>
                 </div>
 
