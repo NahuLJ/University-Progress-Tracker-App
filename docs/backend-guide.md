@@ -210,7 +210,7 @@ Tabla pivote `CarreraMateria` con atributos extra (`anio`, `cuatrimestre`, `orde
 // carrera-materia.entity.ts
 @Entity('carrera_materia')
 @Unique(['carrera', 'materia'])
-@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
+@Unique(['carrera', 'orden'])
 export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;

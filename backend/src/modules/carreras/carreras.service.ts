@@ -402,16 +402,40 @@ export class CarrerasService {
     const conflictoOrden = await this.carreraMateriaRepo.findOne({
       where: {
         carrera: { carreraId },
-        anio: dto.anio,
-        cuatrimestre: dto.cuatrimestre,
         orden: dto.orden,
       },
       relations: { materia: true },
     });
     if (conflictoOrden)
       throw new BadRequestException(
-        `Ya existe una materia en el año ${dto.anio}, cuatrimestre ${dto.cuatrimestre}, orden ${dto.orden}: ${conflictoOrden.materia.nombre}`,
+        `Ya existe una materia con el orden ${dto.orden} en el plan de esta carrera: ${conflictoOrden.materia.nombre}`,
       );
+
+    const correlativas = materia.correlativasRequeridas ?? [];
+    const correlativasConPeriodo = correlativas.filter(
+      (c) => !c.carrera || c.carrera.carreraId === carreraId,
+    );
+
+    for (const correlativa of correlativasConPeriodo) {
+      const cmCorrelativa = await this.carreraMateriaRepo.findOne({
+        where: {
+          carrera: { carreraId },
+          materia: { materiaId: correlativa.materiaCorrelativa.materiaId },
+        },
+      });
+      if (!cmCorrelativa) continue;
+
+      const esPeriodoPosterior =
+        cmCorrelativa.anio > dto.anio ||
+        (cmCorrelativa.anio === dto.anio && cmCorrelativa.cuatrimestre >= dto.cuatrimestre);
+
+      if (esPeriodoPosterior) {
+        throw new BadRequestException(
+          `La correlativa "${correlativa.materiaCorrelativa.nombre}" se cursa en el año ${cmCorrelativa.anio}, cuatrimestre ${cmCorrelativa.cuatrimestre}, ` +
+            `que no es un periodo anterior al año ${dto.anio}, cuatrimestre ${dto.cuatrimestre}`,
+        );
+      }
+    }
 
     const entry = this.carreraMateriaRepo.create({
       carrera,

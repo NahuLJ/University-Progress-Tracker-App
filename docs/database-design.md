@@ -198,7 +198,7 @@ Tabla pivote M:N entre `carrera` y `materia`. Define qué materias pertenecen a 
 
 **Índices únicos:**
 - `(carrera_id, materia_id)` — evita materias duplicadas en la misma carrera.
-- `(carrera_id, anio, cuatrimestre, orden)` — evita órdenes duplicados en el mismo año/cuatrimestre.
+- `(carrera_id, orden)` — evita órdenes duplicados en la misma carrera.
 
 ---
 

@@ -81,7 +81,31 @@ Agrega una materia al plan de estudios de una carrera.
 |---|---|
 | 201 | Materia agregada al plan |
 | 400 | La materia ya existe en el plan de esta carrera |
+| 400 | Ya existe una materia con ese orden en el plan de esta carrera |
+| 400 | Alguna correlativa no pertenece a un periodo anterior al nuevo año/cuatrimestre |
 | 404 | Carrera o materia no encontrada |
+
+### PUT /api/carreras/:id/materias/:carreraMateriaId
+
+Actualiza la posición (`anio`, `cuatrimestre`, `orden`) de una materia en el plan de estudios de una carrera.
+
+**Request Body:**
+```json
+{
+    "anio": 2,
+    "cuatrimestre": 1,
+    "orden": 3
+}
+```
+Todos los campos son opcionales, pero al menos uno debe ser proporcionado. Los campos no proporcionados conservan su valor actual.
+
+| Código | Descripción |
+|---|---|
+| 200 | Materia actualizada en el plan |
+| 400 | El orden ya existe en otra materia de esta carrera |
+| 400 | Alguna correlativa no pertenece a un periodo anterior al nuevo año/cuatrimestre |
+| 400 | Al menos un campo (anio, cuatrimestre u orden) debe ser proporcionado |
+| 404 | Carrera o registro del plan no encontrado |
 
 ### GET /api/materias
 
@@ -387,6 +411,37 @@ export class CarrerasService {
         });
         if (existente) throw new BadRequestException('La materia ya está en el plan de estudios');
 
+        const conflictoOrden = await this.carreraMateriaRepo.findOne({
+            where: { carrera: { carreraId }, orden: dto.orden },
+        });
+        if (conflictoOrden) throw new BadRequestException(`Ya existe una materia con el orden ${dto.orden} en el plan de esta carrera`);
+
+        const correlativas = materia.correlativasRequeridas ?? [];
+        const correlativasConPeriodo = correlativas.filter(
+            (c) => !c.carrera || c.carrera.carreraId === carreraId,
+        );
+
+        for (const correlativa of correlativasConPeriodo) {
+            const cmCorrelativa = await this.carreraMateriaRepo.findOne({
+                where: {
+                    carrera: { carreraId },
+                    materia: { materiaId: correlativa.materiaCorrelativa.materiaId },
+                },
+            });
+            if (!cmCorrelativa) continue;
+
+            const esPeriodoPosterior =
+                cmCorrelativa.anio > dto.anio ||
+                (cmCorrelativa.anio === dto.anio && cmCorrelativa.cuatrimestre >= dto.cuatrimestre);
+
+            if (esPeriodoPosterior) {
+                throw new BadRequestException(
+                    `La correlativa "${correlativa.materiaCorrelativa.nombre}" se cursa en el año ${cmCorrelativa.anio}, cuatrimestre ${cmCorrelativa.cuatrimestre}, ` +
+                        `que no es un periodo anterior al año ${dto.anio}, cuatrimestre ${dto.cuatrimestre}`,
+                );
+            }
+        }
+
         const entry = this.carreraMateriaRepo.create({
             carrera,
             materia,
@@ -573,7 +628,7 @@ export class Carrera {
 ```typescript
 @Entity('carrera_materia')
 @Unique(['carrera', 'materia'])
-@Unique(['carrera', 'anio', 'cuatrimestre', 'orden'])
+@Unique(['carrera', 'orden'])
 export class CarreraMateria {
     @PrimaryGeneratedColumn()
     carreraMateriaId: number;
