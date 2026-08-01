@@ -9,8 +9,8 @@ export const progresoService = {
         return response.data;
     },
 
-    async actualizarProgreso(id: number, data: ActualizarProgresoDto): Promise<any> {
-        const response = await api.patch(`/progreso/${id}`, data);
+    async actualizarProgreso(id: number, data: ActualizarProgresoDto, carreraId: number): Promise<any> {
+        const response = await api.patch(`/progreso/${id}`, { ...data, carreraId });
         return response.data;
     },
 

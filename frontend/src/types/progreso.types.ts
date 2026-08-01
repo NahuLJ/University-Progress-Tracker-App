@@ -26,6 +26,7 @@ export interface ActualizarProgresoDto {
     estado: 'Pendiente' | 'En Proceso' | 'Completada';
     nota?: number;
     tipoAprobacion?: 'Final' | 'Promocion';
+    carreraId: number;
 }
 
 export interface InicializarProgresoDto {

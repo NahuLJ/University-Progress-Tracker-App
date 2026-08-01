@@ -221,7 +221,7 @@ IDs a eliminar. Ver detalle en `docs/frontend/planificador-horarios-page.md`.
 
 Cada dominio tiene su propio hook (`useCarreras`, `useProgreso`, `useDashboard`, `usePlanificacion`, ...).
 El `QueryClient` se configura en `App.tsx` con `staleTime: 5 min` y `retry: 1`. Las mutaciones invalidan
-las query keys correspondientes (`['progreso', usuarioCarreraId]`, `['estadisticas']`, `['carreras', usuarioId]`, etc.)
+las query keys correspondientes (`['progreso']`, `['estadisticas']`, `['plan-estudios']`, `['planificacion']`, `['carreras', usuarioId]`, etc.). El progreso es compartido entre carreras, por eso las mutaciones de progreso invalidan globalmente `['progreso']` y las queries dependientes (`estadisticas`, `plan-estudios`, `planificacion`).
 y muestran notificaciones vía `useNotificationStore.addNotification()` (success en `onSuccess`, error en `onError`).
 
 ### 2. Consumo de la API con Axios

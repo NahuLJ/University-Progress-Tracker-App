@@ -106,9 +106,10 @@ export class EstadisticasService {
         // 1. Verificar que la inscripción existe
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId },
-            relations: ['carrera'],
+            relations: ['carrera', 'usuario'],
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+        const usuarioId = inscripcion.usuario.usuarioId;
 
         // 2. Obtener materias del plan de estudios
         const planEstudios = await this.carreraMateriaRepo.find({
@@ -119,10 +120,10 @@ export class EstadisticasService {
         const creditosTotales = planEstudios.reduce((sum, cm) => sum + cm.materia.creditos, 0);
         const idsMateriasPlan = planEstudios.map((cm) => cm.materia.materiaId);
 
-        // 3. Obtener progreso del usuario para las materias de esta carrera
+        // 3. Obtener progreso compartido del usuario, filtrado a las materias del plan de esta carrera
         const progresos = await this.progresoRepo.find({
             where: {
-                usuarioCarrera: { usuarioCarreraId },
+                usuario: { usuarioId },
                 materia: { materiaId: In(idsMateriasPlan) },
             },
             relations: ['estado', 'materia'],
@@ -212,17 +213,23 @@ export class EstadisticasService {
     async obtenerDistribucionEstados(usuarioCarreraId: number): Promise<DistribucionEstadosDto[]> {
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId },
-            relations: ['carrera'],
+            relations: ['carrera', 'usuario'],
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
         const plan = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+            relations: ['materia'],
         });
         const totalPlan = plan.length;
+        const idsMateriasPlan = plan.map((cm) => cm.materia.materiaId);
 
+        // La distribución se calcula sobre las materias del plan de la carrera actual
         const progresos = await this.progresoRepo.find({
-            where: { usuarioCarrera: { usuarioCarreraId } },
+            where: {
+                usuario: { usuarioId: inscripcion.usuario.usuarioId },
+                materia: { materiaId: In(idsMateriasPlan) },
+            },
             relations: ['estado'],
         });
 
@@ -238,10 +245,16 @@ export class EstadisticasService {
     }
 
     async obtenerEvolucion(usuarioCarreraId: number): Promise<any[]> {
+        const inscripcion = await this.usuarioCarreraRepo.findOne({
+            where: { usuarioCarreraId },
+            relations: ['usuario'],
+        });
+        if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
         // Obtener materias completadas con fecha para agrupar por cuatrimestre académico
         const progresos = await this.progresoRepo.find({
             where: {
-                usuarioCarrera: { usuarioCarreraId },
+                usuario: { usuarioId: inscripcion.usuario.usuarioId },
                 estado: { nombre: 'Completada' },
                 fechaCompletado: Not(IsNull()),
                 nota: Not(IsNull()),
@@ -293,17 +306,19 @@ Para alto volumen de datos, las consultas pueden ejecutarse directamente en SQL 
 
 ### Promedio General (SQL)
 
+> Con progreso compartido, `progreso_materia` referencia a `usuario` (no a la inscripción): el parámetro `?` es ahora `usuario_id`.
+
 ```sql
 SELECT
-    pm.usuario_carrera_id,
+    pm.usuario_id,
     ROUND(AVG(pm.nota), 2) AS promedio_general,
     COUNT(pm.nota) AS materias_consideradas
 FROM progreso_materia pm
 JOIN estado_materia em ON em.estado_id = pm.estado_id
 WHERE em.nombre = 'Completada'
   AND pm.nota IS NOT NULL
-  AND pm.usuario_carrera_id = ?
-GROUP BY pm.usuario_carrera_id;
+  AND pm.usuario_id = ?
+GROUP BY pm.usuario_id;
 ```
 
 ### Distribución de Estados (SQL)
@@ -315,7 +330,7 @@ SELECT
 FROM carrera_materia cm
 LEFT JOIN progreso_materia pm
     ON pm.materia_id = cm.materia_id
-    AND pm.usuario_carrera_id = ?
+    AND pm.usuario_id = ?  -- usuario_id (progreso compartido)
 LEFT JOIN estado_materia em ON em.estado_id = pm.estado_id
 WHERE cm.carrera_id = (SELECT carrera_id FROM usuario_carrera WHERE usuario_carrera_id = ?)
 GROUP BY em.nombre
@@ -332,7 +347,7 @@ FROM carrera_materia cm
 JOIN materia m ON m.materia_id = cm.materia_id
 LEFT JOIN progreso_materia pm
     ON pm.materia_id = cm.materia_id
-    AND pm.usuario_carrera_id = ?
+    AND pm.usuario_id = ?  -- usuario_id (progreso compartido)
 LEFT JOIN estado_materia em ON em.estado_id = pm.estado_id
 WHERE cm.carrera_id = (SELECT carrera_id FROM usuario_carrera WHERE usuario_carrera_id = ?);
 ```

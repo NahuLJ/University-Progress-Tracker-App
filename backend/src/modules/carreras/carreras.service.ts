@@ -215,9 +215,18 @@ export class CarrerasService {
       number,
       { estado: string; nota: number | null; tipoAprobacion: string | null }
     >();
+    let usuarioId: number | undefined;
     if (usuarioCarreraId) {
+      const inscripcion = await this.usuarioCarreraRepo.findOne({
+        where: { usuarioCarreraId },
+        relations: { usuario: true },
+      });
+      usuarioId = inscripcion?.usuario?.usuarioId;
+    }
+
+    if (usuarioId) {
       const progresos = await this.progresoRepo.find({
-        where: { usuarioCarrera: { usuarioCarreraId } },
+        where: { usuario: { usuarioId } },
         relations: { materia: true, estado: true },
       });
       for (const p of progresos) {
@@ -445,14 +454,13 @@ export class CarrerasService {
 
       const usuarioCarreras = await queryRunner.manager.find(UsuarioCarrera, {
         where: { carrera: { carreraId } },
+        relations: { usuario: true },
       });
-      const usuarioCarreraIds = usuarioCarreras.map(
-        (uc) => uc.usuarioCarreraId,
-      );
-      if (usuarioCarreraIds.length > 0) {
+      const usuarioIds = usuarioCarreras.map((uc) => uc.usuario.usuarioId);
+      if (usuarioIds.length > 0) {
         await queryRunner.manager.delete(ProgresoMateria, {
           materia: { materiaId },
-          usuarioCarrera: { usuarioCarreraId: In(usuarioCarreraIds) },
+          usuario: { usuarioId: In(usuarioIds) },
         });
       }
 

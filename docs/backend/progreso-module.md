@@ -7,7 +7,7 @@
 
 ### GET /api/progreso?usuarioCarreraId=:id
 
-Obtiene el progreso completo del usuario en todas las materias de una carrera específica, ordenado por plan de estudios (año, cuatrimestre, orden). Incluye datos del plan (`anio`, `cuatrimestre`, `orden`) para renderizar vistas de árbol.
+Obtiene el progreso del usuario en una carrera específica, ordenado por plan de estudios (año, cuatrimestre, orden). El progreso es **compartido**: devuelve el progreso del usuario sobre las materias del plan (estado/nota únicos aunque la materia exista en otra carrera). Solo devuelve materias que tienen registro de progreso. Incluye datos del plan (`anio`, `cuatrimestre`, `orden`) para renderizar vistas de árbol.
 
 | Código | Descripción |
 |---|---|
@@ -31,14 +31,17 @@ Actualiza el estado, nota y/o tipo de aprobación de una materia. Valida correla
 {
     "estado": "Completada",
     "nota": 8,
-    "tipoAprobacion": "Final"
+    "tipoAprobacion": "Final",
+    "carreraId": 1
 }
 ```
+
+> `carreraId` es **obligatorio**: identifica la carrera desde la que se actualiza (necesaria para validar correlativas, ya que el progreso es compartido entre carreras del usuario).
 
 | Código | Descripción |
 |---|---|
 | 200 | Progreso actualizado correctamente |
-| 400 | Error de validación (nota faltante para "Completada", correlativas no cumplidas, nota fuera de rango 4-10) |
+| 400 | Error de validación (nota faltante para "Completada", correlativas no cumplidas, nota fuera de rango 4-10, falta `carreraId`) |
 | 404 | Progreso no encontrado |
 
 ### POST /api/progreso/inicializar
@@ -83,6 +86,10 @@ export class ActualizarProgresoDto {
     @ValidateIf((o) => o.estado === 'Completada')
     @IsEnum(['Final', 'Promocion'])
     tipoAprobacion?: string;
+
+    @ApiProperty({ example: 1, description: 'Carrera desde la que se actualiza (para validar correlativas)' })
+    @IsInt()
+    carreraId: number;
 }
 ```
 
@@ -124,7 +131,7 @@ export class ProgresoService {
     async obtenerPorCarrera(usuarioCarreraId: number): Promise<any[]> {
         const inscripcion = await this.usuarioCarreraRepo.findOneOrFail({
             where: { usuarioCarreraId },
-            relations: { carrera: true },
+            relations: { carrera: true, usuario: true },
         });
 
         const ordenPlan = await this.carreraMateriaRepo.find({
@@ -133,8 +140,9 @@ export class ProgresoService {
             order: { anio: 'ASC', cuatrimestre: 'ASC', orden: 'ASC' },
         });
 
+        // Progreso compartido del usuario (independiente de la carrera)
         const progresos = await this.progresoRepo.find({
-            where: { usuarioCarrera: { usuarioCarreraId } },
+            where: { usuario: { usuarioId: inscripcion.usuario.usuarioId } },
             relations: { materia: true, estado: true },
         });
 
@@ -176,9 +184,10 @@ export class ProgresoService {
     async inicializar(dto: InicializarProgresoDto): Promise<{ creados: number; existentes: number }> {
         const inscripcion = await this.usuarioCarreraRepo.findOne({
             where: { usuarioCarreraId: dto.usuarioCarreraId },
-            relations: ['carrera'],
+            relations: ['carrera', 'usuario'],
         });
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+        const usuarioId = inscripcion.usuario.usuarioId;
 
         const planCompleto = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
@@ -192,7 +201,7 @@ export class ProgresoService {
         for (const entry of planCompleto) {
             const yaExiste = await this.progresoRepo.findOne({
                 where: {
-                    usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
+                    usuario: { usuarioId },
                     materia: { materiaId: entry.materia.materiaId },
                 },
             });
@@ -201,7 +210,7 @@ export class ProgresoService {
                 continue;
             }
             const nuevo = this.progresoRepo.create({
-                usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
+                usuario: { usuarioId },
                 materia: { materiaId: entry.materia.materiaId },
                 estado: estadoPendiente,
             });
@@ -214,7 +223,7 @@ export class ProgresoService {
     async actualizar(id: number, dto: ActualizarProgresoDto): Promise<ProgresoMateria> {
         const progreso = await this.progresoRepo.findOne({
             where: { progresoId: id },
-            relations: { materia: true, usuarioCarrera: { carrera: true } },
+            relations: { materia: true, usuario: true },
         });
         if (!progreso) throw new NotFoundException('Progreso no encontrado');
 
@@ -239,9 +248,9 @@ export class ProgresoService {
 
         if (dto.estado === 'En Proceso' || dto.estado === 'Completada') {
             const correlativasCumplidas = await this.validarCorrelativas(
-                progreso.usuarioCarrera.usuarioCarreraId,
+                progreso.usuario.usuarioId,
                 progreso.materia.materiaId,
-                progreso.usuarioCarrera.carrera.carreraId,
+                dto.carreraId,
             );
             if (!correlativasCumplidas) {
                 throw new BadRequestException(
@@ -266,31 +275,25 @@ export class ProgresoService {
     }
 
     private async validarCorrelativas(
-        usuarioCarreraId: number,
+        usuarioId: number,
         materiaId: number,
-        carreraId?: number,
+        carreraId: number,
     ): Promise<boolean> {
-        const whereClause: any = { materia: { materiaId } };
-        if (carreraId) {
-            whereClause.carrera = { carreraId };
-        }
         const correlativas = await this.correlativaRepo.find({
-            where: whereClause,
-            relations: { materiaCorrelativa: true, carrera: true },
+            where: { materia: { materiaId }, carrera: { carreraId } },
+            relations: { materiaCorrelativa: true },
         });
 
         if (correlativas.length === 0) {
-            if (carreraId) {
-                return this.validarCorrelativas(usuarioCarreraId, materiaId); // fallback a globales
-            }
             return true;
         }
 
         const idsCorrelativas = correlativas.map((c) => c.materiaCorrelativa.materiaId);
 
+        // Con progreso compartido, una correlativa completada en otra carrera cuenta como aprobada
         const progresos = await this.progresoRepo.find({
             where: {
-                usuarioCarrera: { usuarioCarreraId },
+                usuario: { usuarioId },
                 materia: { materiaId: In(idsCorrelativas) },
             },
             relations: { estado: true },
@@ -310,16 +313,16 @@ export class ProgresoService {
 
 ```typescript
 @Entity('progreso_materia')
-@Unique(['usuarioCarrera', 'materia'])
+@Unique(['usuario', 'materia'])
 export class ProgresoMateria {
     @PrimaryGeneratedColumn()
     progresoId: number;
 
-    @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos)
-    @JoinColumn({ name: 'usuario_carrera_id' })
-    usuarioCarrera: UsuarioCarrera;
+    @ManyToOne(() => Usuario, (u) => u.progresos, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'usuario_id' })
+    usuario: Usuario;
 
-    @ManyToOne(() => Materia)
+    @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
     materia: Materia;
 

@@ -299,17 +299,20 @@ export class Materia {
 
 #### Relación Progreso del Usuario
 
+> **Progreso compartido entre carreras:** `progreso_materia` apunta al `usuario` (no a la inscripción).
+> Si una materia existe en varias carreras del mismo usuario, el estado/nota es único (`UNIQUE(usuario_id, materia_id)`).
+
 ```typescript
 // progreso-materia.entity.ts
 @Entity('progreso_materia')
-@Unique(['usuarioCarrera', 'materia'])
+@Unique(['usuario', 'materia'])
 export class ProgresoMateria {
     @PrimaryGeneratedColumn()
     progresoId: number;
 
-    @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'usuario_carrera_id' })
-    usuarioCarrera: UsuarioCarrera;
+    @ManyToOne(() => Usuario, (u) => u.progresos, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'usuario_id' })
+    usuario: Usuario;
 
     @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'materia_id' })
@@ -358,6 +361,10 @@ export class ActualizarProgresoDto {
     @IsOptional()
     @IsEnum(['Final', 'Promocion'])
     tipoAprobacion?: string;
+
+    @ApiProperty({ example: 1, description: 'Carrera desde la que se actualiza (para validar correlativas)' })
+    @IsInt()
+    carreraId: number;
 }
 ```
 
@@ -454,11 +461,18 @@ El servicio de estadísticas utiliza `QueryBuilder` de TypeORM para calcular los
 ```typescript
 // estadisticas/estadisticas.service.ts
 async obtenerResumen(usuarioCarreraId: number) {
+    // El progreso es compartido: se filtra por el usuario de la inscripción, no por la inscripción
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+        where: { usuarioCarreraId },
+        relations: { usuario: true },
+    });
+    const usuarioId = inscripcion?.usuario?.usuarioId;
+
     const promedio = await this.dataSource
         .createQueryBuilder()
         .select('AVG(pm.nota)', 'promedio')
         .from(ProgresoMateria, 'pm')
-        .where('pm.usuario_carrera_id = :id', { id: usuarioCarreraId })
+        .where('pm.usuario_id = :id', { id: usuarioId })
         .andWhere('pm.estado_id = :completada', { completada: 3 })
         .andWhere('pm.nota IS NOT NULL')
         .getRawOne();
@@ -468,8 +482,8 @@ async obtenerResumen(usuarioCarreraId: number) {
         .select('COUNT(*)', 'pendientes')
         .from(CarreraMateria, 'cm')
         .leftJoin(ProgresoMateria, 'pm',
-            'pm.materia_id = cm.materia_id AND pm.usuario_carrera_id = :id',
-            { id: usuarioCarreraId }
+            'pm.materia_id = cm.materia_id AND pm.usuario_id = :id',
+            { id: usuarioId }
         )
         .where('cm.carrera_id = :carreraId', { carreraId })
         .andWhere('(pm.estadoId IS NULL OR pm.estadoId != :completada)', { completada: 3 })

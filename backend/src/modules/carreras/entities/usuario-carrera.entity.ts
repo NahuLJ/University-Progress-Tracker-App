@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Carrera } from './carrera.entity';
-import { ProgresoMateria } from '../../progreso/entities/progreso-materia.entity';
 import { PeriodoPlanificacion } from '../../planificacion/entities/periodo-planificacion.entity';
 import { Trayectoria } from '../../trayectoria/entities/trayectoria.entity';
 
@@ -35,9 +34,6 @@ export class UsuarioCarrera {
 
   @Column({ default: true })
   activo: boolean;
-
-  @OneToMany(() => ProgresoMateria, (pm) => pm.usuarioCarrera)
-  progresos: ProgresoMateria[];
 
   @OneToMany(() => PeriodoPlanificacion, (pp) => pp.usuarioCarrera)
   periodos: PeriodoPlanificacion[];

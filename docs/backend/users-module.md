@@ -113,7 +113,7 @@ Reactivar una inscripción previamente desactivada (soft delete).
 
 ### DELETE /api/usuarios/:id/carreras/:usuarioCarreraId/definitivo
 
-Elimina definitivamente la inscripción y todos sus datos asociados (progreso, planificaciones, trayectorias) mediante `ON DELETE CASCADE` en las FK.
+Elimina definitivamente la inscripción y, mediante `ON DELETE CASCADE`, sus planificaciones y trayectorias. El **progreso se conserva**: `progreso_materia` pertenece al `usuario` (progreso compartido), no a la inscripción, por lo que no se elimina en cascada.
 
 | Código | Descripción |
 |---|---|
@@ -347,6 +347,10 @@ export class Usuario {
 
     @OneToMany(() => UsuarioCarrera, (uc) => uc.usuario)
     usuarioCarreras: UsuarioCarrera[];
+
+    // Progreso compartido: un mismo progreso de materia vale para todas sus carreras
+    @OneToMany(() => ProgresoMateria, (pm) => pm.usuario)
+    progresos: ProgresoMateria[];
 }
 ```
 
@@ -375,9 +379,6 @@ export class UsuarioCarrera {
 
     @Column({ default: true })
     activo: boolean;
-
-    @OneToMany(() => ProgresoMateria, (pm) => pm.usuarioCarrera)
-    progresos: ProgresoMateria[];
 
     @OneToMany(() => PeriodoPlanificacion, (pp) => pp.usuarioCarrera)
     periodos: PeriodoPlanificacion[];

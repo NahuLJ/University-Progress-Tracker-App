@@ -23,9 +23,10 @@ export class EstadisticasService {
   async obtenerResumen(usuarioCarreraId: number): Promise<ResumenResponseDto> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+    const usuarioId = inscripcion.usuario.usuarioId;
 
     const planEstudios = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
@@ -42,7 +43,7 @@ export class EstadisticasService {
 
     const progresos = await this.progresoRepo.find({
       where: {
-        usuarioCarrera: { usuarioCarreraId },
+        usuario: { usuarioId },
         materia: { materiaId: In(idsMateriasPlan) },
       },
       relations: { estado: true, materia: true },
@@ -172,17 +173,24 @@ export class EstadisticasService {
   ): Promise<DistribucionEstadosDto[]> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
     const plan = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+      relations: { materia: true },
     });
     const totalPlan = plan.length;
+    const idsMateriasPlan = plan
+      .map((cm) => cm.materia?.materiaId)
+      .filter((id): id is number => id !== undefined);
 
     const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
+      where: {
+        usuario: { usuarioId: inscripcion.usuario.usuarioId },
+        materia: { materiaId: In(idsMateriasPlan) },
+      },
       relations: { estado: true },
     });
 
@@ -202,9 +210,15 @@ export class EstadisticasService {
   }
 
   async obtenerEvolucion(usuarioCarreraId: number): Promise<any[]> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { usuario: true },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
     const progresos = await this.progresoRepo.find({
       where: {
-        usuarioCarrera: { usuarioCarreraId },
+        usuario: { usuarioId: inscripcion.usuario.usuarioId },
         estado: { nombre: 'Completada' },
         fechaCompletado: Not(IsNull()),
         nota: Not(IsNull()),

@@ -10,130 +10,16 @@ Cambiar la FK de `usuario_carrera_id` → `usuario_id` y la unique a `UNIQUE(usu
 
 ---
 
-## 1. Base de datos — Migration
+## 1. Base de datos
 
-### 1.1 Crear migration
+El backend usa `synchronize: true` (`backend/src/config/database.config.ts`), por lo que el esquema se sincroniza automáticamente desde las entidades. **No se usan TypeORM migrations** (no existe `src/migrations/` ni `src/config/typeorm.config.ts`, y `package.json` no tiene scripts de CLI de typeorm).
 
-```bash
-cd backend
-npx typeorm migration:create src/migrations/SharedProgreso
-```
+No hace falta migration: basta con **recrear la base de datos** (o dropear la tabla `progreso_materia` y reiniciar el backend) para que TypeORM cree la tabla con el nuevo esquema definido por la entidad. Antes de recrear, si hubiera datos que preservar, hacer backup.
 
-### 1.2 SQL de la migration
-
-**up:**
-
-```sql
--- 1) Crear columna temporal usuario_id
-ALTER TABLE progreso_materia
-  ADD COLUMN usuario_id INT NULL AFTER progreso_id;
-
--- 2) Poblar usuario_id desde usuario_carrera
-UPDATE progreso_materia pm
-JOIN usuario_carrera uc ON uc.usuario_carrera_id = pm.usuario_carrera_id
-SET pm.usuario_id = uc.usuario_id;
-
--- 3) Manejar duplicados: si un mismo (usuario_id, materia_id) aparece en
---    múltiples carreras, conservar la fila con estado más avanzado:
---    Completada > En Proceso > Pendiente. A igual estado, la de mayor nota.
---    Eliminar las filas sobrantes.
-DELETE pm2 FROM progreso_materia pm2
-INNER JOIN (
-    SELECT pm.usuario_id, pm.materia_id, MAX(pm.progreso_id) AS keep_id
-    FROM progreso_materia pm
-    INNER JOIN (
-        SELECT usuario_id, materia_id,
-            CASE
-                WHEN SUM(CASE WHEN e.nombre = 'Completada' THEN 3
-                              WHEN e.nombre = 'En Proceso' THEN 2
-                              ELSE 1 END) >= 3 THEN 'Completada'
-                WHEN SUM(CASE WHEN e.nombre = 'Completada' THEN 3
-                              WHEN e.nombre = 'En Proceso' THEN 2
-                              ELSE 1 END) >= 2 THEN 'En Proceso'
-                ELSE 'Pendiente'
-            END AS mejor_estado,
-            MAX(pm.nota) AS mejor_nota
-        FROM progreso_materia pm
-        JOIN estado_materia e ON e.estado_id = pm.estado_id
-        GROUP BY pm.usuario_id, pm.materia_id
-    ) mejor ON mejor.usuario_id = pm2.usuario_id AND mejor.materia_id = pm2.materia_id
-    JOIN estado_materia e2 ON e2.estado_id = pm2.estado_id
-    LEFT JOIN (
-        SELECT pm3.progreso_id
-        FROM progreso_materia pm3
-        JOIN estado_materia e3 ON e3.estado_id = pm3.estado_id
-        INNER JOIN (
-            SELECT usuario_id, materia_id,
-                CASE
-                    WHEN SUM(CASE WHEN e3.nombre = 'Completada' THEN 3
-                                  WHEN e3.nombre = 'En Proceso' THEN 2
-                                  ELSE 1 END) >= 3 THEN 'Completada'
-                    WHEN SUM(CASE WHEN e3.nombre = 'Completada' THEN 3
-                                  WHEN e3.nombre = 'En Proceso' THEN 2
-                                  ELSE 1 END) >= 2 THEN 'En Proceso'
-                    ELSE 'Pendiente'
-                END AS mejor_estado,
-                MAX(pm3.nota) AS mejor_nota
-            FROM progreso_materia pm3
-            JOIN estado_materia e3 ON e3.estado_id = pm3.estado_id
-            GROUP BY pm3.usuario_id, pm3.materia_id
-        ) sub ON sub.usuario_id = pm3.usuario_id AND sub.materia_id = pm3.materia_id
-        JOIN estado_materia e4 ON e4.estado_id = pm3.estado_id
-        WHERE (e4.nombre = sub.mejor_estado)
-          AND (pm3.nota = sub.mejor_nota OR (pm3.nota IS NULL AND sub.mejor_nota IS NULL))
-        GROUP BY pm3.usuario_id, pm3.materia_id
-        HAVING MIN(pm3.progreso_id) = pm3.progreso_id
-    ) keep ON keep.progreso_id = pm2.progreso_id
-WHERE keep.progreso_id IS NULL
-  AND pm2.usuario_id IS NOT NULL;
-
--- 4) Hacer NOT NULL
-ALTER TABLE progreso_materia
-  MODIFY COLUMN usuario_id INT NOT NULL;
-
--- 5) Eliminar FK y columna vieja
-ALTER TABLE progreso_materia
-  DROP FOREIGN KEY progreso_materia_ibfk_1,
-  DROP INDEX usuario_carrera_id,
-  DROP COLUMN usuario_carrera_id;
-
--- 6) Agregar nueva FK e índice unique
-ALTER TABLE progreso_materia
-  ADD CONSTRAINT fk_progreso_usuario
-    FOREIGN KEY (usuario_id) REFERENCES usuario(usuario_id) ON DELETE CASCADE,
-  ADD UNIQUE INDEX uq_usuario_materia (usuario_id, materia_id);
-```
-
-> **Alternativa simplificada** si no hay datos reales o se acepta perder duplicados:
-> ```sql
-> DELETE pm FROM progreso_materia pm
-> WHERE pm.progreso_id NOT IN (
->   SELECT MIN(progreso_id) FROM progreso_materia
->   GROUP BY usuario_id, materia_id
-> );
-> ```
-> y luego seguir con los pasos 1, 2, 4, 5, 6.
-
-**down:**
-
-```sql
-ALTER TABLE progreso_materia
-  DROP FOREIGN KEY fk_progreso_usuario,
-  DROP INDEX uq_usuario_materia;
-
-ALTER TABLE progreso_materia
-  ADD COLUMN usuario_carrera_id INT NULL AFTER progreso_id,
-  ADD CONSTRAINT progreso_materia_ibfk_1
-    FOREIGN KEY (usuario_carrera_id) REFERENCES usuario_carrera(usuario_carrera_id) ON DELETE CASCADE;
-
--- No se puede revertir la pérdida de datos duplicados
-```
-
-### 1.3 Ejecutar
-
-```bash
-npx typeorm migration:run -d src/config/typeorm.config.ts
-```
+Esquema resultante de `progreso_materia`:
+- FK `usuario_id` → `usuario.usuario_id` `ON DELETE CASCADE`.
+- `UNIQUE (usuario_id, materia_id)`.
+- Se elimina la columna y FK `usuario_carrera_id`.
 
 ---
 
@@ -228,10 +114,12 @@ const progresos = await this.progresoRepo.find({
 });
 ```
 
+> Nota: este método solo devuelve materias que tienen progreso registrado. Con progreso compartido, al entrar a una carrera nueva las materias exclusivas sin registro no aparecen hasta inicializar — ver §14.4 (auto-init).
+
 ### 5.2 `inicializar(dto)`
 
 ```typescript
-// Obtener usuarioId desde la inscripción
+// Obtener usuarioId desde la inscripción (agregar relations usuario: true):
 const inscripcion = await this.usuarioCarreraRepo.findOne({
   where: { usuarioCarreraId: dto.usuarioCarreraId },
   relations: { carrera: true, usuario: true },
@@ -295,16 +183,25 @@ if (!progreso) throw new NotFoundException('Progreso no encontrado');
 - **Opción A (recomendada):** Recibir `carreraId` en el DTO de actualización (el frontend lo conoce).
 - **Opción B:** Buscar la carrera activa del usuario que contenga la materia (más complejo, puede haber múltiples).
 
-**Implementación Opción A** — Agregar `carreraId` a `ActualizarProgresoDto`:
+**Implementación Opción A** — Agregar `carreraId` a `ActualizarProgresoDto` (ver §8) y pasarlo al service. En el controlador, el frontend ya envía `carreraId` (se obtiene de `carreraActiva.carrera.carreraId`).
+
+En el call-site de `validarCorrelativas` dentro de `actualizar`, cambiar los argumentos:
 
 ```typescript
-// actualizar-progreso.dto.ts
-@ApiProperty({ example: 1 })
-@IsInt()
-carreraId: number;
-```
+// Antes:
+this.validarCorrelativas(
+  progreso.usuarioCarrera.usuarioCarreraId,
+  progreso.materia.materiaId,
+  progreso.usuarioCarrera.carrera.carreraId,
+);
 
-Y pasarlo al service. En el controlador, el frontend ya envía `carreraId` (se obtiene de `carreraActiva.carrera.carreraId`).
+// Después:
+this.validarCorrelativas(
+  progreso.usuario.usuarioId,
+  progreso.materia.materiaId,
+  dto.carreraId,
+);
+```
 
 ### 5.4 `validarCorrelativas`
 
@@ -335,9 +232,186 @@ private async validarCorrelativas(
 }
 ```
 
+> Con progreso compartido, una correlativa completada en otra carrera del usuario cuenta como aprobada. Este es el comportamiento deseado.
+
 ---
 
-## 6. Backend — DTO: `ActualizarProgresoDto`
+## 6. Backend — Service: `CarrerasService`
+
+**Archivo:** `backend/src/modules/carreras/carreras.service.ts`
+
+### 6.1 `obtenerPlanEstudios(carreraId, usuarioCarreraId?)`
+
+Devuelve el plan con `estadoUsuario`, `nota` y `tipoAprobacion` de cada materia y sus correlativas. Cambiar la búsqueda de progreso para usar el `usuarioId` de la inscripción:
+
+```typescript
+// Antes:
+if (usuarioCarreraId) {
+  const progresos = await this.progresoRepo.find({
+    where: { usuarioCarrera: { usuarioCarreraId } },
+    relations: { materia: true, estado: true },
+  });
+  // ...
+}
+
+// Después:
+let usuarioId: number | undefined;
+if (usuarioCarreraId) {
+  const inscripcion = await this.usuarioCarreraRepo.findOne({
+    where: { usuarioCarreraId },
+    relations: { usuario: true },
+  });
+  usuarioId = inscripcion?.usuario?.usuarioId;
+}
+
+if (usuarioId) {
+  const progresos = await this.progresoRepo.find({
+    where: { usuario: { usuarioId } },
+    relations: { materia: true, estado: true },
+  });
+  // ...
+}
+```
+
+### 6.2 `quitarMateriaDelPlan(carreraId, carreraMateriaId)`
+
+El borrado de progreso usa la FK que se elimina, así que rompe. Cambiar la consulta de `usuarioCarrera` a `usuario`:
+
+```typescript
+// Antes:
+const usuarioCarreras = await queryRunner.manager.find(UsuarioCarrera, {
+  where: { carrera: { carreraId } },
+});
+const usuarioCarreraIds = usuarioCarreras.map((uc) => uc.usuarioCarreraId);
+if (usuarioCarreraIds.length > 0) {
+  await queryRunner.manager.delete(ProgresoMateria, {
+    materia: { materiaId },
+    usuarioCarrera: { usuarioCarreraId: In(usuarioCarreraIds) },
+  });
+}
+
+// Después:
+const usuarioCarreras = await queryRunner.manager.find(UsuarioCarrera, {
+  where: { carrera: { carreraId } },
+  relations: { usuario: true },
+});
+const usuarioIds = usuarioCarreras.map((uc) => uc.usuario.usuarioId);
+if (usuarioIds.length > 0) {
+  await queryRunner.manager.delete(ProgresoMateria, {
+    materia: { materiaId },
+    usuario: { usuarioId: In(usuarioIds) },
+  });
+}
+```
+
+**Decisión de diseño:** con progreso compartido, este `DELETE` borra el progreso de la materia también para las otras carreras del usuario. Si se prefiere no perder progreso compartido, conviene **no borrar el `ProgresoMateria` acá** (el alta/eliminación de materias ya lo gestiona `MateriasService.eliminar`) o borrar solo cuando la materia no figure en otro plan activo del mismo usuario.
+
+---
+
+## 7. Backend — Service: `PlanificacionService`
+
+**Archivo:** `backend/src/modules/planificacion/planificacion.service.ts`
+
+El servicio consulta `ProgresoMateria` en 4 lugares. Todos deben pasar de filtrar por `usuarioCarreraId` a filtrar por `usuarioId`. Con progreso compartido, una materia completada en otra carrera cuenta como correlativa/desbloqueada.
+
+### 7.1 `obtenerMateriasDisponibles(usuarioCarreraId)`
+
+```typescript
+// Cargar la inscripción con el usuario (agregar relations usuario: true):
+const inscripcion = await this.usuarioCarreraRepo.findOne({
+  where: { usuarioCarreraId },
+  relations: { carrera: true, usuario: true },
+});
+
+// Antes:
+const progresos = await this.progresoRepo.find({
+  where: { usuarioCarrera: { usuarioCarreraId } },
+  relations: { materia: true, estado: true },
+});
+
+// Después:
+const progresos = await this.progresoRepo.find({
+  where: { usuario: { usuarioId: inscripcion.usuario.usuarioId } },
+  relations: { materia: true, estado: true },
+});
+```
+
+### 7.2 `obtenerMateriasDesbloqueables(periodoId)`
+
+```typescript
+// Cargar el periodo con el usuario (agregar relations usuario: true):
+const periodo = await this.periodoRepo.findOne({
+  where: { periodoId },
+  relations: { usuarioCarrera: { carrera: true, usuario: true } },
+});
+
+// Antes:
+const progresos = await this.progresoRepo.find({
+  where: { usuarioCarrera: { usuarioCarreraId } },
+  relations: { materia: true, estado: true },
+});
+
+// Después (usuarioId ya disponible del periodo):
+const progresos = await this.progresoRepo.find({
+  where: { usuario: { usuarioId: periodo.usuarioCarrera.usuario.usuarioId } },
+  relations: { materia: true, estado: true },
+});
+```
+
+### 7.3 `obtenerImpactoEliminacion(materiaPlanificadaId)`
+
+```typescript
+// Cargar la inscripción con el usuario (agregar relations usuario: true):
+const ucCarrera = await this.usuarioCarreraRepo.findOne({
+  where: { usuarioCarreraId },
+  relations: { carrera: true, usuario: true },
+});
+
+// Antes:
+const progresos = await this.progresoRepo.find({
+  where: { usuarioCarrera: { usuarioCarreraId } },
+  relations: { materia: true, estado: true },
+});
+
+// Después:
+const progresos = await this.progresoRepo.find({
+  where: { usuario: { usuarioId: ucCarrera.usuario.usuarioId } },
+  relations: { materia: true, estado: true },
+});
+```
+
+### 7.4 `validarCorrelativas(...)`
+
+> Nota: este método privado está actualmente sin llamadas en el archivo (código muerto). Cambiarlo es preventivo para no romper el día que se use.
+
+```typescript
+// Antes: filtra por usuarioCarreraId
+const progresos = await this.progresoRepo.find({
+  where: {
+    usuarioCarrera: { usuarioCarreraId },
+    materia: { materiaId: In(idsCorrelativas) },
+  },
+  relations: { estado: true, materia: true },
+});
+
+// Después: derivar usuarioId de la inscripción al inicio del método y filtrar por él
+const inscripcion = await this.usuarioCarreraRepo.findOne({
+  where: { usuarioCarreraId },
+  relations: { usuario: true },
+});
+// ...
+const progresos = await this.progresoRepo.find({
+  where: {
+    usuario: { usuarioId: inscripcion.usuario.usuarioId },
+    materia: { materiaId: In(idsCorrelativas) },
+  },
+  relations: { estado: true, materia: true },
+});
+```
+
+---
+
+## 8. Backend — DTO: `ActualizarProgresoDto`
 
 **Archivo:** `backend/src/modules/progreso/dto/actualizar-progreso.dto.ts`
 
@@ -355,9 +429,11 @@ export class ActualizarProgresoDto {
 }
 ```
 
+> `carreraId` es obligatorio: si el frontend no lo manda (p. ej. `carreraActiva` sin cargar) la validación devuelve 400. Ver §14.2.
+
 ---
 
-## 7. Backend — Controller: `ProgresoController`
+## 9. Backend — Controller: `ProgresoController`
 
 **Archivo:** `backend/src/modules/progreso/progreso.controller.ts`
 
@@ -365,19 +441,17 @@ No requiere cambios estructurales. Los endpoints reciben los mismos parámetros.
 
 ---
 
-## 8. Backend — Module: `ProgresoModule`
+## 10. Backend — Module: `ProgresoModule`
 
 **Archivo:** `backend/src/modules/progreso/progreso.module.ts`
 
-Agregar `Usuario` al `TypeOrmModule.forFeature`:
+Opcional: agregar `Usuario` al `TypeOrmModule.forFeature`. No es estrictamente necesario porque el service deriva `usuarioId` desde la inscripción y nunca inyecta `UsuarioRepo`:
 
 ```typescript
-import { Usuario } from '../usuarios/entities/usuario.entity';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      ProgresoMateria, EstadoMateria, UsuarioCarrera, CarreraMateria, Correlativa, Usuario,
+      ProgresoMateria, EstadoMateria, UsuarioCarrera, CarreraMateria, Correlativa,
     ]),
   ],
   // ...
@@ -386,16 +460,16 @@ import { Usuario } from '../usuarios/entities/usuario.entity';
 
 ---
 
-## 9. Backend — Service: `EstadisticasService`
+## 11. Backend — Service: `EstadisticasService`
 
 **Archivo:** `backend/src/modules/estadisticas/estadisticas.service.ts`
 
 Todos los métodos que buscan progreso por `usuarioCarreraId` deben cambiar a buscar por `usuarioId`.
 
-### 9.1 `obtenerResumen(usuarioCarreraId)`
+### 11.1 `obtenerResumen(usuarioCarreraId)`
 
 ```typescript
-// Obtener usuarioId desde la inscripción
+// Obtener usuarioId desde la inscripción (agregar relations usuario: true):
 const inscripcion = await this.usuarioCarreraRepo.findOne({
   where: { usuarioCarreraId },
   relations: { carrera: true, usuario: true },
@@ -423,7 +497,9 @@ const progresos = await this.progresoRepo.find({
 });
 ```
 
-### 9.2 `obtenerDistribucionEstados(usuarioCarreraId)`
+### 11.2 `obtenerDistribucionEstados(usuarioCarreraId)`
+
+La distribución se calcula sobre el plan de la carrera actual, así que el query debe filtrar además por las materias del plan (si no, contaría materias completadas en otras carreras que no pertenecen a este plan):
 
 ```typescript
 // Antes:
@@ -435,17 +511,29 @@ const progresos = await this.progresoRepo.find({
 // Después:
 const inscripcion = await this.usuarioCarreraRepo.findOne({
   where: { usuarioCarreraId },
-  relations: { usuario: true },
+  relations: { carrera: true, usuario: true },
 });
 if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
+const plan = await this.carreraMateriaRepo.find({
+  where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+  relations: { materia: true },
+});
+const totalPlan = plan.length;
+const idsMateriasPlan = plan
+  .map((cm) => cm.materia?.materiaId)
+  .filter((id): id is number => id !== undefined);
+
 const progresos = await this.progresoRepo.find({
-  where: { usuario: { usuarioId: inscripcion.usuario.usuarioId } },
+  where: {
+    usuario: { usuarioId: inscripcion.usuario.usuarioId },
+    materia: { materiaId: In(idsMateriasPlan) },
+  },
   relations: { estado: true },
 });
 ```
 
-### 9.3 `obtenerEvolucion(usuarioCarreraId)`
+### 11.3 `obtenerEvolucion(usuarioCarreraId)`
 
 ```typescript
 // Antes:
@@ -479,7 +567,7 @@ const progresos = await this.progresoRepo.find({
 
 ---
 
-## 10. Backend — Controller: `EstadisticasController`
+## 12. Backend — Controller: `EstadisticasController`
 
 **Archivo:** `backend/src/modules/estadisticas/estadisticas.controller.ts`
 
@@ -487,7 +575,7 @@ No requiere cambios. Los endpoints siguen recibiendo `usuarioCarreraId` y `usuar
 
 ---
 
-## 11. Frontend — API Service: `progreso.service.ts`
+## 13. Frontend — API Service: `progreso.service.ts`
 
 **Archivo:** `frontend/src/services/progreso.service.ts`
 
@@ -509,17 +597,17 @@ async actualizarProgreso(id: number, data: ActualizarProgresoDto, carreraId: num
 
 ---
 
-## 12. Frontend — Hook: `useProgreso.ts`
+## 14. Frontend — Hook: `useProgreso.ts`
 
 **Archivo:** `frontend/src/hooks/useProgreso.ts`
 
-### 12.1 Recibir `carreraId` como parámetro
+### 14.1 Recibir `carreraId` como parámetro
 
 ```typescript
 export function useProgreso(usuarioCarreraId: number | null, carreraId?: number | null) {
 ```
 
-### 12.2 Pasar `carreraId` en la mutation de actualización
+### 14.2 Pasar `carreraId` en la mutation de actualización
 
 ```typescript
 const mutation = useMutation({
@@ -529,35 +617,47 @@ const mutation = useMutation({
 });
 ```
 
-### 12.3 Invalidar progreso de todas las carreras en vez de solo la actual
+> Ojo: si `carreraId` es `null`/`undefined` (carrera activa sin cargar), `carreraId!` envía `undefined` en el body y el `@IsInt()` del DTO devuelve 400. Deshabilitar el guardado mientras no haya `carreraId` disponible.
+
+### 14.3 Invalidar progreso de todas las carreras en vez de solo la actual
 
 Al actualizar o eliminar, el progreso cambia globalmente (afecta a todas las carreras). Invalidar todas las queries relacionadas:
 
 ```typescript
 onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['progreso'] }); // invalida TODAS las carreras
+    queryClient.invalidateQueries({ queryKey: ['progreso'] });        // TODAS las carreras
     queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+    queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });   // estadoUsuario/nota de correlativas
+    queryClient.invalidateQueries({ queryKey: ['planificacion'] });   // disponibles / desbloqueables
     addNotification('Progreso actualizado', 'success');
 },
 ```
 
-> Alternativa: invalidar solo las carreras del usuario (más preciso). Se puede obtener `usuarioId` del auth store y luego buscar todas las `usuarioCarreraId` activas para invalidar cada una. Pero invalidar `['progreso']` es más simple y React Query lo maneja eficientemente.
+> Sin invalidar `['plan-estudios']` y `['planificacion']`, la página de Plan de Estudios (estado de correlativas) y el Planificador (materias disponibles/desbloqueables) muestran datos viejos hasta que se refetcheen.
 
-### 12.4 Auto-init
+### 14.4 Auto-init
 
-El auto-init actual verifica si `progresos.length > 0` para decidir si inicializar. Con progreso compartido, al entrar a una carrera nueva pueden venir materias con progreso (compartidas) y otras sin progreso (exclusivas). El auto-init se dispara si la lista está vacía, lo cual solo pasa si ninguna materia del plan tiene progreso. Esto sigue siendo correcto, pero se podría optimizar:
+El auto-init actual dispara solo si la lista de progreso viene vacía (`progresos.length === 0`). Con progreso compartido esto **no alcanza**: al entrar a una carrera que comparte materias con otra, la lista viene con las materias compartidas (no vacía), el auto-init no corre y las materias **exclusivas** de la nueva carrera quedan sin registro. Como `obtenerPorCarrera` solo devuelve materias que tienen progreso (§5.1), esas materias ni siquiera aparecen en la grilla.
+
+Cambiar la condición de disparo:
 
 ```typescript
-// Opcional: inicializar siempre al entrar a una carrera nueva
-// para asegurar que todas las materias del plan tengan registro.
-// El backend ya ignora duplicados (skip-if-exists).
-```
+// Opción A (recomendada): inicializar siempre al montar con una carrera activa.
+// El backend ya ignora duplicados (skip-if-exists por usuarioId + materiaId).
+progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
+    queryClient.invalidateQueries({ queryKey: ['progreso'] });
+    queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+    queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+    queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+});
 
-No es necesario cambiar la lógica de auto-init, el backend ya maneja duplicados correctamente.
+// Opción B: disparar cuando la cantidad de progresos devueltos sea menor a la
+// cantidad de materias activas del plan de la carrera activa.
+```
 
 ---
 
-## 13. Frontend — Page: `ProgresoPage.tsx`
+## 15. Frontend — Page: `ProgresoPage.tsx`
 
 **Archivo:** `frontend/src/pages/ProgresoPage.tsx`
 
@@ -573,7 +673,7 @@ const {
 
 ---
 
-## 14. Frontend — Types
+## 16. Frontend — Types
 
 **Archivo:** `frontend/src/types/progreso.types.ts`
 
@@ -590,40 +690,40 @@ export interface ActualizarProgresoDto {
 
 ---
 
-## 15. Frontend — Componente `MateriaProgresoRow.tsx`
+## 17. Frontend — Componente `MateriaProgresoRow.tsx`
 
 **Archivo:** `frontend/src/components/progreso/MateriaProgresoRow.tsx`
 
-Si este componente usa `progresoId` para editar y muestra correlativas, verificar que al obtener detalle de materia se pase el `carreraId` correcto. El componente ya recibe `carreraId` como prop (revisar el código actual). No requiere cambios adicionales.
+No requiere cambios de código. El componente recibe `carreraId` como prop, pero solo lo usa para el query de detalle de materia (`['materia-detalle', materia.materiaId, carreraId]`). El guardado va por `onSave(progreso.progresoId, data)` y el `carreraId` del body lo inyecta la mutation de `useProgreso` (§14.2).
+
+El `carreraId` llega por la cadena: `ProgresoPage` lo pasa a `useProgreso` (§15), que lo agrega en el PATCH (§13).
 
 ---
 
-## 16. Consideraciones adicionales
+## 18. Consideraciones adicionales
 
-### 16.1 Planificación de horarios
+### 18.1 Planificación de horarios
 
-`MateriaPlanificada` NO referencia `ProgresoMateria`, solo referencia `Materia` y `PeriodoPlanificacion`. No requiere cambios.
+`MateriaPlanificada` NO referencia `ProgresoMateria`, pero `PlanificacionService` SÍ consulta `ProgresoMateria` en 4 queries por `usuarioCarreraId` — deben cambiar a `usuarioId` (ver §7). Con progreso compartido, una materia completada en otra carrera cuenta como desbloqueada en esta.
 
-### 16.2 Trayectorias
+### 18.2 Trayectorias
 
 `Trayectoria` referencia `UsuarioCarrera`, no `ProgresoMateria`. No requiere cambios.
 
-### 16.3 Dashboard / Estadísticas
+### 18.3 Dashboard / Estadísticas
 
-Los endpoints de estadísticas (`/resumen`, `/distribucion-estados`, `/evolucion`) siguen recibiendo `usuarioCarreraId` y calculan sobre esa carrera específica, pero ahora el progreso considerado es el compartido del usuario. Esto es correcto porque:
-- El promedio general se calcula sobre todas las materias completadas del usuario (incluyendo las de otras carreras).
+Los endpoints de estadísticas (`/resumen`, `/distribucion-estados`, `/evolucion`) siguen recibiendo `usuarioCarreraId`, pero ahora el progreso considerado es el compartido del usuario. Esto es correcto porque:
+- El promedio general se calcula sobre las materias del plan de la carrera actual (porque `obtenerResumen` filtra por `In(idsMateriasPlan)`).
 - La distribución de estados se calcula solo sobre las materias del plan de la carrera actual.
 - La evolución histórica usa las fechas de completado del usuario.
 
-### 16.4 `carreras-resumen`
+### 18.4 `carreras-resumen`
 
 Ya usa `usuarioId` (no `usuarioCarreraId`). No requiere cambios. Internamente llama a `obtenerResumen` que ahora usará progreso compartido, lo cual es correcto.
 
-### 16.5 Rollback
+### 18.5 Rollback
 
-Si algo sale mal, la migration tiene `down` que revierte el schema, pero los datos duplicados eliminados no se recuperan. Se recomienda:
-- Hacer backup de `progreso_materia` antes de migrar.
-- Probar en ambiente de desarrollo primero.
+No hay migration que revertir (el esquema se sincroniza solo). Si algo sale mal, recrear la base de datos o dropear la tabla `progreso_materia` y reiniciar el backend.
 
 ---
 
@@ -631,15 +731,16 @@ Si algo sale mal, la migration tiene `down` que revierte el schema, pero los dat
 
 | # | Archivo | Cambio |
 |---|---|---|
-| 1 | `backend/src/migrations/...SharedProgreso.ts` | Migration SQL |
-| 2 | `backend/src/modules/progreso/entities/progreso-materia.entity.ts` | FK → Usuario, Unique |
-| 3 | `backend/src/modules/usuarios/entities/usuario.entity.ts` | +OneToMany progresos |
-| 4 | `backend/src/modules/carreras/entities/usuario-carrera.entity.ts` | -OneToMany progresos |
-| 5 | `backend/src/modules/progreso/progreso.service.ts` | 4 métodos modificados |
-| 6 | `backend/src/modules/progreso/dto/actualizar-progreso.dto.ts` | +carreraId |
-| 7 | `backend/src/modules/progreso/progreso.module.ts` | +Usuario en forFeature |
-| 8 | `backend/src/modules/estadisticas/estadisticas.service.ts` | 3 métodos modificados |
-| 9 | `frontend/src/services/progreso.service.ts` | +carreraId en actualizar |
-| 10 | `frontend/src/hooks/useProgreso.ts` | +carreraId param, invalidación global |
-| 11 | `frontend/src/pages/ProgresoPage.tsx` | Pasar carreraId al hook |
-| 12 | `frontend/src/types/progreso.types.ts` | +carreraId en DTO |
+| 1 | `backend/src/modules/progreso/entities/progreso-materia.entity.ts` | FK → Usuario, Unique |
+| 2 | `backend/src/modules/usuarios/entities/usuario.entity.ts` | +OneToMany progresos |
+| 3 | `backend/src/modules/carreras/entities/usuario-carrera.entity.ts` | -OneToMany progresos |
+| 4 | `backend/src/modules/progreso/progreso.service.ts` | 4 métodos modificados |
+| 5 | `backend/src/modules/carreras/carreras.service.ts` | obtenerPlanEstudios + quitarMateriaDelPlan |
+| 6 | `backend/src/modules/planificacion/planificacion.service.ts` | 4 queries por usuarioId |
+| 7 | `backend/src/modules/progreso/dto/actualizar-progreso.dto.ts` | +carreraId |
+| 8 | `backend/src/modules/progreso/progreso.module.ts` | (opcional) +Usuario en forFeature |
+| 9 | `backend/src/modules/estadisticas/estadisticas.service.ts` | 3 métodos modificados |
+| 10 | `frontend/src/services/progreso.service.ts` | +carreraId en actualizar |
+| 11 | `frontend/src/hooks/useProgreso.ts` | +carreraId param, invalidación global, fix auto-init |
+| 12 | `frontend/src/pages/ProgresoPage.tsx` | Pasar carreraId al hook |
+| 13 | `frontend/src/types/progreso.types.ts` | +carreraId en DTO |

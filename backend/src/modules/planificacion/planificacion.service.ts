@@ -295,7 +295,7 @@ export class PlanificacionService {
   ): Promise<Materia[]> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
@@ -310,7 +310,7 @@ export class PlanificacionService {
     });
 
     const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
+      where: { usuario: { usuarioId: inscripcion.usuario.usuarioId } },
       relations: { materia: true, estado: true },
     });
 
@@ -392,11 +392,11 @@ export class PlanificacionService {
   ): Promise<Materia[]> {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId },
-      relations: { usuarioCarrera: { carrera: true } },
+      relations: { usuarioCarrera: { carrera: true, usuario: true } },
     });
     if (!periodo) return [];
 
-    const usuarioCarreraId = periodo.usuarioCarrera.usuarioCarreraId;
+    const usuarioId = periodo.usuarioCarrera.usuario.usuarioId;
     const carreraId = periodo.usuarioCarrera.carrera.carreraId;
 
     let idsPlanificadas: Set<number>;
@@ -411,7 +411,7 @@ export class PlanificacionService {
     }
 
     const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
+      where: { usuario: { usuarioId } },
       relations: { materia: true, estado: true },
     });
     const idsCompletadas = new Set(
@@ -518,9 +518,10 @@ export class PlanificacionService {
     );
     const ucCarrera = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     const carreraId = ucCarrera?.carrera?.carreraId ?? 0;
+    const usuarioId = ucCarrera?.usuario?.usuarioId;
 
     const todasLasPlanificaciones = await this.periodoRepo.find({
       where: { trayectoriaId: periodo.trayectoriaId },
@@ -535,7 +536,9 @@ export class PlanificacionService {
     );
 
     const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
+      where: usuarioId
+        ? { usuario: { usuarioId } }
+        : { usuario: { usuarioId: 0 } },
       relations: { materia: true, estado: true },
     });
     const idsCompletadas = new Set(
@@ -794,6 +797,13 @@ export class PlanificacionService {
     trayectoriaId?: number,
     periodoId?: number,
   ): Promise<boolean> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { usuario: true },
+    });
+    if (!inscripcion) return false;
+    const usuarioId = inscripcion.usuario.usuarioId;
+
     const correlativas = await this.correlativaRepo.find({
       where: {
         materia: { materiaId },
@@ -812,7 +822,7 @@ export class PlanificacionService {
 
     const progresos = await this.progresoRepo.find({
       where: {
-        usuarioCarrera: { usuarioCarreraId },
+        usuario: { usuarioId },
         materia: { materiaId: In(idsCorrelativas) },
       },
       relations: { estado: true, materia: true },

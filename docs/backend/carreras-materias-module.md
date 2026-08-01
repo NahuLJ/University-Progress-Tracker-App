@@ -25,7 +25,7 @@ Obtiene los detalles de una carrera específica.
 ### GET /api/carreras/:id/plan-estudios
 
 Retorna el plan de estudios completo de la carrera. Las materias vienen ordenadas por año y cuatrimestre, cada una con sus correlativas.
-Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia **y en cada correlativa**.
+Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia **y en cada correlativa**. El progreso es compartido entre carreras: se consulta por `usuario`, no por inscripción.
 
 | Código | Descripción |
 |---|---|
@@ -303,9 +303,19 @@ export class CarrerasService {
         });
 
         const progresoMap = new Map<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>();
+        let usuarioId: number | undefined;
         if (usuarioCarreraId) {
+            const inscripcion = await this.usuarioCarreraRepo.findOne({
+                where: { usuarioCarreraId },
+                relations: { usuario: true },
+            });
+            usuarioId = inscripcion?.usuario?.usuarioId;
+        }
+
+        if (usuarioId) {
+            // Progreso compartido del usuario (independiente de la carrera)
             const progresos = await this.progresoRepo.find({
-                where: { usuarioCarrera: { usuarioCarreraId } },
+                where: { usuario: { usuarioId } },
                 relations: { materia: true, estado: true },
             });
             for (const p of progresos) {
@@ -485,28 +495,27 @@ export class MateriasService {
 
 ## Validación de Correlatividades
 
-Función utilitaria para verificar que un usuario cumple con todas las correlativas antes de permitirle cambiar una materia a "En Proceso" o "Completada". Soporta correlativas por carrera: si se provee `carreraId`, filtra solo las correlativas de esa carrera; si no encuentra, cae a correlativas globales (null carreraId):
+Función utilitaria para verificar que un usuario cumple con todas las correlativas antes de permitirle cambiar una materia a "En Proceso" o "Completada". `carreraId` es **obligatorio**: filtra las correlativas definidas para esa carrera (si no hay correlativas para la materia en esa carrera, se considera cumplida). Como el progreso es compartido, una correlativa completada en otra carrera del usuario también cuenta como aprobada:
 
 ```typescript
 private async validarCorrelativas(
     usuarioCarreraId: number,
     materiaId: number,
-    carreraId?: number,
+    carreraId: number,
 ): Promise<boolean> {
-    const whereClause: any = { materia: { materiaId } };
-    if (carreraId) {
-        whereClause.carrera = { carreraId };
-    }
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+        where: { usuarioCarreraId },
+        relations: { usuario: true },
+    });
+    if (!inscripcion) return false;
+    const usuarioId = inscripcion.usuario.usuarioId;
 
     const correlativas = await this.correlativaRepo.find({
-        where: whereClause,
-        relations: { materiaCorrelativa: true, carrera: true },
+        where: { materia: { materiaId }, carrera: { carreraId } },
+        relations: { materiaCorrelativa: true },
     });
 
     if (correlativas.length === 0) {
-        if (carreraId) {
-            return this.validarCorrelativas(usuarioCarreraId, materiaId); // fallback a globales
-        }
         return true;
     }
 
@@ -514,9 +523,10 @@ private async validarCorrelativas(
         (c) => c.materiaCorrelativa.materiaId,
     );
 
+    // Progreso compartido: una correlativa completada en otra carrera cuenta como aprobada
     const progresos = await this.progresoRepo.find({
         where: {
-            usuarioCarrera: { usuarioCarreraId },
+            usuario: { usuarioId },
             materia: { materiaId: In(idsCorrelativas) },
         },
         relations: { estado: true },

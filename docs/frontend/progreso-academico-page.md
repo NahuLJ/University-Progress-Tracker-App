@@ -28,7 +28,7 @@ hooks/
 └── useCarrerasResumen.ts       # resumen por carrera (GET /estadisticas/carreras-resumen)
 
 services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarreraId=),
-                                  # actualizarProgreso (PATCH /progreso/:id),
+                                  # actualizarProgreso (PATCH /progreso/:id, envía { ...data, carreraId }),
                                   # inicializarProgreso (POST /progreso/inicializar)
 ```
 
@@ -67,7 +67,7 @@ MainLayout
 ## Manejo del Estado Local — `useProgreso`
 
 ```typescript
-export function useProgreso(usuarioCarreraId: number | null) {
+export function useProgreso(usuarioCarreraId: number | null, carreraId?: number | null) {
     const [filtroEstado, setFiltroEstado] = useState('todas');
     const [busqueda, setBusqueda] = useState('');
     const queryClient = useQueryClient();
@@ -79,25 +79,32 @@ export function useProgreso(usuarioCarreraId: number | null) {
         enabled: !!usuarioCarreraId,
     });
 
-    // Auto-init: crea registros Pendiente cuando la consulta devuelve vacío
+    // Auto-init: crea registros Pendiente cuando la consulta devuelve vacío.
+    // Invalida todas las queries globales porque el progreso es compartido entre carreras.
     useEffect(() => {
         if (!usuarioCarreraId || isLoading || error || !progresos || progresos.length > 0) return;
         if (initializedRef.current.has(usuarioCarreraId)) return;
         initializedRef.current.add(usuarioCarreraId);
         progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
         });
     }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
     const mutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) =>
-            progresoService.actualizarProgreso(id, data),
+        mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) => {
+            if (carreraId == null) {
+                throw new Error('Carrera no disponible para guardar el progreso');
+            }
+            return progresoService.actualizarProgreso(id, data, carreraId);
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Progreso actualizado', 'success');
         },
         onError: (error) => {
@@ -109,9 +116,11 @@ export function useProgreso(usuarioCarreraId: number | null) {
     const deleteMutation = useMutation({
         mutationFn: (id: number) => progresoService.eliminarProgreso(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
+            addNotification('Registro eliminado', 'success');
         },
     });
 
@@ -188,6 +197,6 @@ cuatrimestres a la vez.
 |---|---|
 | Cargando | `ProgresoSkeleton`: 10 filas simuladas |
 | Sin resultados tras filtrar | `ProgresoTree` muestra "No hay materias para mostrar" |
-| Cambio de carrera | `useProgreso` refetch por `queryKey` + auto-init si es necesario |
+| Cambio de carrera | `useProgreso` refetch por `queryKey` (mismo progreso compartido, filtrado al plan de la carrera nueva) + auto-init si es necesario; `carreraId` se actualiza para los envíos del modal |
 | Sin carrera activa | `EmptyState` con enlace a "Ver carreras" |
 | Carrera inactiva | Se muestra card de aviso (rojo) indicando que no se pueden editar progresos; botones Expandir/Contraer, filtros y `ProgresoTree` se ocultan |

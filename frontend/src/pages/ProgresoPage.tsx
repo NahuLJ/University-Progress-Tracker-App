@@ -31,7 +31,7 @@ export function ProgresoPage() {
         isLoading,
         isSaving,
         error,
-    } = useProgreso(usuarioCarreraId);
+    } = useProgreso(usuarioCarreraId, carreraActiva?.carrera?.carreraId);
 
     if (cargandoCarrera || (usuarioCarreraId && isLoading)) {
         return <ProgresoSkeleton />;

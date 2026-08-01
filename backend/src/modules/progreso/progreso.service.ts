@@ -30,7 +30,7 @@ export class ProgresoService {
   async obtenerPorCarrera(usuarioCarreraId: number): Promise<any[]> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     if (!inscripcion) return [];
 
@@ -48,7 +48,7 @@ export class ProgresoService {
     const materiaIds = ordenPlanActivo.map((cm) => cm.materia.materiaId);
 
     const progresos = await this.progresoRepo.find({
-      where: { usuarioCarrera: { usuarioCarreraId } },
+      where: { usuario: { usuarioId: inscripcion.usuario.usuarioId } },
       relations: { materia: true, estado: true },
     });
 
@@ -93,9 +93,10 @@ export class ProgresoService {
   }): Promise<{ creados: number; existentes: number }> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId: dto.usuarioCarreraId },
-      relations: { carrera: true },
+      relations: { carrera: true, usuario: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+    const usuarioId = inscripcion.usuario.usuarioId;
 
     const planCompleto = await this.carreraMateriaRepo.find({
       where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
@@ -114,7 +115,7 @@ export class ProgresoService {
     for (const entry of planActivo) {
       const yaExiste = await this.progresoRepo.findOne({
         where: {
-          usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
+          usuario: { usuarioId },
           materia: { materiaId: entry.materia.materiaId },
         },
       });
@@ -123,7 +124,7 @@ export class ProgresoService {
         continue;
       }
       const nuevo = this.progresoRepo.create({
-        usuarioCarrera: { usuarioCarreraId: dto.usuarioCarreraId },
+        usuario: { usuarioId },
         materia: { materiaId: entry.materia.materiaId },
         estado: estadoPendiente!,
       });
@@ -139,7 +140,7 @@ export class ProgresoService {
   ): Promise<ProgresoMateria> {
     const progreso = await this.progresoRepo.findOne({
       where: { progresoId: id },
-      relations: { materia: true, usuarioCarrera: { carrera: true } },
+      relations: { materia: true, usuario: true },
     });
     if (!progreso) throw new NotFoundException('Progreso no encontrado');
 
@@ -166,9 +167,9 @@ export class ProgresoService {
 
     if (dto.estado === 'En Proceso' || dto.estado === 'Completada') {
       const correlativasCumplidas = await this.validarCorrelativas(
-        progreso.usuarioCarrera.usuarioCarreraId,
+        progreso.usuario.usuarioId,
         progreso.materia.materiaId,
-        progreso.usuarioCarrera.carrera.carreraId,
+        dto.carreraId,
       );
       if (!correlativasCumplidas) {
         throw new BadRequestException(
@@ -201,7 +202,7 @@ export class ProgresoService {
   }
 
   private async validarCorrelativas(
-    usuarioCarreraId: number,
+    usuarioId: number,
     materiaId: number,
     carreraId: number,
   ): Promise<boolean> {
@@ -223,7 +224,7 @@ export class ProgresoService {
 
     const progresos = await this.progresoRepo.find({
       where: {
-        usuarioCarrera: { usuarioCarreraId },
+        usuario: { usuarioId },
         materia: { materiaId: In(idsCorrelativas) },
       },
       relations: { estado: true },

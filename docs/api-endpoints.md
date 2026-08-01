@@ -44,10 +44,11 @@ interface LoginDto {
 | `PATCH` | `/usuarios/:id/carreras/:usuarioCarreraId/reactivar` | ✅ Bearer | — | `200`: Inscripción reactivada · `400`: Ya activa · `404`: No encontrada |
 | `DELETE` | `/usuarios/:id/carreras/:usuarioCarreraId/definitivo` | ✅ Bearer | — | `200`: Inscripción eliminada · `404`: No encontrada |
 
-> **Nota de eliminación definitiva:** Solo se borra el progreso y la planificación de las materias
-> **exclusivas** de la carrera eliminada. Si una materia está compartida con otra carrera **activa**
-> en la que el usuario sigue inscripto, su progreso se conserva. El soft delete
-> (`DELETE /.../:usuarioCarreraId`, sin `/definitivo`) **no borra ningún progreso**.
+> **Nota de eliminación definitiva:** La eliminación (`DELETE /.../:usuarioCarreraId/definitivo`)
+> borra la inscripción y, por cascada de FK, sus planificaciones y trayectorias. El **progreso se
+> conserva siempre**: como `progreso_materia` pertenece al `usuario` (progreso compartido entre
+> carreras), no se elimina al borrar una inscripción. El soft delete
+> (`DELETE /.../:usuarioCarreraId`, sin `/definitivo`) tampoco borra ningún progreso.
 
 ### DTOs
 
@@ -160,6 +161,7 @@ interface ActualizarProgresoDto {
   estado: 'Pendiente' | 'En Proceso' | 'Completada';
   nota?: number;               // 4-10, obligatorio si estado=Completada
   tipoAprobacion?: 'Final' | 'Promocion'; // obligatorio si estado=Completada
+  carreraId: number;           // obligatorio: identifica la carrera desde la que se actualiza (el progreso es compartido entre carreras del usuario)
 }
 ```
 

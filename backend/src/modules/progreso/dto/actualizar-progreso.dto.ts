@@ -20,4 +20,8 @@ export class ActualizarProgresoDto {
   @ValidateIf((o: ActualizarProgresoDto) => o.estado === 'Completada')
   @IsEnum(['Final', 'Promocion'])
   tipoAprobacion?: string;
+
+  @ApiProperty({ example: 1, description: 'Carrera desde la que se actualiza' })
+  @IsInt()
+  carreraId: number;
 }

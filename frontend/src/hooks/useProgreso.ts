@@ -5,7 +5,7 @@ import { useNotificationStore } from '../store/notification.store';
 import type { ActualizarProgresoDto } from '../types/progreso.types';
 import type { AxiosError } from 'axios';
 
-export function useProgreso(usuarioCarreraId: number | null) {
+export function useProgreso(usuarioCarreraId: number | null, carreraId?: number | null) {
     const [filtroEstado, setFiltroEstado] = useState<string>('todas');
     const [busqueda, setBusqueda] = useState('');
     const queryClient = useQueryClient();
@@ -21,27 +21,32 @@ export function useProgreso(usuarioCarreraId: number | null) {
         if (!usuarioCarreraId) return;
         if (isLoading || error) return;
         if (!progresos) return;
-        if (progresos.length > 0) return;
         if (initializedRef.current.has(usuarioCarreraId)) return;
 
         initializedRef.current.add(usuarioCarreraId);
 
         progresoService.inicializarProgreso(usuarioCarreraId).then(() => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
         });
     }, [usuarioCarreraId, progresos, isLoading, error, queryClient]);
 
     const addNotification = useNotificationStore((s) => s.addNotification);
 
     const mutation = useMutation({
-        mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) =>
-            progresoService.actualizarProgreso(id, data),
+        mutationFn: ({ id, data }: { id: number; data: ActualizarProgresoDto }) => {
+            if (carreraId == null) {
+                throw new Error('Carrera no disponible para guardar el progreso');
+            }
+            return progresoService.actualizarProgreso(id, data, carreraId);
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Progreso actualizado', 'success');
         },
         onError: (error: AxiosError<{ message: string }>) => {
@@ -53,9 +58,10 @@ export function useProgreso(usuarioCarreraId: number | null) {
     const deleteMutation = useMutation({
         mutationFn: (id: number) => progresoService.eliminarProgreso(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['progreso', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['progreso'] });
             queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
-            queryClient.invalidateQueries({ queryKey: ['planificacion', 'disponibles', usuarioCarreraId] });
+            queryClient.invalidateQueries({ queryKey: ['plan-estudios'] });
+            queryClient.invalidateQueries({ queryKey: ['planificacion'] });
             addNotification('Registro eliminado', 'success');
         },
         onError: () => {

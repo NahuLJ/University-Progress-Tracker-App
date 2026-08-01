@@ -106,7 +106,7 @@ se agrega a `removidas` si estaba persistida. Si el destino está ocupado, evicc
 ### Hook — `usePlanificacion(usuarioCarreraId, carreraId)`
 
 - `listarPeriodos(usuarioCarreraId)` (query, enabled si hay `usuarioCarreraId`).
-- `useProgreso(usuarioCarreraId)` → materias con estado ≠ "Completada".
+- `useProgreso(usuarioCarreraId, carreraId)` → materias con estado ≠ "Completada" (progreso compartido del usuario).
 - `obtenerMateriasDisponibles(usuarioCarreraId)` (query): lista de materias que el usuario
   puede planificar (backend filtra por correlativas cumplidas y estado ≠ Completada). Los datos
   se sincronizan al store vía `useEffect` que filtra por `horasAsignadas < cargaHoraria`.

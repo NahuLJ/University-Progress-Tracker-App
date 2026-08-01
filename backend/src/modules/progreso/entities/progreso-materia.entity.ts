@@ -6,21 +6,21 @@ import {
   JoinColumn,
   Unique,
 } from 'typeorm';
-import { UsuarioCarrera } from '../../carreras/entities/usuario-carrera.entity';
+import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Materia } from '../../materias/entities/materia.entity';
 import { EstadoMateria } from './estado-materia.entity';
 
 @Entity('progreso_materia')
-@Unique(['usuarioCarrera', 'materia'])
+@Unique(['usuario', 'materia'])
 export class ProgresoMateria {
   @PrimaryGeneratedColumn()
   progresoId: number;
 
-  @ManyToOne(() => UsuarioCarrera, (uc) => uc.progresos, {
+  @ManyToOne(() => Usuario, (u) => u.progresos, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'usuario_carrera_id' })
-  usuarioCarrera: UsuarioCarrera;
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: Usuario;
 
   @ManyToOne(() => Materia, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'materia_id' })

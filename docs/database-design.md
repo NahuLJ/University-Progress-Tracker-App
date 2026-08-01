@@ -81,7 +81,7 @@ erDiagram
 
     progreso_materia {
         int progreso_id PK
-        int usuario_carrera_id FK
+        int usuario_id FK
         int materia_id FK
         int estado_id FK
         int nota
@@ -239,12 +239,12 @@ Catálogo de estados del progreso (reemplaza un `ENUM`).
 
 ### 8. `progreso_materia`
 
-Registro del avance de un usuario en una materia dentro de una carrera.
+Registro del avance de un usuario sobre una materia. El progreso es **compartido entre carreras**: si la misma materia existe en dos carreras distintas, el estado/nota es único por usuario (no por inscripción).
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | `progreso_id` | `INT` | `PK AUTO_INCREMENT` | Identificador único |
-| `usuario_carrera_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Vinculación usuario-carrera |
+| `usuario_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Usuario dueño del progreso (compartido entre sus carreras) |
 | `materia_id` | `INT` | `FK NOT NULL ON DELETE CASCADE` | Materia evaluada |
 | `estado_id` | `INT` | `FK NOT NULL DEFAULT 1` | Pendiente/En Proceso/Completada |
 | `nota` | `INT` | `CHECK (4–10) NULL` | Nota (obligatoria si estado = Completada) |
@@ -252,7 +252,7 @@ Registro del avance de un usuario en una materia dentro de una carrera.
 | `fecha_completado` | `DATE` | `NULL` | Fecha de completado |
 | `fecha_actualizacion` | `DATETIME` | `NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE` | Última modificación |
 
-**Índice único:** `(usuario_carrera_id, materia_id)` — un progreso por materia por inscripción.
+**Índice único:** `(usuario_id, materia_id)` — un progreso por materia por usuario (independiente de la carrera).
 
 ---
 
@@ -329,21 +329,21 @@ Asigna una materia a un bloque horario y día dentro de un período.
 
 ```sql
 SELECT
-    uc.usuario_carrera_id,
+    uc.usuario_id,
     AVG(pm.nota) AS promedio_general
 FROM usuario_carrera uc
-JOIN progreso_materia pm ON pm.usuario_carrera_id = uc.usuario_carrera_id
+JOIN progreso_materia pm ON pm.usuario_id = uc.usuario_id
 JOIN estado_materia em ON em.estado_id = pm.estado_id
 WHERE em.nombre = 'Completada'
   AND pm.nota IS NOT NULL
-GROUP BY uc.usuario_carrera_id;
+GROUP BY uc.usuario_id;
 ```
 
 ### Tiempo estimado para recibirse (cuatrimestres restantes)
 
 ```sql
 SELECT
-    uc.usuario_carrera_id,
+    uc.usuario_id,
     COUNT(DISTINCT cm.carrera_materia_id) AS materias_totales,
     COUNT(DISTINCT CASE WHEN em.nombre = 'Completada' THEN cm.carrera_materia_id END) AS materias_completadas,
     COUNT(DISTINCT CASE WHEN em.nombre IS NULL OR em.nombre != 'Completada' THEN cm.carrera_materia_id END) AS materias_pendientes,
@@ -364,11 +364,11 @@ SELECT
 FROM usuario_carrera uc
 JOIN carrera_materia cm ON cm.carrera_id = uc.carrera_id
 LEFT JOIN progreso_materia pm
-    ON pm.usuario_carrera_id = uc.usuario_carrera_id
+    ON pm.usuario_id = uc.usuario_id
     AND pm.materia_id = cm.materia_id
 LEFT JOIN estado_materia em ON em.estado_id = pm.estado_id
 WHERE uc.activo = TRUE
-GROUP BY uc.usuario_carrera_id, uc.carrera_id;
+GROUP BY uc.usuario_id, uc.carrera_id;
 ```
 
 ---
