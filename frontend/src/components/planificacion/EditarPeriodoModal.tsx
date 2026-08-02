@@ -43,6 +43,8 @@ export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData, re
         }
     }, [initialData, form]);
 
+    const instanciaValue = form.watch('instancia');
+
     const onSubmit = (data: PeriodoFormData) => {
         onSuccess(data);
         onClose();
@@ -66,7 +68,8 @@ export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData, re
                     label="Instancia"
                     error={form.formState.errors.instancia?.message}
                     disabled={readonlyAnioInstancia}
-                    {...form.register('instancia')}
+                    value={instanciaValue}
+                    onChange={(e) => form.setValue('instancia', e.target.value as typeof instanciaValue)}
                 >
                     <option value="Verano">Verano</option>
                     <option value="1er Cuatrimestre">1er Cuatrimestre</option>

@@ -158,12 +158,14 @@ Formulario RHF + Zod: `anio` (2020–2030), `instancia` (Verano / 1er Cuatrimest
 `nombre` opcional. Cuando se abre para continuar una planificación (`planificacionOrigenId` presente),
 la instancia por defecto se computa según el origen: si el año avanza (origen = 2do Cuatrimestre)
 se preselecciona `Verano`; si es el mismo año, se preselecciona la primera instancia disponible
-después del origen. Al confirmar llama a `crearPeriodo`.
+después del origen. El select de instancia usa `form.watch('instancia')` para reflejar el valor seleccionado.
+Al confirmar llama a `crearPeriodo`.
 
 ### EditarPeriodoModal
 
 Formulario RHF + Zod idéntico a `NuevoPeriodoModal`, pero pre-cargado con los datos del período
-activo (`anio`, `instancia`, `nombre`). El título del modal es "Editar planificación" y el botón de
+activo (`anio`, `instancia`, `nombre`). El select de instancia usa `form.watch('instancia')` para reflejar
+el valor seleccionado. El título del modal es "Editar planificación" y el botón de
 envío dice "Guardar cambios" (variante `warning` = amarillo). Al confirmar llama a
 `actualizarPeriodo(periodoId, data)` (PATCH `/api/planificacion/periodos/:id`) y recarga el
 período activo para reflejar los cambios en el header.
@@ -181,6 +183,8 @@ Grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`) de materias que se desbloquea
 las materias actualmente seleccionadas en el calendario. Se envía `idsSeleccionados` completo al
 backend (reemplaza las de DB), por lo que refleja tanto altas como bajas de materias. Ordenada
 alfabéticamente por `nombre` via `useMemo`. Si está vacía muestra "No hay materias nuevas por desbloquear".
+Cada card muestra: nombre, código, créditos y lista de correlativas (nombre) con viñetas.
+Las correlativas completadas se muestran tachadas y en gris; las pendientes en blanco.
 
 ### Validaciones / Estados
 

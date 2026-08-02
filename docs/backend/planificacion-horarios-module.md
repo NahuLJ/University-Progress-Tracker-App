@@ -133,7 +133,7 @@ Retorna las materias que se desbloquearían (todas sus correlativas estarían cu
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ materiaId, nombre, codigo, creditos, ... }]` |
+| 200 | `[{ materiaId, nombre, codigo, creditos, correlativasCumplidas, correlativasTotal, correlativas: [{ materiaId, nombre, codigo, estado }] }]` |
 | 404 | Período no encontrado |
 
 > Comportamiento: Si se envía `materiaIds`, reemplaza **completamente** el conjunto de materias

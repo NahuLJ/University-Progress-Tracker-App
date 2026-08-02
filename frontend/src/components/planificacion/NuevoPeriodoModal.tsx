@@ -61,6 +61,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
     }, [isOpen, planificacionOrigenId, origenAnio, origenInstancia, form]);
 
     const anioSeleccionado = form.watch('anio');
+    const instanciaValue = form.watch('instancia');
 
     const instanciasDisponibles = useMemo(() => {
         if (origenAnio === undefined || origenInstancia === undefined) {
@@ -115,7 +116,8 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
                 <Select
                     label="Instancia"
                     error={form.formState.errors.instancia?.message}
-                    {...form.register('instancia')}
+                    value={instanciaValue}
+                    onChange={(e) => form.setValue('instancia', e.target.value as typeof instanciaValue)}
                 >
                     {instanciasDisponibles.map((i) => (
                         <option key={i} value={i}>{i}</option>

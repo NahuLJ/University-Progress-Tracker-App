@@ -66,10 +66,21 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
                     <div key={m.materiaId} className="p-3 border border-base-600 rounded-lg">
                         <div className="font-medium text-slate-100">{m.nombre}</div>
                         <div className="text-sm text-slate-400">{m.codigo} • {m.creditos} créditos</div>
-                        <div className="text-xs text-slate-500 mt-1">
-                            {!m.correlativas || m.correlativas.length === 0
-                                ? 'Sin correlativas'
-                                : `${m.correlativas.filter((c: { estado: string }) => c.estado !== 'Completada').length} correlativas faltantes`}
+                        <div className="text-xs mt-1">
+                            {!m.correlativas || m.correlativas.length === 0 ? (
+                                <span className="text-slate-400">Sin correlativas</span>
+                            ) : (
+                                <>
+                                    <div className="font-medium text-slate-200 mb-1">Correlativas:</div>
+                                    <ul className="list-disc list-inside space-y-0.5">
+                                        {m.correlativas.map((c: { nombre: string; estado: string }) => (
+                                            <li key={c.nombre} className="text-slate-100">
+                                                {c.nombre}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
                         </div>
                     </div>
                 ))}

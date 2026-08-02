@@ -389,7 +389,22 @@ export class PlanificacionService {
   async obtenerMateriasDesbloqueables(
     periodoId: number,
     materiaIds?: number[],
-  ): Promise<Materia[]> {
+  ): Promise<
+    {
+      materiaId: number;
+      nombre: string;
+      codigo: string;
+      creditos: number;
+      correlativasCumplidas: number;
+      correlativasTotal: number;
+      correlativas: {
+        materiaId: number;
+        nombre: string;
+        codigo: string;
+        estado: 'Pendiente' | 'En Proceso' | 'Completada';
+      }[];
+    }[]
+  > {
     const periodo = await this.periodoRepo.findOne({
       where: { periodoId },
       relations: { usuarioCarrera: { carrera: true, usuario: true } },
@@ -459,7 +474,20 @@ export class PlanificacionService {
       },
     });
 
-    const desbloqueables: Materia[] = [];
+    const resultado: {
+      materiaId: number;
+      nombre: string;
+      codigo: string;
+      creditos: number;
+      correlativasCumplidas: number;
+      correlativasTotal: number;
+      correlativas: {
+        materiaId: number;
+        nombre: string;
+        codigo: string;
+        estado: 'Pendiente' | 'En Proceso' | 'Completada';
+      }[];
+    }[] = [];
 
     for (const cm of planEstudios) {
       const materia = cm.materia;
@@ -488,11 +516,40 @@ export class PlanificacionService {
       );
 
       if (todasCumplidas && !yaDisponibleSinPlanificar) {
-        desbloqueables.push(materia);
+        resultado.push({
+          materiaId: materia.materiaId,
+          nombre: materia.nombre,
+          codigo: materia.codigo,
+          creditos: materia.creditos,
+          correlativasCumplidas: correlativas.filter((c) =>
+            idsCompletadas.has(c.materiaCorrelativa.materiaId),
+          ).length,
+          correlativasTotal: correlativas.length,
+          correlativas: correlativas.map((c) => {
+            const cm = c.materiaCorrelativa;
+            let estado: 'Pendiente' | 'En Proceso' | 'Completada';
+            if (idsCompletadas.has(cm.materiaId)) {
+              estado = 'Completada';
+            } else if (
+              idsPlanificadas.has(cm.materiaId) ||
+              idsPlanificadasPrevias.has(cm.materiaId)
+            ) {
+              estado = 'En Proceso';
+            } else {
+              estado = 'Pendiente';
+            }
+            return {
+              materiaId: cm.materiaId,
+              nombre: cm.nombre,
+              codigo: cm.codigo,
+              estado,
+            };
+          }),
+        });
       }
     }
 
-    return desbloqueables;
+    return resultado;
   }
 
   async obtenerImpactoEliminacion(
