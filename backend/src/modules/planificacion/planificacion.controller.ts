@@ -92,7 +92,7 @@ export class PlanificacionController {
   @Get('disponibles')
   @ApiOperation({
     summary:
-      'Materias disponibles para planificar. Si se proveen trayectoriaId y periodoId, se incluyen materias desbloqueadas por planificaciones previas.',
+      'Materias disponibles para planificar. Si se proveen trayectoriaId y periodoId, se incluyen materias desbloqueadas por planificaciones previas y se excluyen las ya ubicadas en cualquier período de la trayectoria.',
   })
   @ApiQuery({ name: 'usuarioCarreraId', required: true })
   @ApiQuery({ name: 'trayectoriaId', required: false })

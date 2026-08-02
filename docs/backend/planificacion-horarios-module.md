@@ -115,7 +115,7 @@ Asigna una materia a un bloque horario y día específico dentro del período.
 
 Materias que el usuario puede planificar (no completadas, con correlativas cumplidas). Devueltas ordenadas alfabéticamente por `nombre`.
 
-Cuando se especifican `trayectoriaId` y `periodoId`, se activa la lógica de **cadena de ancestros**: las materias planificadas en la línea de ancestros del período actual (vía `planificacionOrigenId`) se excluyen de disponibles y cuentan como cumplidas para correlativas. Las materias en forks hermanos no se ven afectadas.
+Cuando se especifican `trayectoriaId` y `periodoId`, se activa la lógica de **cadena completa**: se recorren tanto los **ancestros** (vía `planificacionOrigenId` hasta la raíz) como los **descendientes** (recursivo por hijos) del período actual. Las materias planificadas en cualquiera de esos períodos de la **misma cadena** se excluyen de disponibles (ya están ubicadas en la línea temporal del camino, antes o después). Solo los períodos **anteriores** (ancestros) cuentan como cumplidas para correlativas. Las bifurcaciones son cadenas paralelas independientes: las materias planificadas en una rama hermana no se excluyen.
 
 | Código | Descripción |
 |---|---|
@@ -124,7 +124,7 @@ Cuando se especifican `trayectoriaId` y `periodoId`, se activa la lógica de **c
 
 ### GET /api/planificacion/periodos/:id/materias-desbloqueables
 
-Retorna las materias que se desbloquearían (todas sus correlativas estarían cumplidas) si el usuario completara todas las materias indicadas. Devueltas ordenadas alfabéticamente por `nombre`. Si el período no existe retorna `[]` (no 404).
+Retorna las materias que se desbloquearían con las materias de **esta** planificación: todas sus correlativas estarían cumplidas y **al menos una de ellas está planificada en el período actual**. Devueltas ordenadas alfabéticamente por `nombre`. Si el período no existe retorna `[]` (no 404).
 
 | Parámetro | Tipo | Descripción |
 |---|---|---|
@@ -140,6 +140,14 @@ Retorna las materias que se desbloquearían (todas sus correlativas estarían cu
 > planificadas (ignora las guardadas en DB). Si no se envía, usa las materias persistidas en DB.
 > Esto permite al frontend calcular desbloqueables según la selección actual del calendario,
 > incluso cuando se sacan materias ya guardadas.
+
+> Si el período pertenece a una trayectoria, se excluyen las materias ya planificadas en períodos
+> **anteriores** de la misma cadena (ancestros). Las materias planificadas en planificaciones
+> **futuras** (descendientes) NO se excluyen: las materias a desbloquear siempre se muestran.
+>
+> Solo se devuelven materias cuyo desbloqueo depende de la planificación actual: todas sus
+> correlativas cumplidas y **al menos una correlativa planificada en el período actual**. Si sus
+> correlativas ya estaban cumplidas sin esta planificación, la materia no aparece en la lista.
 
 ### DELETE /api/planificacion/materias/:id
 
@@ -486,7 +494,8 @@ export class MateriaPlanificada {
 |---|---|
 | No puede haber dos materias en el mismo bloque, día y período | Índice único + validación explícita en el Service |
 | Una materia puede ocupar múltiples bloques en distintos días, pero no exceder su `cargaHoraria` semanal | Backend: `Math.ceil(cargaHoraria / 2)` bloques máximo. Frontend valida `horasAsignadas >= cargaHoraria` antes de impedir agregar otro bloque (permite bloques parciales para cargas horarias impares) |
-| No se puede planificar una materia si no se cumplen sus correlativas | Validación contra `obtenerMateriasDisponibles` (misma lógica que el listado del frontend; considera completadas + planificadas previas en la cadena de ancestros de la trayectoria) |
+| No se puede planificar una materia si no se cumplen sus correlativas | Validación contra `obtenerMateriasDisponibles` (misma lógica que el listado del frontend; considera completadas + planificadas previas de la misma cadena de la trayectoria) |
+| Una materia ya planificada en otro período de la misma cadena de la trayectoria (antes o después) no puede volver a planificarse | `obtenerMateriasDisponibles` excluye ancestros y descendientes vía `planificacionOrigenId`; las ramas paralelas (forks) son independientes |
 | Las materias que se desbloquearían al completar la planificación se calculan en `GET /periodos/:id/materias-desbloqueables` | Endpoint dedicado que compara planificadas + completadas vs. correlativas del plan |
 | Solo existen 7 bloques fijos: 08-10, 10-12, 12-14, 14-16, 16-18, 18-20, 20-22 | Catálogo predefinido en base de datos (seed) |
 | Los días disponibles son Lunes a Sábado | ENUM en la entidad |

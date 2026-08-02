@@ -144,17 +144,17 @@ export class CrearPeriodoDto {
 - Sin `planificacionOrigenId`: el nuevo período debe ser posterior a **todos** los existentes en la trayectoria.
 - Con `planificacionOrigenId`: el nuevo período solo debe ser posterior al período origen (permite bifurcaciones aunque existan otros períodos en la misma posición).
 
-### Materias disponibles en fork — cadena de ancestros
+### Materias disponibles en fork — cadena completa
 
-`obtenerMateriasDisponibles()` (en `PlanificacionService`) calcula las materias disponibles para un período dentro de una trayectoria. En lugar de considerar **todos** los periodos de la trayectoria, recorre solo la **cadena de ancestros** vía `planificacionOrigenId`:
+`obtenerMateriasDisponibles()` (en `PlanificacionService`) calcula las materias disponibles para un período dentro de una trayectoria. En lugar de considerar **todos** los periodos de la trayectoria, recorre solo la **cadena completa** que contiene al período actual vía `planificacionOrigenId`:
 
-- Se construye un `Map<periodoId, PeriodoPlanificacion>` con todos los periodos de la trayectoria.
-- Se parte del `periodoActual` y se sube por `planificacionOrigenId` hasta la raíz.
-- Solo las materias de los periodos ancestros se agregan a `idsPlanificadasEnTrayectoria` (excluidas de disponibles) y a `idsPlanificadasPrevias` (cuentan como cumplidas para correlativas).
+- Se construye un `Map<periodoId, PeriodoPlanificacion>` y un mapa `hijosPorOrigen` con todos los periodos de la trayectoria.
+- Se sube por `planificacionOrigenId` hasta la raíz (**ancestros**): sus materias van a `idsPlanificadasEnTrayectoria` (excluidas de disponibles) y a `idsPlanificadasPrevias` (cuentan como cumplidas para correlativas).
+- Se baja recursivamente por los hijos (`hijosPorOrigen`) (**descendientes**): sus materias van solo a `idsPlanificadasEnTrayectoria` — ya están ubicadas en la línea temporal del camino y no deben volver a planificarse, pero no desbloquean correlativas.
 
-Esto asegura que cada **fork** tenga su propia lista independiente de materias disponibles. Si B y C son hijos de A (mismo año/cuatrimestre), las materias planificadas en B no se excluyen de la lista de C, y viceversa.
+Esto asegura que cada **fork** tenga su propia lista independiente de materias disponibles. Si B y C son hijos de A, las materias planificadas en B no se excluyen de la lista de C, y viceversa; pero si `a` está planificada en B, no aparece en A ni en ninguna planificación de la cadena A→B.
 
-El mismo patrón se aplica en `obtenerMateriasDesbloqueables()`.
+En `obtenerMateriasDesbloqueables()` el patrón es distinto: solo se recorren los **ancestros** (períodos anteriores) para excluir materias ya planificadas y considerarlas cumplidas para correlativas. Las materias planificadas en planificaciones **futuras** (descendientes) no se excluyen: la lista de materias a desbloquear siempre se muestra completa. Además, solo se listan materias cuyo desbloqueo depende de la planificación actual (todas sus correlativas cumplidas y **al menos una correlativa planificada en el período actual**).
 
 ### Listar períodos — filtro independientes
 

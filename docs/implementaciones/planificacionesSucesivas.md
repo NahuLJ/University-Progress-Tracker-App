@@ -102,10 +102,11 @@ Nuevo parámetro opcional `trayectoriaId?: number`. Cuando se especifica:
 1. Obtener las materias normalmente disponibles (correlativas ya cumplidas en BD).
 2. Si `periodoId` también está presente:
    - Obtener TODAS las planificaciones de la trayectoria.
-   - Construir un `Map<periodoId, PeriodoPlanificacion>` para lookup rápido.
-   - Recorrer la **cadena de ancestros** del período actual vía `planificacionOrigenId`:
-     - Por cada ancestro, agregar sus materias a `idsPlanificadasEnTrayectoria` (excluyen de disponibles) y a `idsPlanificadasPrevias` (considerarlas cumplidas para correlativas).
-   - Las materias en forks hermanos (misma posición cronológica, distinto `planificacionOrigenId`) **no se excluyen** de disponibles.
+   - Construir un `Map<periodoId, PeriodoPlanificacion>` y un mapa `hijosPorOrigen` para lookup rápido.
+   - Recorrer la **cadena completa** del período actual vía `planificacionOrigenId`:
+     - **Ancestros** (hacia la raíz): sus materias van a `idsPlanificadasEnTrayectoria` (excluyen de disponibles) y a `idsPlanificadasPrevias` (considerarlas cumplidas para correlativas).
+     - **Descendientes** (recursivo por `hijosPorOrigen`): sus materias van solo a `idsPlanificadasEnTrayectoria` — ya están ubicadas en la línea temporal del camino y no deben volver a planificarse.
+   - Las materias en forks hermanos (cadenas paralelas, distinto `planificacionOrigenId`) **no se excluyen** de disponibles.
 3. Filtrar materias: excluir las que estén en `idsPlanificadasEnTrayectoria`, mantener las que solo estén en `idsPlanificadasPrevias` (desbloqueadas por planificaciones previas).
 4. Calcular correlativas como si las materias en `idsPlanificadasPrevias` estuvieran completadas (en memoria).
 5. Unir ambos conjuntos: disponibles actuales + las que se desbloquean con las planificaciones anteriores.
@@ -116,12 +117,14 @@ GET /planificacion/disponibles?usuarioCarreraId=:id&trayectoriaId=:tid&periodoId
 ```
 
 - `trayectoriaId`: opcional. Si presente, se calculan disponibles sucesivos.
-- `periodoId`: obligatorio si `trayectoriaId` está presente. Es el periodo actual que se está editando. Se recorren los ancestros vía `planificacionOrigenId` para filtrar/excluir materias planificadas y considerar las previas para correlativas.
+- `periodoId`: obligatorio si `trayectoriaId` está presente. Es el periodo actual que se está editando. Se recorre la cadena completa (ancestros y descendientes) vía `planificacionOrigenId` para filtrar/excluir materias planificadas; solo los ancestros se consideran cumplidos para correlativas.
 
 #### 3.2.3 `obtenerMateriasDesbloqueables()` modificado
 
 Cuando se consulta desde una planificación dentro de una trayectoria:
-- Incluir en la base de correlativas cumplidas tanto las materias completadas reales como las planificadas en periodos anteriores de la misma trayectoria.
+- Incluir en la base de correlativas cumplidas tanto las materias completadas reales como las planificadas en periodos **anteriores de la misma cadena**.
+- Excluir las materias ya planificadas en períodos **anteriores** (ancestros). Las materias planificadas en planificaciones **futuras** (descendientes) no se excluyen: las materias a desbloquear siempre se muestran.
+- Solo se muestran materias cuyo desbloqueo depende de la planificación actual: todas sus correlativas cumplidas y **al menos una correlativa planificada en el período actual**. Si las correlativas ya estaban cumplidas sin esta planificación, la materia no aparece.
 
 #### 3.2.4 Nuevo endpoint: árbol de bifurcaciones
 
@@ -303,15 +306,17 @@ Dada una trayectoria `T` y una planificación `P_actual` dentro de ella:
 
 1. `completadas_reales` ← materias con `estado_materia_id = 3` (Completada) en `progreso_materia` para el `usuario_carrera_id`.
 2. `ancestros` ← periodos en la **cadena de ancestros** de `P_actual` recorriendo `planificacionOrigenId` hasta la raíz.
-3. `planificadas_previas` ← todos los `materia_id` únicos de `materia_planificada` en `ancestros`.
-4. `ids_cumplidos` ← `completadas_reales ∪ planificadas_previas`.
-5. Para cada materia `M` del plan de estudios de la carrera:
-   - Si `M` está en `completadas_reales` **o** en `planificadas_previas` → excluir (ya fue planificada).
+3. `descendientes` ← periodos en la **cadena de descendientes** de `P_actual` recorriendo recursivamente los hijos (`planificacionOrigenId = P_actual.id`, luego sus hijos, etc.).
+4. `planificadas_previas` ← todos los `materia_id` únicos de `materia_planificada` en `ancestros` (desbloquean correlativas).
+5. `en_trayectoria` ← `planificadas_previas ∪ materia_id` de `materia_planificada` en `descendientes` (excluyen de disponibles).
+6. `ids_cumplidos` ← `completadas_reales ∪ planificadas_previas`.
+7. Para cada materia `M` del plan de estudios de la carrera:
+   - Si `M` está en `en_trayectoria` → excluir (ya está ubicada en la línea temporal del camino, antes o después).
    - Obtener correlativas de `M`.
    - Si todas las correlativas están en `ids_cumplidos` → incluir como disponible.
-6. El resultado es la unión de: disponibles actuales (correlativas reales cumplidas) + materias que se desbloquean gracias a las planificaciones previas.
+8. El resultado es la unión de: disponibles actuales (correlativas reales cumplidas) + materias que se desbloquean gracias a las planificaciones previas.
 
-> **Importante:** Solo se recorren los **ancestros**, no todos los periodos de la trayectoria. Esto asegura que en bifurcaciones (A → {B, C}), las materias planificadas en B no se excluyan de las disponibles en C, y viceversa. Cada fork tiene su propia línea temporal independiente.
+> **Importante:** Se recorre la **cadena completa** (ancestros y descendientes), no todos los periodos de la trayectoria. Esto asegura que en bifurcaciones (A → {B, C}), las materias planificadas en B no se excluyan de las disponibles en C, y viceversa — cada fork tiene su propia línea temporal independiente. Pero una materia planificada en B sí se excluye de A (ancestro) y de cualquier descendiente de B.
 
 ### 5.2 Validación de orden cronológico
 
@@ -488,10 +493,10 @@ ALTER TABLE periodo_planificacion
 | Estado `Planificado` (id=4) | Se menciona como necesario | No implementado. El cálculo de disponibles trayectoria se hace consultando `materia_planificada` de periodos previos, sin persistir estado adicional. |
 | Eliminación en cascada de periodos | `ON DELETE CASCADE` en `planificacion_origen_id` (migración SQL) | Se maneja manualmente vía `eliminarDescendientes` en `planificacion.service.ts`. La entity no declara `onDelete` explícito. |
 | Validación de correlativas al planificar | Llama a `validarCorrelativas` internamente | `planificarMateria` ahora usa `obtenerMateriasDisponibles` para validar (misma lógica que el listado del frontend), garantizando consistencia absoluta entre lo que se muestra y lo que se acepta. |
-| Cálculo de materias disponibles en forks | Consideraba todos los periodos de la trayectoria planos | Usa **cadena de ancestros** vía `planificacionOrigenId`. Cada fork es independiente: materias en B no afectan disponibles en C. Aplica también en `obtenerMateriasDesbloqueables`. |
+| Cálculo de materias disponibles en forks | Consideraba todos los periodos de la trayectoria planos | `obtenerMateriasDisponibles` usa la **cadena completa** vía `planificacionOrigenId`: ancestros + descendientes se excluyen de disponibles (solo los ancestros desbloquean correlativas). `obtenerMateriasDesbloqueables` solo excluye ancestros, siempre muestra las materias a desbloquear aunque estén planificadas en planificaciones futuras, y lista únicamente las que dependen de la planificación actual (todas sus correlativas cumplidas y al menos una correlativa planificada en el período). Cada fork es independiente: materias en B no afectan disponibles en C. |
 | Botón "+ Nueva planificación" en TrayectoriaPage | Presente | Eliminado. Solo se crean periodos como continuación de otro (botón "Continuar") o como el primero (EmptyState). |
 | Invalidación de árbol al eliminar periodo | Solo `['trayectoria']`, `['trayectorias']`, `['planificacion']` | Se agregó `['trayectoria-arbol']` para refrescar el árbol de bifurcaciones. |
 | Relación `materia` en query de progresos para `validarCorrelativas` | No se cargaba explícitamente | Se agregó `materia: true` en las relations de la query de progresos. |
 | Método `eliminarPeriodo` | Solo eliminaba materias planificadas y el periodo | Ahora antes de eliminar ejecuta `eliminarDescendientes` para eliminar recursivamente todos los hijos y sus materias. |
-| `obtenerPlanificadasPrevias` | Escaneo plano cronológico de todos los periodos | Usa **cadena de ancestros** vía `planificacionOrigenId` (consistente con `obtenerMateriasDisponibles`). |
+| `obtenerPlanificadasPrevias` | Escaneo plano cronológico de todos los periodos | Usa la **cadena de ancestros** vía `planificacionOrigenId` (a diferencia de `obtenerMateriasDisponibles`, que recorre la cadena completa en ambas direcciones). Solo interesan los períodos anteriores, porque el análisis de impacto en cascada mira lo que se desbloqueó hacia atrás. |
 | Sección 5.6 (validación al editar con hijos) | — | Implementado: backend + frontend (modal `ConfirmarEliminacionModal` solo con cascade, materias completadas bloqueadas, elimina todos los bloques). Se eliminó `verificarInconsistencias` (sin frontend). |

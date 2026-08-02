@@ -334,10 +334,18 @@ export class PlanificacionService {
         });
 
         const periodosMap = new Map<number, PeriodoPlanificacion>();
+        const hijosPorOrigen = new Map<number, PeriodoPlanificacion[]>();
         for (const p of periodosEnTrayectoria) {
           periodosMap.set(p.periodoId, p);
+          if (p.planificacionOrigenId != null) {
+            const hijos = hijosPorOrigen.get(p.planificacionOrigenId) ?? [];
+            hijos.push(p);
+            hijosPorOrigen.set(p.planificacionOrigenId, hijos);
+          }
         }
 
+        // Períodos ANTERIORES de la misma cadena: desbloquean correlativas y
+        // no deben volver a planificarse.
         let current: PeriodoPlanificacion | null = periodoActual;
         while (current.planificacionOrigenId) {
           const ancestro = periodosMap.get(current.planificacionOrigenId);
@@ -347,6 +355,19 @@ export class PlanificacionService {
             idsPlanificadasPrevias.add(mp.materia.materiaId);
           }
           current = ancestro;
+        }
+
+        // Períodos POSTERIORES de la misma cadena: no desbloquean correlativas,
+        // pero la materia ya está ubicada en la línea temporal del camino y no
+        // debe volver a planificarse. Las bifurcaciones son cadenas paralelas
+        // independientes y no se ven afectadas.
+        const pendientes = [...(hijosPorOrigen.get(periodoActual.periodoId) ?? [])];
+        while (pendientes.length > 0) {
+          const hijo = pendientes.pop()!;
+          for (const mp of hijo.materiasPlanificadas) {
+            idsPlanificadasEnTrayectoria.add(mp.materia.materiaId);
+          }
+          pendientes.push(...(hijosPorOrigen.get(hijo.periodoId) ?? []));
         }
       }
     }
@@ -448,6 +469,8 @@ export class PlanificacionService {
         periodosMap.set(p.periodoId, p);
       }
 
+      // Períodos ANTERIORES de la misma cadena: desbloquean correlativas y no
+      // deben ofrecerse como desbloqueables.
       let current: PeriodoPlanificacion | null = periodo;
       while (current.planificacionOrigenId) {
         const ancestro = periodosMap.get(current.planificacionOrigenId);
@@ -511,11 +534,11 @@ export class PlanificacionService {
       const todasCumplidas = correlativas.every((c) =>
         idsHipoteticamenteCompletadas.has(c.materiaCorrelativa.materiaId),
       );
-      const yaDisponibleSinPlanificar = correlativas.every((c) =>
-        idsCompletadas.has(c.materiaCorrelativa.materiaId),
+      const desbloqueadaPorEstaPlanificacion = correlativas.some((c) =>
+        idsPlanificadas.has(c.materiaCorrelativa.materiaId),
       );
 
-      if (todasCumplidas && !yaDisponibleSinPlanificar) {
+      if (todasCumplidas && desbloqueadaPorEstaPlanificacion) {
         resultado.push({
           materiaId: materia.materiaId,
           nombre: materia.nombre,

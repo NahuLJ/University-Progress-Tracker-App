@@ -179,8 +179,8 @@ interface ActualizarProgresoDto {
 | `GET` | `/planificacion/bloques` | ✅ Bearer | — | — | `200`: Bloques[] (7 bloques 08-10 a 20-22) |
 | `GET` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | — | `200`: Materias planificadas[] (vacío si no existe el período) |
 | `POST` | `/planificacion/periodos/:id/materias` | ✅ Bearer | — | `PlanificarMateriaDto` | `201`: Planificada · `400`: Conflicto / Correlativas pendientes · `404`: No encontrado |
-| `GET` | `/planificacion/disponibles` | ✅ Bearer | `usuarioCarreraId`, `trayectoriaId` (opcional), `periodoId` (opcional) | — | `200`: Materias disponibles[] (incluye desbloqueadas por planificaciones previas si hay trayectoria) |
-| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs) | — | `200`: Materias[] que se desbloquearían (vacío si no existe el período) |
+| `GET` | `/planificacion/disponibles` | ✅ Bearer | `usuarioCarreraId`, `trayectoriaId` (opcional), `periodoId` (opcional) | — | `200`: Materias disponibles[] (incluye desbloqueadas por planificaciones previas y excluye las ya ubicadas en la misma cadena de la trayectoria) |
+| `GET` | `/planificacion/periodos/:id/materias-desbloqueables` | ✅ Bearer | `materiaIds` (comma-separated IDs) | — | `200`: Materias[] que se desbloquearían con la planificación actual (al menos una correlativa planificada en el período; vacío si no existe el período) |
 | `DELETE` | `/planificacion/materias/:id` | ✅ Bearer | `modo`: `simple` \| `cascade` | Opcional. `simple` (default): elimina solo esa materia. `cascade`: elimina todos los bloques + dependientes en hijos | `200`: Removida · `404`: No encontrada |
 
 ### DTOs
