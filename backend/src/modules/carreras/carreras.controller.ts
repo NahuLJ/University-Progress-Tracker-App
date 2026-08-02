@@ -22,6 +22,7 @@ import { CarrerasService } from './carreras.service';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
+import { ActualizarMateriaPlanDto } from './dto/actualizar-materia-plan.dto';
 import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
 
 @ApiTags('Carreras')
@@ -125,6 +126,33 @@ export class CarrerasController {
     @Body() dto: AgregarMateriaPlanDto,
   ) {
     return this.carrerasService.agregarMateriaAlPlan(id, dto);
+  }
+
+  @Put(':id/materias/:carreraMateriaId')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Actualizar la posición de una materia en el plan de estudios',
+  })
+  @ApiResponse({ status: 200, description: 'Materia actualizada en el plan' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Error de validación (orden duplicado, correlativas inválidas, etc.)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Carrera o registro del plan no encontrado',
+  })
+  async actualizarMateriaEnPlan(
+    @Param('id') id: number,
+    @Param('carreraMateriaId') carreraMateriaId: number,
+    @Body() dto: ActualizarMateriaPlanDto,
+  ) {
+    return this.carrerasService.actualizarMateriaEnPlan(
+      id,
+      carreraMateriaId,
+      dto,
+    );
   }
 
   @Delete(':id/materias/:carreraMateriaId')

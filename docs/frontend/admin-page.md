@@ -26,7 +26,9 @@ components/admin/
 ├── CrearCarreraModal.tsx       # formulario CrearCarreraDto (RHF + Zod)
 ├── CrearMateriaModal.tsx       # formulario CrearMateriaDto (RHF + Zod)
 ├── PlanEstudiosEditor.tsx      # gestión de plan de estudios: lista con chip de código,
-│                                 # modal para agregar materia, modal de confirmación para quitar
+│                                 # modal para agregar materia, modal de edición de posición
+│                                 # (año/cuatrimestre/nro), modal de confirmación para quitar,
+│                                 # modal de errores de validación
 ├── CorrelativasEditor.tsx      # gestión de correlativas: selector de materia con chip,
 │                                 # modal para asignar correlativa, modal de confirmación para eliminar
 ├── CarreraEditTabs.tsx         # tabs: Datos generales | Plan de estudios | Correlativas
@@ -42,7 +44,7 @@ hooks/
 
 services/carreras.service.ts    # carrerasService.* (admin) + materiasAdminService.*
 types/
-├── carrera.types.ts            # CrearCarreraDto, AgregarMateriaPlanDto, PlanEstudios, MateriaPlanEstudios
+├── carrera.types.ts            # CrearCarreraDto, AgregarMateriaPlanDto, ActualizarMateriaPlanDto, PlanEstudios, MateriaPlanEstudios
 └── materia.types.ts            # CrearMateriaDto, AsignarCorrelativaDto, MateriaDetalle
 ```
 
@@ -79,6 +81,7 @@ MainLayout
 | `GET` | `/api/materias` | `materiasAdminService.listarMaterias` |
 | `GET` | `/api/materias/:id` | `materiasAdminService.obtenerMateria` |
 | `POST` | `/api/carreras/:id/materias` | `carrerasService.agregarMateriaAlPlan` |
+| `PUT` | `/api/carreras/:id/materias/:carreraMateriaId` | `carrerasService.actualizarMateriaEnPlan` |
 | `POST` | `/api/materias/:id/correlativas` | `materiasAdminService.asignarCorrelativa` |
 | `DELETE` | `/api/materias/:id/correlativas/:correlativaId` | `materiasAdminService.eliminarCorrelativa` |
 | `GET` | `/api/carreras/:id/plan-estudios` | `carrerasService.obtenerPlanEstudios` (para el árbol del plan) |
@@ -100,13 +103,22 @@ El campo descripción es un `<textarea>` auto-creciente con contador de caracter
 
 ### PlanEstudiosEditor (en CarreraEditPage, tab "Plan de estudios")
 1. **Lista de materias** en el plan organizada por Año → Cuatrimestre. Cada materia se muestra como
-   `{nro} - {nombre}` con `<Badge variant="info">` (chip neon-cyan) para el código. Botón "Quitar"
-   abre modal de confirmación con advertencia de irreversibilidad.
+   `{nro} - {nombre}` con `<Badge variant="info">` (chip neon-cyan) para el código (no muestra
+   "A/C" porque ya está agrupada por año y cuatrimestre). Botones de acción por fila: lápiz
+   (editar posición) y "Quitar" (modal de confirmación con advertencia de irreversibilidad).
 2. **Botón "Agregar materia"** abre un `<Modal>` con:
    - `Select` del catálogo de materias disponibles (dropdown personalizado con scroll, max 192px)
-   - Campos `Año`, `Cuatrimestre`, `Nro` (input numéricos)
+   - Campos `Año`, `Cuatrimestre`, `Nro` (input numéricos con `min`/`max`)
    - Botones Cancelar / Agregar al plan
-3. Al agregar exitosamente, se invalidan las queries de plan, progreso y planificación.
+3. **Edición de posición (lápiz)** abre un `<Modal>` "Editar posición de la materia" con la materia
+   seleccionada y campos `Año`, `Cuatrimestre`, `Nro` **precargados** con sus valores actuales y
+   botones Cancelar / Guardar. Al guardar llama `carrerasService.actualizarMateriaEnPlan`.
+4. **Validación de números (cliente)**: antes de enviar (agregar y editar) se valida que `año` y
+   `nro` sean enteros > 0 y que `cuatrimestre` sea 1 o 2. Si falla, se muestra una notificación de
+   error y no se envía la petición.
+5. **Modal de errores de validación**: si el backend rechaza la edición (orden duplicado, correlativas
+   en periodos inválidos), se abre un modal que lista cada error con viñetas y botón "Cerrar".
+6. Al agregar/editar exitosamente, se invalidan las queries de plan, progreso y planificación.
 
 ### CorrelativasEditor (en CarreraEditPage, tab "Correlativas")
 1. **Seleccionar materia** — `Select` del plan. Al seleccionar, muestra las correlativas actuales
@@ -139,7 +151,8 @@ El componente `Input` (`components/ui/Input.tsx`) soporta un prop `textarea` que
 |---|---|
 | `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (coerce a number) |
 | `CrearMateriaDto` | nombre ≤200, codigo ≤20, cargaHoraria ≥1 (int), creditos ≥1 (int) |
-| `AgregarMateriaPlanDto` | materiaId, anio ≥1, cuatrimestre ≥1, orden ≥1 |
+| `AgregarMateriaPlanDto` | materiaId, anio ≥1, cuatrimestre 1–2, orden ≥1 |
+| `ActualizarMateriaPlanDto` | anio ≥1, cuatrimestre 1–2, orden ≥1 (al menos un campo) |
 | `AsignarCorrelativaDto` | materiaCorrelativaId entero, distinto de la materia origen |
 
 ---

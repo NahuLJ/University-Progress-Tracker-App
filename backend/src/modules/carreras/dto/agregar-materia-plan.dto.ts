@@ -1,4 +1,4 @@
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AgregarMateriaPlanDto {
@@ -14,6 +14,7 @@ export class AgregarMateriaPlanDto {
   @ApiProperty({ example: 1 })
   @IsInt()
   @Min(1)
+  @Max(2)
   cuatrimestre: number;
 
   @ApiProperty({ example: 3 })

@@ -155,7 +155,7 @@ frontend/
     │   ├── carreras.service.ts   # carreras del usuario (con y sin paginación), activas (paginado),
     │   │                        #   inactivas (paginado), disponibles (paginado), plan, inscribir,
     │   │                        #   desinscribir, reactivar, eliminar definitivamente
-    │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan
+    │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan, actualizarMateriaEnPlan
     │   │                        #   + materiasAdminService: listar, obtenerMateria, crear,
     │   │                        #     asignarCorrelativa, eliminarCorrelativa
     │   ├── materias.service.ts   # (eliminado) → reemplazado por materiasAdminService en carreras.service.ts

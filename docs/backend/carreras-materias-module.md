@@ -104,8 +104,11 @@ Todos los campos son opcionales, pero al menos uno debe ser proporcionado. Los c
 | 200 | Materia actualizada en el plan |
 | 400 | El orden ya existe en otra materia de esta carrera |
 | 400 | Alguna correlativa no pertenece a un periodo anterior al nuevo año/cuatrimestre |
+| 400 | Alguna materia que depende de esta como correlativa no pertenece a un periodo posterior al nuevo año/cuatrimestre |
 | 400 | Al menos un campo (anio, cuatrimestre u orden) debe ser proporcionado |
 | 404 | Carrera o registro del plan no encontrado |
+
+> **Regla de correlativas en ambos sentidos:** al mover una materia, sus **correlativas** (`correlativasRequeridas`) deben estar en periodos estrictamente **anteriores**, y las materias que la **requieren como correlativa** (`esCorrelativaDe`) deben estar en periodos estrictamente **posteriores**. La misma validación de correlativas en periodos anteriores se aplica al agregar una materia (`POST /api/carreras/:id/materias`).
 
 ### GET /api/materias
 
@@ -206,7 +209,7 @@ export class CrearCarreraDto {
 ### AgregarMateriaPlanDto
 
 ```typescript
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AgregarMateriaPlanDto {
@@ -222,6 +225,7 @@ export class AgregarMateriaPlanDto {
     @ApiProperty({ example: 1 })
     @IsInt()
     @Min(1)
+    @Max(2)
     cuatrimestre: number;
 
     @ApiProperty({ example: 3 })
@@ -230,6 +234,34 @@ export class AgregarMateriaPlanDto {
     orden: number;
 }
 ```
+
+### ActualizarMateriaPlanDto
+
+```typescript
+import { IsInt, Min, Max } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ActualizarMateriaPlanDto {
+    @ApiProperty({ example: 2, description: 'Nuevo año (opcional, al menos un campo requerido)' })
+    @IsInt()
+    @Min(1)
+    @Max(10)
+    anio?: number;
+
+    @ApiProperty({ example: 1, description: 'Nuevo cuatrimestre (opcional, al menos un campo requerido)' })
+    @IsInt()
+    @Min(1)
+    @Max(2)
+    cuatrimestre?: number;
+
+    @ApiProperty({ example: 3, description: 'Nuevo orden/nro dentro del cuatrimestre (opcional, al menos un campo requerido)' })
+    @IsInt()
+    @Min(1)
+    orden?: number;
+}
+```
+
+> Al menos uno de los tres campos debe ser proporcionado. Esta validación se implementa en el service (los campos no proporcionados conservan su valor actual).
 
 ### CrearMateriaDto
 

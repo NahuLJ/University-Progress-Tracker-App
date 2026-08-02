@@ -23,6 +23,8 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 | `POST` | `/api/carreras` | `CrearCarreraDto` | `201` carrera creada |
 | `POST` | `/api/materias` | `CrearMateriaDto` | `201` materia creada |
 | `POST` | `/api/carreras/:id/materias` | `AgregarMateriaPlanDto` | `201` materia en plan |
+| `PUT` | `/api/carreras/:id/materias/:carreraMateriaId` | `ActualizarMateriaPlanDto` | `200` posición actualizada |
+| `DELETE` | `/api/carreras/:id/materias/:carreraMateriaId` | — | `200` baja física con cascada |
 | `POST` | `/api/materias/:id/correlativas` | `{ materiaCorrelativaId, carreraId? }` | `201` correlativa asignada |
 | `DELETE` | `/api/materias/:id/correlativas/:correlativaId` | `?carreraId=N` | `200` eliminada |
 | `GET` | `/api/materias` | — | catálogo global |
@@ -33,6 +35,7 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 `frontend/src/services/carreras.service.ts`:
 - `carrerasService.crearCarrera(data: CrearCarreraDto)`
 - `carrerasService.agregarMateriaAlPlan(carreraId, data: AgregarMateriaPlanDto)`
+- `carrerasService.actualizarMateriaEnPlan(carreraId, carreraMateriaId, data: ActualizarMateriaPlanDto)`
 
 `frontend/src/services/carreras.service.ts` → `materiasAdminService`:
 - `listarMaterias()`
@@ -42,7 +45,7 @@ Permitir la gestión del catálogo académico desde la app (rol admin):
 
 ## Tipos (ya en `frontend/src/types/`)
 
-- `carrera.types.ts`: `CrearCarreraDto`, `AgregarMateriaPlanDto`
+- `carrera.types.ts`: `CrearCarreraDto`, `AgregarMateriaPlanDto`, `ActualizarMateriaPlanDto`
 - `materia.types.ts`: `Materia`, `CrearMateriaDto`, `AsignarCorrelativaDto`, `Correlativa`
 
 ## Estructura de archivos a crear en el frontend
@@ -79,6 +82,7 @@ frontend/src/
 ### Plan de estudios de una carrera
 1. Seleccionar carrera → `obtenerPlanEstudios(carreraId)` (ya existe en `carrerasService`).
 2. `PlanEstudiosAdmin` permite elegir una materia del catálogo + `anio`/`cuatrimestre`/`orden` y llama `agregarMateriaAlPlan`.
+3. Editar la posición de una materia ya en el plan: modal con `anio`/`cuatrimestre`/`orden` precargados → `actualizarMateriaEnPlan`. El backend valida orden único y correlativas en periodos anteriores/posteriores; los errores se muestran en un modal en el frontend.
 
 ### Correlativas
 1. `MateriaCorrelativasAdmin` permite seleccionar una carrera (opcional) y una materia; muestra sus correlativas filtradas por carrera.
@@ -91,7 +95,8 @@ frontend/src/
 |---|---|
 | `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (1 decimal) |
 | `CrearMateriaDto` | nombre ≤200, codigo ≤20, cargaHoraria ≥1, creditos ≥1 |
-| `AgregarMateriaPlanDto` | materiaId entero, anio ≥1, cuatrimestre ≥1, orden ≥1 |
+| `AgregarMateriaPlanDto` | materiaId entero, anio ≥1, cuatrimestre 1–2, orden ≥1 |
+| `ActualizarMateriaPlanDto` | anio ≥1, cuatrimestre 1–2, orden ≥1 (al menos un campo) |
 | `AsignarCorrelativaDto` | materiaCorrelativaId entero, distinto de la materia origen |
 
 ## Rutas

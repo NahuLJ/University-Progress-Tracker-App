@@ -361,7 +361,9 @@ export class PlanificacionService {
         // pero la materia ya está ubicada en la línea temporal del camino y no
         // debe volver a planificarse. Las bifurcaciones son cadenas paralelas
         // independientes y no se ven afectadas.
-        const pendientes = [...(hijosPorOrigen.get(periodoActual.periodoId) ?? [])];
+        const pendientes = [
+          ...(hijosPorOrigen.get(periodoActual.periodoId) ?? []),
+        ];
         while (pendientes.length > 0) {
           const hijo = pendientes.pop()!;
           for (const mp of hijo.materiasPlanificadas) {

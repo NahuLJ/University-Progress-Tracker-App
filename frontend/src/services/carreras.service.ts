@@ -7,6 +7,7 @@ import type {
     CrearCarreraDto,
     ActualizarCarreraDto,
     AgregarMateriaPlanDto,
+    ActualizarMateriaPlanDto,
     CarreraAdminRow,
     CarreraAdminFilters,
 } from '../types/carrera.types';
@@ -90,6 +91,10 @@ export const carrerasService = {
 
     async agregarMateriaAlPlan(carreraId: number, data: AgregarMateriaPlanDto): Promise<void> {
         await api.post(`/carreras/${carreraId}/materias`, data);
+    },
+
+    async actualizarMateriaEnPlan(carreraId: number, carreraMateriaId: number, data: ActualizarMateriaPlanDto): Promise<void> {
+        await api.put(`/carreras/${carreraId}/materias/${carreraMateriaId}`, data);
     },
 
     async listarCarrerasAdmin(params?: CarreraAdminFilters): Promise<PaginatedResponse<CarreraAdminRow>> {

@@ -48,6 +48,12 @@ export interface AgregarMateriaPlanDto {
     orden: number;
 }
 
+export interface ActualizarMateriaPlanDto {
+    anio?: number;
+    cuatrimestre?: number;
+    orden?: number;
+}
+
 export interface Correlativa {
     correlativaId: number;
     materiaId: number;

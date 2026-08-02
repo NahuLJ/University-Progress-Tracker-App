@@ -16,6 +16,7 @@ import { Correlativa } from '../materias/entities/correlativa.entity';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
+import { ActualizarMateriaPlanDto } from './dto/actualizar-materia-plan.dto';
 import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
 
 export interface MateriaPlanItem {
@@ -446,6 +447,112 @@ export class CarrerasService {
       cuatrimestre: dto.cuatrimestre,
       orden: dto.orden,
     });
+    return this.carreraMateriaRepo.save(entry);
+  }
+
+  async actualizarMateriaEnPlan(
+    carreraId: number,
+    carreraMateriaId: number,
+    dto: ActualizarMateriaPlanDto,
+  ): Promise<CarreraMateria> {
+    const entry = await this.carreraMateriaRepo.findOne({
+      where: { carreraMateriaId, carrera: { carreraId } },
+      relations: {
+        materia: {
+          correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+          esCorrelativaDe: { materia: true, carrera: true },
+        },
+      },
+    });
+    if (!entry) throw new NotFoundException('Registro del plan no encontrado');
+
+    if (dto.anio == null && dto.cuatrimestre == null && dto.orden == null) {
+      throw new BadRequestException(
+        'Al menos un campo (anio, cuatrimestre u orden) debe ser proporcionado',
+      );
+    }
+
+    const nuevoAnio = dto.anio ?? entry.anio;
+    const nuevoCuatrimestre = dto.cuatrimestre ?? entry.cuatrimestre;
+    const nuevoOrden = dto.orden ?? entry.orden;
+
+    // Validación 1: orden único en toda la carrera
+    const conflictoOrden = await this.carreraMateriaRepo.findOne({
+      where: {
+        carrera: { carreraId },
+        orden: nuevoOrden,
+      },
+    });
+    if (
+      conflictoOrden &&
+      conflictoOrden.carreraMateriaId !== carreraMateriaId
+    ) {
+      throw new BadRequestException(
+        `Ya existe una materia con el orden ${nuevoOrden} en el plan de esta carrera`,
+      );
+    }
+
+    // Validación 2: correlativas deben pertenecer a periodos anteriores
+    const correlativas = entry.materia.correlativasRequeridas ?? [];
+    const correlativasConPeriodo = correlativas.filter(
+      (c) => !c.carrera || c.carrera.carreraId === carreraId,
+    );
+
+    for (const correlativa of correlativasConPeriodo) {
+      const cmCorrelativa = await this.carreraMateriaRepo.findOne({
+        where: {
+          carrera: { carreraId },
+          materia: { materiaId: correlativa.materiaCorrelativa.materiaId },
+        },
+      });
+      if (!cmCorrelativa) continue;
+
+      const esPeriodoPosterior =
+        cmCorrelativa.anio > nuevoAnio ||
+        (cmCorrelativa.anio === nuevoAnio &&
+          cmCorrelativa.cuatrimestre >= nuevoCuatrimestre);
+
+      if (esPeriodoPosterior) {
+        throw new BadRequestException(
+          `La correlativa "${correlativa.materiaCorrelativa.nombre}" se cursa en el año ${cmCorrelativa.anio}, cuatrimestre ${cmCorrelativa.cuatrimestre}, ` +
+            `que no es un periodo anterior al año ${nuevoAnio}, cuatrimestre ${nuevoCuatrimestre}`,
+        );
+      }
+    }
+
+    // Validación 3: materias que requieren esta materia como correlativa deben
+    // estar en periodos posteriores al nuevo periodo
+    const dependientes = entry.materia.esCorrelativaDe ?? [];
+    const dependientesConPeriodo = dependientes.filter(
+      (c) => !c.carrera || c.carrera.carreraId === carreraId,
+    );
+
+    for (const dependiente of dependientesConPeriodo) {
+      const cmDependiente = await this.carreraMateriaRepo.findOne({
+        where: {
+          carrera: { carreraId },
+          materia: { materiaId: dependiente.materia.materiaId },
+        },
+      });
+      if (!cmDependiente) continue;
+
+      const esPeriodoNoPosterior =
+        cmDependiente.anio < nuevoAnio ||
+        (cmDependiente.anio === nuevoAnio &&
+          cmDependiente.cuatrimestre <= nuevoCuatrimestre);
+
+      if (esPeriodoNoPosterior) {
+        throw new BadRequestException(
+          `La materia "${dependiente.materia.nombre}" depende de esta materia como correlativa y se cursa en el año ${cmDependiente.anio}, cuatrimestre ${cmDependiente.cuatrimestre}, ` +
+            `que no es un periodo posterior al año ${nuevoAnio}, cuatrimestre ${nuevoCuatrimestre}`,
+        );
+      }
+    }
+
+    entry.anio = nuevoAnio;
+    entry.cuatrimestre = nuevoCuatrimestre;
+    entry.orden = nuevoOrden;
+
     return this.carreraMateriaRepo.save(entry);
   }
 
