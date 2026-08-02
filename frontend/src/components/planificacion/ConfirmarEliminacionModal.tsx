@@ -24,29 +24,29 @@ export function ConfirmarEliminacionModal({
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Impacto en planes sucesores — ${periodoActualNombre}`} size="lg">
             <div className="space-y-4">
-                <p className="text-slate-300">
-                    Estás por sacar <strong className="text-white">{materiaCodigo} - {materiaNombre}</strong> del plan actual.
+                <p className="text-text-subtle">
+                    Estás por sacar <strong className="text-text-default">{materiaCodigo} - {materiaNombre}</strong> del plan actual.
                 </p>
 
-                <div className="bg-neon-yellow/10 border border-neon-yellow/30 rounded-lg p-3">
-                    <p className="text-sm text-neon-yellow font-medium mb-2">
+                <div className="bg-status-warning/10 border border-status-warning/30 rounded-md p-3">
+                    <p className="text-sm text-status-warning font-medium mb-2">
                         Materias afectadas en planes sucesores:
                     </p>
                     <ul className="space-y-1.5">
                         {impactadas.map((imp) => (
-                            <li key={`${imp.materiaId}-${imp.periodoId}`} className="text-sm text-slate-300 flex items-center gap-2">
-                                <span className="text-neon-yellow">•</span>
+                            <li key={`${imp.materiaId}-${imp.periodoId}`} className="text-sm text-text-subtle flex items-center gap-2">
+                                <span className="text-status-warning">•</span>
                                 <span>
                                     <strong>{imp.codigo} - {imp.nombre}</strong>
-                                    <span className="text-slate-500"> en </span>
-                                    <span className="text-neon-cyan">{imp.periodoNombre}</span>
+                                    <span className="text-text-muted"> en </span>
+                                    <span className="text-accent-primary">{imp.periodoNombre}</span>
                                 </span>
                             </li>
                         ))}
                     </ul>
                 </div>
 
-                <p className="text-sm text-slate-300">
+                <p className="text-sm text-text-subtle">
                     Al confirmar se eliminará esta materia del plan actual y todas las materias afectadas de los planes hijos, incluyendo las que dependan indirectamente.
                 </p>
 

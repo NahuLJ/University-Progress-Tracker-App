@@ -17,18 +17,18 @@ interface MateriaProgresoRowProps {
 
 function chipClass(estado: string) {
     if (estado === 'Completada') {
-        return 'bg-neon-green/15 text-neon-green border border-neon-green/30';
+        return 'badge badge-success';
     }
     if (estado === 'En Proceso') {
-        return 'bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30';
+        return 'badge badge-warning';
     }
-    return 'bg-neon-red/15 text-neon-red border border-neon-red/30';
+    return 'badge badge-danger';
 }
 
 function dotClass(estado: string) {
-    if (estado === 'Completada') return 'bg-neon-green';
-    if (estado === 'En Proceso') return 'bg-neon-yellow';
-    return 'bg-neon-red';
+    if (estado === 'Completada') return 'bg-status-success';
+    if (estado === 'En Proceso') return 'bg-status-warning';
+    return 'bg-status-danger';
 }
 
 export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carreraId, progresoMap }: MateriaProgresoRowProps) {
@@ -69,23 +69,23 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
     const puedeResetear = progreso.estado.nombre !== 'Pendiente';
 
     return (
-        <div className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-base-700/50">
-            <span className="col-span-1 text-center text-slate-400 font-mono text-sm">{progreso.orden}</span>
-            <span className="col-span-3 text-center font-medium text-slate-100 truncate cursor-pointer hover:text-neon-cyan transition-colors" title={materia.nombre} onClick={() => setModalDetalle(true)}>{materia.nombre}</span>
-            <span className="col-span-2 text-center text-slate-400 font-mono text-sm">{materia.codigo}</span>
-            <span className="col-span-1 text-center text-slate-300 text-sm">{materia.creditos}</span>
+        <div className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-bg-surface-secondary">
+            <span className="col-span-1 text-center text-text-muted font-mono text-sm">{progreso.orden}</span>
+            <span className="col-span-3 text-center font-medium text-text-default truncate cursor-pointer hover:text-accent-primary transition-colors" title={materia.nombre} onClick={() => setModalDetalle(true)}>{materia.nombre}</span>
+            <span className="col-span-2 text-center text-text-muted font-mono text-sm">{materia.codigo}</span>
+            <span className="col-span-1 text-center text-text-subtle text-sm">{materia.creditos}</span>
 
             <div className="col-span-2 flex items-center justify-center">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${chipClass(progreso.estado.nombre)}`}>
-                    <span className={`w-2 h-2 rounded-full mr-2 ${dotClass(progreso.estado.nombre)}`} />
+                <span className={`inline-flex items-center gap-1.5 ${chipClass(progreso.estado.nombre)}`}>
+                    <span className={`w-2 h-2 rounded-full ${dotClass(progreso.estado.nombre)}`} />
                     {progreso.estado.nombre}
                 </span>
             </div>
 
             {progreso.estado.nombre === 'Completada' ? (
                 <>
-                    <span className="col-span-1 text-center text-slate-300">{progreso.nota ?? '—'}</span>
-                    <span className="col-span-1 text-center text-slate-400">{progreso.tipoAprobacion ?? '—'}</span>
+                    <span className="col-span-1 text-center text-text-subtle">{progreso.nota ?? '—'}</span>
+                    <span className="col-span-1 text-center text-text-muted">{progreso.tipoAprobacion ?? '—'}</span>
                 </>
             ) : (
                 <div className="col-span-2" />
@@ -95,19 +95,19 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
                 <button
                     type="button"
                     onClick={() => setModalEdit(true)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                    className="p-1.5 rounded-md hover:bg-bg-surface-secondary transition-colors"
                     title="Editar progreso"
                 >
-                    <Icon name="edit" className="w-4 h-4 text-slate-400 hover:text-white" />
+                    <Icon name="edit" className="w-4 h-4 text-text-muted hover:text-text-default" />
                 </button>
                 {puedeResetear && (
                     <button
                         type="button"
                         onClick={() => setModalReset(true)}
-                        className="p-1.5 rounded-lg hover:bg-neon-red/10 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-status-danger/10 transition-colors"
                         title="Reiniciar progreso"
                     >
-                        <Icon name="delete" className="w-4 h-4 text-slate-500 hover:text-neon-red" />
+                        <Icon name="delete" className="w-4 h-4 text-text-muted hover:text-status-danger" />
                     </button>
                 )}
             </div>
@@ -130,10 +130,10 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
             />
 
             {modalReset && (
-                <div className="fixed inset-0 bg-base-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setModalReset(false)}>
-                    <div className="card rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                        <h2 className="text-xl font-semibold mb-4">Reiniciar progreso</h2>
-                        <p className="text-slate-300 mb-6">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setModalReset(false)}>
+                    <div className="card rounded-card max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-sm font-semibold mb-4">Reiniciar progreso</h2>
+                        <p className="text-text-subtle mb-6">
                             ¿Reiniciar <strong>{materia.nombre}</strong> a estado Pendiente?
                             {progreso.estado.nombre === 'Completada' && ' Se eliminará la nota y el tipo de aprobación.'}
                         </p>

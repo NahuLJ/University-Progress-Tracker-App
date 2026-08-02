@@ -54,7 +54,7 @@ export function DashboardPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Dashboard</h1>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-text-muted mt-1">
                         Resumen general de tu progreso académico, promedios y tiempo estimado restante.
                     </p>
                 </div>
@@ -78,7 +78,7 @@ export function DashboardPage() {
             </div>
 
             <div>
-                <h2 className="text-lg font-semibold mb-3">Mis carreras</h2>
+                <h2 className="text-sm font-semibold mb-3">Mis carreras</h2>
                 <CarrerasResumenList
                     carreras={resumenCarreras ?? []}
                     usuarioCarreraIdActivo={usuarioCarreraId}

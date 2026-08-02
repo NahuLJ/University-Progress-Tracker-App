@@ -15,14 +15,14 @@ function MateriaRow({ materia, onClick }: MateriaRowProps) {
     return (
         <button
             onClick={onClick}
-            className="w-full text-left p-3 hover:bg-base-700/50 rounded-lg flex items-center justify-between gap-4 transition-colors"
+            className="w-full text-left p-3 hover:bg-bg-surface-secondary rounded-md flex items-center justify-between gap-4 transition-colors"
         >
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-sm">
-                    <span className="font-mono text-slate-400">[{materia.orden}]</span>
-                    <span className="font-medium truncate text-slate-100">{materia.nombre}</span>
+                    <span className="font-mono text-text-muted">[{materia.orden}]</span>
+                    <span className="font-medium truncate text-text-default">{materia.nombre}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                <div className="flex items-center gap-2 text-xs text-text-muted mt-1">
                     <Badge variant="info" size="sm">{materia.codigo}</Badge>
                     <span>•</span>
                     <span>{materia.cargaHoraria}h/sem</span>

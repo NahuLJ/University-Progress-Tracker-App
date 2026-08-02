@@ -200,7 +200,7 @@ export function PlanificacionPage() {
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
-                        className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="p-2 rounded-md text-text-muted hover:bg-bg-surface-secondary hover:text-text-default transition-colors"
                         title="Volver"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -209,11 +209,11 @@ export function PlanificacionPage() {
                     </button>
                     <div>
                         {trayectoria && (
-                            <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
+                            <div className="flex items-center gap-2 text-sm text-text-muted mb-1">
                                 <button
                                     type="button"
                                     onClick={() => navigate('/trayectorias')}
-                                    className="hover:text-neon-cyan transition-colors"
+                                    className="hover:text-accent-primary transition-colors"
                                 >
                                     Trayectorias
                                 </button>
@@ -221,7 +221,7 @@ export function PlanificacionPage() {
                                 <button
                                     type="button"
                                     onClick={() => navigate(`/trayectoria/${trayectoria.trayectoriaId}`)}
-                                    className="hover:text-neon-cyan transition-colors"
+                                    className="hover:text-accent-primary transition-colors"
                                 >
                                     {trayectoria.nombre}
                                 </button>
@@ -232,10 +232,10 @@ export function PlanificacionPage() {
                             {periodoActivo?.nombre && ` - ${periodoActivo.nombre}`}
                         </h1>
                         <div className="flex items-center gap-1.5 mt-1">
-                            <svg className="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg className="w-4 h-4 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 21h16M4 21V7a2 2 0 012-2h12a2 2 0 012 2v14" />
                             </svg>
-                            <span className="text-sm font-medium text-white">{carreraActiva?.carrera?.nombre ?? ''}</span>
+                            <span className="text-sm font-medium text-text-default">{carreraActiva?.carrera?.nombre ?? ''}</span>
                         </div>
                     </div>
                 </div>
@@ -267,7 +267,7 @@ export function PlanificacionPage() {
             </div>
 
             {trayectoria && (
-                <div className="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-3 text-sm text-neon-cyan">
+                <div className="bg-accent-primary/10 border border-accent-primary/30 rounded-md p-3 text-sm text-accent-primary">
                     Esta planificación pertenece a la trayectoria <strong>{trayectoria.nombre}</strong>.
                     Las materias disponibles incluyen las que se desbloquean según planificaciones anteriores de esta trayectoria.
                 </div>
@@ -276,7 +276,7 @@ export function PlanificacionPage() {
             <Card>
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold">Planificación de horarios</h2>
+                        <h2 className="text-sm font-semibold">Planificación de horarios</h2>
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
@@ -295,8 +295,8 @@ export function PlanificacionPage() {
                         </div>
                     </div>
 
-                    <div className={`bg-neon-yellow/10 border border-neon-yellow/40 rounded-lg p-3 transition-opacity ${store.dirty ? 'opacity-100' : 'opacity-0'}`}>
-                        <p className="text-sm text-neon-yellow">
+                    <div className={`bg-status-warning/10 border border-status-warning/40 rounded-md p-3 transition-opacity ${store.dirty ? 'opacity-100' : 'opacity-0'}`}>
+                        <p className="text-sm text-status-warning">
                             Tenés cambios sin guardar
                         </p>
                     </div>
@@ -318,7 +318,7 @@ export function PlanificacionPage() {
                 title="Eliminar período"
                 size="sm"
             >
-                <p className="text-slate-300 mb-6">¿Eliminar esta planificación? Los cambios realizados se perderán.</p>
+                <p className="text-text-subtle mb-6">¿Eliminar esta planificación? Los cambios realizados se perderán.</p>
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setMostrarDescarte(false)}>
                         Cancelar
@@ -350,7 +350,7 @@ export function PlanificacionPage() {
                 title="Descartar cambios"
                 size="sm"
             >
-                <p className="text-slate-300 mb-6">¿Descartar cambios sin guardar? Los cambios realizados se perderán.</p>
+                <p className="text-text-subtle mb-6">¿Descartar cambios sin guardar? Los cambios realizados se perderán.</p>
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setMostrarDescartarCambios(false)}>
                         Cancelar

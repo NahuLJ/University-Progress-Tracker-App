@@ -97,7 +97,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
         <Modal isOpen={isOpen} onClose={onClose} title={isSucesiva ? 'Nueva planificación sucesiva' : 'Nueva planificación'} size="md">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {isSucesiva && (
-                    <div className="bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg p-3 text-sm text-neon-cyan">
+                    <div className="bg-accent-primary/10 border border-accent-primary/30 rounded-md p-3 text-sm text-accent-primary">
                         {planificacionOrigenId
                             ? 'Esta planificación continuará la seleccionada en la trayectoria.'
                             : 'Esta planificación se creará dentro de la trayectoria actual.'}
@@ -125,7 +125,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
                 </Select>
 
                 {noInstancias && (
-                    <p className="text-sm text-neon-yellow">
+                    <p className="text-sm text-status-warning">
                         No hay cuatrimestres disponibles para {anioSeleccionado}. Seleccioná un año posterior.
                     </p>
                 )}

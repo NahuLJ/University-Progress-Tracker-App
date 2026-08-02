@@ -17,7 +17,7 @@ export function Skeleton({ className, variant = 'text', width, height }: Skeleto
     return (
         <div
             className={cn(
-                'animate-pulse bg-base-600/70',
+                'animate-pulse bg-bg-surface-secondary/70',
                 variants[variant],
                 className
             )}

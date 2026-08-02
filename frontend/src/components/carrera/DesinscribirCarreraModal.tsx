@@ -11,22 +11,22 @@ export function DesinscribirCarreraModal({ isOpen, onClose, onSuccess, carreraNo
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Desinscribirse de ${carreraNombre}`} size="sm">
             <div className="space-y-4">
-                <p className="text-sm text-slate-300">
-                    Vas a desinscribirte de <strong className="text-white">{carreraNombre}</strong>.
+                <p className="text-sm text-text-subtle">
+                    Vas a desinscribirte de <strong className="text-text-default">{carreraNombre}</strong>.
                     Tu progreso guardado y fecha de inicio se mantendrán intactos si te reinscribís más adelante.
                 </p>
                 <div className="flex justify-end gap-2 pt-4">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="btn-ghost"
                     >
                         Cancelar
                     </button>
                     <button
                         type="button"
                         onClick={() => { onSuccess(); onClose(); }}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-yellow/60 text-neon-yellow bg-transparent hover:bg-neon-yellow/10 hover:shadow-[0_0_10px_rgba(251,146,60,0.8)] transition-all"
+                        className="btn-danger"
                     >
                         Desinscribirme
                     </button>

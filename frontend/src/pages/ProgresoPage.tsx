@@ -60,8 +60,8 @@ export function ProgresoPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Progreso Académico</h1>
-                <p className="text-sm text-slate-400 mt-1">
+                <h1 className="text-lg font-semibold text-text-default">Progreso Académico</h1>
+                <p className="text-sm text-text-muted mt-1">
                     Gestioná las materias que estás cursando, en progreso o completadas, y actualizá sus estados y notas.
                 </p>
             </div>
@@ -75,14 +75,14 @@ export function ProgresoPage() {
             )}
 
             {carreraInactiva ? (
-                <CardUI className="border-neon-red/30 bg-neon-red/5">
+                <CardUI className="border-status-danger/30 bg-status-danger/5">
                     <div className="flex items-center gap-3 p-4">
-                        <div className="w-10 h-10 rounded-full bg-neon-red/20 flex items-center justify-center flex-shrink-0">
-                            <Icon name="warning" className="w-5 h-5 text-neon-red" />
+                        <div className="w-10 h-10 rounded-md bg-status-danger/20 flex items-center justify-center flex-shrink-0">
+                            <Icon name="warning" className="w-5 h-5 text-status-danger" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold text-neon-red">Carrera inactiva</h3>
-                            <p className="text-slate-300 mt-1">
+                            <h3 className="text-sm font-semibold text-status-danger">Carrera inactiva</h3>
+                            <p className="text-text-subtle mt-1">
                                 No se pueden realizar modificaciones en el progreso de carreras inactivas.
                                 Reactivá la carrera desde la sección de Carreras para volver a editar tu progreso.
                             </p>
@@ -93,7 +93,7 @@ export function ProgresoPage() {
                 <>
                     <Card>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <h2 className="text-lg font-semibold">Distribución de Estados</h2>
+                            <h2 className="text-sm font-semibold text-text-default">Distribución de Estados</h2>
                             <ProgresoStatsBar totales={totales} />
                         </div>
                     </Card>

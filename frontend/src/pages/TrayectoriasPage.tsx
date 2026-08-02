@@ -69,25 +69,25 @@ export function TrayectoriasPage() {
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold">Trayectorias</h1>
                         {trayectorias.length > 0 && (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">
+                            <span className="badge badge-info">
                                 {trayectorias.length}
                             </span>
                         )}
                     </div>
                     {carreraActiva?.carrera?.nombre && (
                         <div className="flex items-center gap-1.5 mt-1">
-                            <svg className="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg className="w-4 h-4 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            <span className="text-sm font-medium text-white">{carreraActiva.carrera.nombre}</span>
+                            <span className="text-sm font-medium text-text-default">{carreraActiva.carrera.nombre}</span>
                         </div>
                     )}
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-text-muted mt-1">
                         Agrupá planificaciones en cadena para planificar a largo plazo. Las materias planificadas en un período
                         desbloquean correlativas para los siguientes, permitiendo un camino de planeación sucesivo.
                     </p>
                 </div>
-                <Button variant="success" onClick={() => setMostrarNueva(true)}>
+                <Button variant="primary" onClick={() => setMostrarNueva(true)}>
                     + Nueva trayectoria
                 </Button>
             </div>
@@ -98,7 +98,7 @@ export function TrayectoriasPage() {
                     title="No hay trayectorias"
                     description="Una trayectoria agrupa planificaciones sucesivas para planificar a largo plazo."
                     action={
-                        <Button variant="success" onClick={() => setMostrarNueva(true)}>
+                        <Button variant="primary" onClick={() => setMostrarNueva(true)}>
                             Crear primera trayectoria
                         </Button>
                     }
@@ -151,23 +151,23 @@ function TrayectoriaCard({ trayectoria, onClick }: { trayectoria: import('../typ
     const cantidad = trayectoria.planificaciones?.length ?? 0;
     return (
         <Card
-            className="group cursor-pointer hover:border-neon-cyan/40 transition-all duration-300"
+            className="group cursor-pointer hover:bg-bg-surface-secondary transition-colors"
             onClick={onClick}
         >
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-white group-hover:text-neon-cyan transition-colors">
+                    <h3 className="text-sm font-semibold text-text-default">
                         {trayectoria.nombre}
                     </h3>
-                    <span className="text-xs text-slate-400">{new Date(trayectoria.creadoEn).toLocaleDateString()}</span>
+                    <span className="text-xs text-text-muted">{new Date(trayectoria.creadoEn).toLocaleDateString()}</span>
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-text-muted">
                     {cantidad === 0
                         ? 'Sin planificaciones'
                         : `${cantidad} planificación${cantidad !== 1 ? 'es' : ''}`}
                 </p>
                 <div className="pt-2">
-                    <Button variant="outline" className="w-full text-sm">
+                    <Button variant="primary" className="w-full text-sm">
                         Ver trayectoria
                     </Button>
                 </div>

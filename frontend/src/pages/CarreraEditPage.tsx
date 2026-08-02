@@ -65,12 +65,12 @@ export function CarreraEditPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => navigate('/admin')} className="text-text-muted hover:text-text-default transition-colors">
                     <Icon name="arrowLeft" className="w-5 h-5" />
                 </button>
                 <div>
-                    <p className="text-sm text-slate-400">Admin &gt; Carreras &gt; {carrera?.nombre} &gt; Editar</p>
-                    <h1 className="text-2xl font-bold text-white">Editar carrera</h1>
+                    <p className="text-sm text-text-muted">Admin &gt; Carreras &gt; {carrera?.nombre} &gt; Editar</p>
+                    <h1 className="text-2xl font-bold text-text-default">Editar carrera</h1>
                 </div>
             </div>
 
@@ -78,8 +78,8 @@ export function CarreraEditPage() {
 
             {tab === 'datos' && (
                 <Card className="p-6 max-w-xl mx-auto">
-                    <h2 className="text-xl font-bold text-white mb-1 border-l-4 border-neon-cyan pl-3">Datos generales</h2>
-                    <p className="text-sm text-slate-400 mb-4 pl-3">Información de la carrera</p>
+                    <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">Datos generales</h2>
+                    <p className="text-sm text-text-muted mb-4 pl-3">Información de la carrera</p>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <Input
                             label="Nombre"
@@ -116,8 +116,8 @@ export function CarreraEditPage() {
             {tab === 'plan' && (
                 <Card>
                     <div className="p-6">
-                        <h2 className="text-xl font-bold text-white mb-1 border-l-4 border-neon-cyan pl-3">Plan de estudios</h2>
-                        <p className="text-sm text-slate-400 mb-4 pl-3">Materias y orden de cursado</p>
+                        <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">Plan de estudios</h2>
+                        <p className="text-sm text-text-muted mb-4 pl-3">Materias y orden de cursado</p>
                     </div>
                     <div className="px-6 pb-6">
                         <PlanEstudiosEditor carreraId={carreraId} />
@@ -128,8 +128,8 @@ export function CarreraEditPage() {
             {tab === 'correlativas' && (
                 <Card>
                     <div className="p-6">
-                        <h2 className="text-xl font-bold text-white mb-1 border-l-4 border-neon-cyan pl-3">Correlativas</h2>
-                        <p className="text-sm text-slate-400 mb-4 pl-3">Requisitos y dependencias entre materias</p>
+                        <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">Correlativas</h2>
+                        <p className="text-sm text-text-muted mb-4 pl-3">Requisitos y dependencias entre materias</p>
                     </div>
                     <div className="px-6 pb-6">
                         <CorrelativasEditor carreraId={carreraId} />

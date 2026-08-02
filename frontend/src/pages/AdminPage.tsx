@@ -19,8 +19,8 @@ export function AdminPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Administración académica</h1>
-                    <p className="text-sm text-slate-400">
+                    <h1 className="text-2xl font-bold text-text-default">Administración académica</h1>
+                    <p className="text-sm text-text-muted">
                         Gestioná el catálogo de carreras, materias y correlativas.
                     </p>
                 </div>
@@ -31,7 +31,7 @@ export function AdminPage() {
             {tab === 'carreras' && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold text-white">Carreras</h2>
+                        <h2 className="text-sm font-semibold text-text-default">Carreras</h2>
                         <Button onClick={() => setCarreraModalOpen(true)}>Nueva carrera</Button>
                     </div>
                     <TablaCarreras />
@@ -41,7 +41,7 @@ export function AdminPage() {
             {tab === 'materias' && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold text-white">Materias</h2>
+                        <h2 className="text-sm font-semibold text-text-default">Materias</h2>
                         <Button onClick={() => setMateriaModalOpen(true)}>Nueva materia</Button>
                     </div>
                     <TablaMaterias />

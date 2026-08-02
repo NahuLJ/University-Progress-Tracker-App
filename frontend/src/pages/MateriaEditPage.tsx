@@ -74,18 +74,18 @@ export function MateriaEditPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/admin/materias/${materiaId}`)} className="text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => navigate(`/admin/materias/${materiaId}`)} className="text-text-muted hover:text-text-default transition-colors">
                     <Icon name="arrowLeft" className="w-5 h-5" />
                 </button>
                 <div>
-                    <p className="text-sm text-slate-400">Admin &gt; Materias &gt; {materia?.nombre} &gt; Editar</p>
-                    <h1 className="text-2xl font-bold text-white">Editar materia</h1>
+                    <p className="text-sm text-text-muted">Admin &gt; Materias &gt; {materia?.nombre} &gt; Editar</p>
+                    <h1 className="text-2xl font-bold text-text-default">Editar materia</h1>
                 </div>
             </div>
 
             <Card className="p-6 max-w-xl mx-auto">
-                <h2 className="text-xl font-bold text-white mb-1 border-l-4 border-neon-cyan pl-3">Datos generales</h2>
-                <p className="text-sm text-slate-400 mb-4 pl-3">Información de la materia</p>
+                    <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">Datos generales</h2>
+                    <p className="text-sm text-text-muted mb-4 pl-3">Información de la materia</p>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <Input
                         label="Nombre"

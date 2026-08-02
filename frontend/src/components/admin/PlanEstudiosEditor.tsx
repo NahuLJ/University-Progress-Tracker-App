@@ -165,7 +165,7 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             <Card className="p-4 lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-white">Materias en el plan</h3>
+                        <h3 className="text-sm font-semibold text-text-default">Materias en el plan</h3>
                         <Badge variant="info">{totalMaterias}</Badge>
                     </div>
                     <Button size="sm" onClick={() => setAgregarOpen(true)}>
@@ -175,24 +175,24 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                 {plan.isLoading && <LoadingSpinner />}
                 {plan.isError && <QueryError error={plan.error} onRetry={() => plan.refetch()} />}
                 {plan.data && totalMaterias === 0 && (
-                    <p className="text-sm text-slate-400">Esta carrera aún no tiene materias en su plan.</p>
+                    <p className="text-sm text-text-muted">Esta carrera aún no tiene materias en su plan.</p>
                 )}
                 {plan.data && plan.data.anios.length > 0 && (
                     <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin">
                         {plan.data.anios.map((anioData) => (
                             <div key={anioData.anio}>
-                                <h4 className="text-sm font-medium text-neon-cyan">Año {anioData.anio}</h4>
+                                <h4 className="text-sm font-medium text-accent-primary">Año {anioData.anio}</h4>
                                 {anioData.cuatrimestres.map((cuat) => (
                                     <div key={cuat.cuatrimestre} className="ml-3 mt-1">
-                                        <p className="text-xs text-slate-400">Cuatrimestre {cuat.cuatrimestre}</p>
+                                        <p className="text-xs text-text-muted">Cuatrimestre {cuat.cuatrimestre}</p>
                                         <ul className="space-y-1 mt-1">
                                             {cuat.materias.map((m) => (
                                                 <li key={m.carreraMateriaId}
-                                                    className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2"
+                                                    className="flex items-center justify-between bg-bg-surface-secondary/60 rounded-md px-3 py-2"
                                                 >
-                                                    <span className="text-sm text-slate-200">
-                                                        <span className="font-mono text-slate-400">{m.orden}</span>
-                                                        <span className="mx-1 text-slate-500">-</span>
+                                                    <span className="text-sm text-text-default">
+                                                        <span className="font-mono text-text-muted">{m.orden}</span>
+                                                        <span className="mx-1 text-text-muted">-</span>
                                                         {m.nombre}
                                                         <Badge variant="info" size="sm" className="ml-2">{m.codigo}</Badge>
                                                     </span>
@@ -200,11 +200,11 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                                                         <button
                                                             title="Editar posición"
                                                             onClick={() => { setEditandoMateria(m); setEditForm({ anio: m.anio, cuatrimestre: m.cuatrimestre, orden: m.orden }); }}
-                                                            className="text-slate-400 hover:text-neon-cyan transition-colors"
+                                                            className="text-text-muted hover:text-accent-primary transition-colors"
                                                         >
                                                             <Icon name="edit" className="w-4 h-4" />
                                                         </button>
-                                                        <button title="Quitar del plan" onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo, orden: m.orden })} className="text-slate-400 hover:text-neon-red transition-colors ml-3">
+                                                        <button title="Quitar del plan" onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo, orden: m.orden })} className="text-text-muted hover:text-status-danger transition-colors ml-3">
                                                             <Icon name="delete" className="w-4 h-4" />
                                                         </button>
                                                     </div>
@@ -263,17 +263,17 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             >
                 {quitarConfirm && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
-                            <span className="text-sm text-slate-200">
-                                <span className="font-mono text-slate-400">{quitarConfirm.orden}</span>
-                                <span className="mx-1 text-slate-500">-</span>
+                        <div className="flex items-center gap-2 flex-wrap bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                            <span className="text-sm text-text-default">
+                                <span className="font-mono text-text-muted">{quitarConfirm.orden}</span>
+                                <span className="mx-1 text-text-muted">-</span>
                                 {quitarConfirm.nombre}
                                 <Badge variant="info" size="sm" className="ml-2">{quitarConfirm.codigo}</Badge>
                             </span>
                         </div>
-                        <div className="bg-neon-red/10 border border-neon-red/30 rounded-lg p-3">
-                            <p className="text-sm text-neon-red font-medium">Esta acción es irreversible</p>
-                            <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1">
+                        <div className="bg-status-danger/10 border border-status-danger/30 rounded-md p-3">
+                            <p className="text-sm text-status-danger font-medium">Esta acción es irreversible</p>
+                            <ul className="mt-2 text-sm text-text-subtle list-disc list-inside space-y-1">
                                 <li>Se eliminará permanentemente el progreso académico de todos los usuarios en esta materia para esta carrera</li>
                                 <li>Se eliminarán todas las planificaciones que la incluyan (bloques horarios)</li>
                                 <li>Se eliminarán las correlativas asociadas a esta materia en esta carrera</li>
@@ -302,10 +302,10 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
             >
                 {editandoMateria && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
-                            <span className="text-sm text-slate-200">
-                                <span className="font-mono text-slate-400">{editandoMateria.orden}</span>
-                                <span className="mx-1 text-slate-500">-</span>
+                        <div className="flex items-center gap-2 flex-wrap bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                            <span className="text-sm text-text-default">
+                                <span className="font-mono text-text-muted">{editandoMateria.orden}</span>
+                                <span className="mx-1 text-text-muted">-</span>
                                 {editandoMateria.nombre}
                                 <Badge variant="info" size="sm" className="ml-2">{editandoMateria.codigo}</Badge>
                             </span>
@@ -334,9 +334,9 @@ export function PlanEstudiosEditor({ carreraId }: Props) {
                 size="sm"
             >
                 <div className="space-y-3">
-                    <div className="bg-neon-red/10 border border-neon-red/30 rounded-lg p-3">
-                        <p className="text-sm text-neon-red font-medium text-justify">No se pudo actualizar la materia</p>
-                        <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1 text-justify">
+                    <div className="bg-status-danger/10 border border-status-danger/30 rounded-md p-3">
+                        <p className="text-sm text-status-danger font-medium text-justify">No se pudo actualizar la materia</p>
+                        <ul className="mt-2 text-sm text-text-subtle list-disc list-inside space-y-1 text-justify">
                             {editErrors.map((err, i) => (
                                 <li key={i}>{err}</li>
                             ))}

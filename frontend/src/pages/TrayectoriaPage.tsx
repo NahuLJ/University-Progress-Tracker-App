@@ -126,7 +126,7 @@ export function TrayectoriaPage() {
             <div className="flex items-center justify-between shrink-0 px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-4">
                     <button type="button" onClick={() => navigate('/trayectorias')}
-                        className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                        className="p-2 rounded-md text-text-muted hover:bg-bg-surface-secondary hover:text-text-default transition-colors"
                         title="Volver a trayectorias"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -137,12 +137,12 @@ export function TrayectoriaPage() {
                         <h1 className="text-2xl font-bold">{trayectoriaNombre}</h1>
                         <div className="flex items-center gap-3 mt-1">
                             <div className="flex items-center gap-1.5">
-                                <svg className="w-4 h-4 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg className="w-4 h-4 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 21h16M4 21V7a2 2 0 012-2h12a2 2 0 012 2v14" />
                                 </svg>
-                                <span className="text-sm font-medium text-white">{carreraActiva?.carrera?.nombre ?? ''}</span>
+                                <span className="text-sm font-medium text-text-default">{carreraActiva?.carrera?.nombre ?? ''}</span>
                             </div>
-                            <span className="text-sm text-slate-400">&middot; {sortedPlanificaciones.length} planificaciones</span>
+                            <span className="text-sm text-text-muted">&middot; {sortedPlanificaciones.length} planificaciones</span>
                         </div>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ export function TrayectoriaPage() {
                         title="Trayectoria vacía"
                         description="Agregá planificaciones para comenzar a planificar tus materias sucesivamente."
                         action={
-                            <Button variant="success" onClick={() => handleContinuar(undefined)}>
+                            <Button variant="primary" onClick={() => handleContinuar(undefined)}>
                                 Crear primera planificación
                             </Button>
                         }

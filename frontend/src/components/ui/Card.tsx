@@ -11,16 +11,16 @@ interface CardProps {
 export function Card({ children, className, title, subtitle, onClick }: CardProps) {
     return (
         <div
-            className={cn('card flex flex-col', className, onClick && 'cursor-pointer hover:border-neon-cyan/60 hover:shadow-neon-cyan transition-all')}
+            className={cn('card flex flex-col', className, onClick && 'cursor-pointer hover:bg-bg-surface-secondary transition-colors')}
             onClick={onClick}
         >
             {(title || subtitle) && (
-                <div className="px-6 py-4 border-b border-base-600">
-                    {title && <h3 className="text-lg font-semibold text-white">{title}</h3>}
-                    {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
+                <div className="px-4 py-3 border-b border-hairline">
+                    {title && <h3 className="text-sm font-semibold text-text-default">{title}</h3>}
+                    {subtitle && <p className="text-xs text-text-muted mt-1">{subtitle}</p>}
                 </div>
             )}
-            <div className="p-6 flex-1">{children}</div>
+            <div className="p-4 flex-1">{children}</div>
         </div>
     );
 }

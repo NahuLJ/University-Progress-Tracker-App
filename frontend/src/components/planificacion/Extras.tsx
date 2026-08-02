@@ -1,24 +1,22 @@
 import { useMemo } from 'react';
 import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
 import type { MateriaEnCelda, MateriaDesbloqueable } from '../../types/planificacion.types';
 
 const COLORES = [
-    'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30',
-    'bg-neon-green/15 text-neon-green border-neon-green/30',
-    'bg-neon-violet/15 text-neon-violet border-neon-violet/30',
-    'bg-neon-orange/15 text-neon-orange border-neon-orange/30',
-    'bg-neon-pink/15 text-neon-pink border-neon-pink/30',
-    'bg-neon-yellow/15 text-neon-yellow border-neon-yellow/30',
-    'bg-neon-blue/15 text-neon-blue border-neon-blue/30',
+    'bg-accent-primary/15 text-accent-primary',
+    'bg-status-success/15 text-status-success',
+    'bg-status-warning/15 text-status-warning',
+    'bg-status-danger/15 text-status-danger',
+    'bg-bg-surface-secondary text-text-default',
+    'bg-accent-cyan/15 text-accent-cyan',
 ];
 
 export function LeyendaHorarios({ materias }: { materias: MateriaEnCelda[] }) {
     return (
         <Card>
-            <h3 className="font-semibold mb-3">Leyenda</h3>
+            <h3 className="text-sm font-semibold mb-3">Leyenda</h3>
             {(!materias || materias.length === 0) ? (
-                <p className="text-slate-400 text-sm">Añadí materias al cronograma para ver la leyenda</p>
+                <p className="text-text-muted text-sm">Añadí materias al cronograma para ver la leyenda</p>
             ) : (
                 <div className="flex flex-wrap gap-2">
                     {materias.reduce((acc: MateriaEnCelda[], m: MateriaEnCelda) => {
@@ -27,13 +25,12 @@ export function LeyendaHorarios({ materias }: { materias: MateriaEnCelda[] }) {
                         }
                         return acc;
                     }, []).map((m: any, i: number) => (
-                        <Badge
+                        <span
                             key={m.materiaId}
-                            variant="default"
-                            className={COLORES[i % COLORES.length]}
+                            className={`badge ${COLORES[i % COLORES.length]}`}
                         >
                             {m.nombre} ({m.codigo})
-                        </Badge>
+                        </span>
                     ))}
                 </div>
             )}
@@ -49,7 +46,7 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
 
     if (ordenadas.length === 0) {
         return (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-8 text-text-muted">
                 No hay materias nuevas por desbloquear
             </div>
         );
@@ -57,24 +54,24 @@ export function MateriasDesbloqueablesList({ materias }: { materias: MateriaDesb
 
     return (
         <div className="space-y-4">
-            <h3 className="font-semibold">Materias que se desbloquearán</h3>
-            <p className="text-sm text-slate-300 mb-4">
+            <h3 className="text-sm font-semibold">Materias que se desbloquearán</h3>
+            <p className="text-sm text-text-subtle mb-4">
                 Al completar las materias planificadas, también podrás cursar:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {ordenadas.map((m: any) => (
-                    <div key={m.materiaId} className="p-3 border border-base-600 rounded-lg">
-                        <div className="font-medium text-slate-100">{m.nombre}</div>
-                        <div className="text-sm text-slate-400">{m.codigo} • {m.creditos} créditos</div>
+                    <div key={m.materiaId} className="p-3 border border-hairline rounded-md">
+                        <div className="font-medium text-text-default">{m.nombre}</div>
+                        <div className="text-sm text-text-muted">{m.codigo} • {m.creditos} créditos</div>
                         <div className="text-xs mt-1">
                             {!m.correlativas || m.correlativas.length === 0 ? (
-                                <span className="text-slate-400">Sin correlativas</span>
+                                <span className="text-text-muted">Sin correlativas</span>
                             ) : (
                                 <>
-                                    <div className="font-medium text-slate-200 mb-1">Correlativas:</div>
+                                    <div className="font-medium text-text-subtle mb-1">Correlativas:</div>
                                     <ul className="list-disc list-inside space-y-0.5">
                                         {m.correlativas.map((c: { nombre: string; estado: string }) => (
-                                            <li key={c.nombre} className="text-slate-100">
+                                            <li key={c.nombre} className="text-text-default">
                                                 {c.nombre}
                                             </li>
                                         ))}

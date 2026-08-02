@@ -18,9 +18,9 @@ export function MateriaDetailModal({ isOpen, onClose, materia }: MateriaDetailMo
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm text-slate-400">Código: <span className="font-mono font-medium text-white">{materia.codigo}</span></p>
-                        <p className="text-sm text-slate-400">Créditos: <span className="font-medium text-white">{materia.creditos}</span></p>
-                        <p className="text-sm text-slate-400">Carga horaria: <span className="font-medium text-white">{materia.cargaHoraria}h/semana</span></p>
+                        <p className="text-xs text-text-muted">Código: <span className="font-mono font-medium text-text-default">{materia.codigo}</span></p>
+                        <p className="text-xs text-text-muted">Créditos: <span className="font-medium text-text-default">{materia.creditos}</span></p>
+                        <p className="text-xs text-text-muted">Carga horaria: <span className="font-medium text-text-default">{materia.cargaHoraria}h/semana</span></p>
                     </div>
                     <StatusBadge estado={estado} className="gap-1">
                         {estado}
@@ -30,8 +30,8 @@ export function MateriaDetailModal({ isOpen, onClose, materia }: MateriaDetailMo
                 </div>
 
                 <div className="border-t pt-6">
-                    <h4 className="font-medium mb-3">Descripción</h4>
-                    <p className="text-slate-300 whitespace-pre-wrap">{materia.descripcion || 'Sin descripción disponible'}</p>
+                    <h4 className="text-sm font-semibold mb-3">Descripción</h4>
+                    <p className="text-text-subtle whitespace-pre-wrap">{materia.descripcion || 'Sin descripción disponible'}</p>
                 </div>
 
                 <div className="border-t pt-6">

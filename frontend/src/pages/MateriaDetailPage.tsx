@@ -69,12 +69,12 @@ export function MateriaDetailPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => navigate('/admin')} className="text-text-muted hover:text-text-default transition-colors">
                         <Icon name="arrowLeft" className="w-5 h-5" />
                     </button>
                     <div>
-                        <p className="text-sm text-slate-400">Admin &gt; Materias &gt; {materia.nombre}</p>
-                        <h1 className="text-2xl font-bold text-white">{materia.nombre}</h1>
+                        <p className="text-sm text-text-muted">Admin &gt; Materias &gt; {materia.nombre}</p>
+                        <h1 className="text-2xl font-bold text-text-default">{materia.nombre}</h1>
                     </div>
                 </div>
                 <Button onClick={() => navigate(`/admin/materias/${materiaId}/editar`)}>
@@ -104,7 +104,7 @@ export function MateriaDetailPage() {
                 <Card title="Carreras que la contienen">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-base-600 text-slate-400 text-left">
+                            <tr className="border-b border-hairline text-text-muted text-left">
                                 <th className="py-2 pr-4 font-medium">Carrera</th>
                                 <th className="py-2 pr-4 font-medium">Año</th>
                                 <th className="py-2 pr-4 font-medium">Cuatrimestre</th>
@@ -113,15 +113,15 @@ export function MateriaDetailPage() {
                         </thead>
                         <tbody>
                             {(materia as any).carreras.map((c: any) => (
-                                <tr key={c.carreraId} className="border-b border-base-700/50">
+                                <tr key={c.carreraId} className="border-b border-hairline">
                                     <td className="py-2 pr-4">
-                                        <button onClick={() => navigate(`/carreras/${c.carreraId}`)} className="text-neon-cyan hover:underline">
+                                        <button onClick={() => navigate(`/carreras/${c.carreraId}`)} className="text-accent-primary hover:underline">
                                             {c.nombre}
                                         </button>
                                     </td>
-                                    <td className="py-2 pr-4 text-slate-300">{c.anio}</td>
-                                    <td className="py-2 pr-4 text-slate-300">{c.cuatrimestre}</td>
-                                    <td className="py-2 text-slate-300">{c.orden}</td>
+                                    <td className="py-2 pr-4 text-text-subtle">{c.anio}</td>
+                                    <td className="py-2 pr-4 text-text-subtle">{c.cuatrimestre}</td>
+                                    <td className="py-2 text-text-subtle">{c.orden}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -132,18 +132,18 @@ export function MateriaDetailPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card title="Correlativas requeridas">
                     {reqGroups.length === 0 ? (
-                        <p className="text-sm text-slate-400">No requiere correlativas.</p>
+                        <p className="text-sm text-text-muted">No requiere correlativas.</p>
                     ) : (
                         <div className="space-y-4">
                             {reqGroups.map((g) => (
                                 <div key={g.carreraNombre}>
-                                    <h4 className="text-sm font-medium text-neon-cyan mb-2">{g.carreraNombre}</h4>
+                                    <h4 className="text-sm font-medium text-accent-primary mb-2">{g.carreraNombre}</h4>
                                     <ul className="space-y-2">
                                         {g.items.map((c) => (
-                                            <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
-                                                <span className="text-sm text-slate-200">
+                                            <li key={c.correlativaId} className="flex items-center justify-between bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                                                <span className="text-sm text-text-default">
                                                     {c.materiaCorrelativaNombre}{' '}
-                                                    <span className="text-slate-400">({c.materiaCorrelativaCodigo})</span>
+                                                    <span className="text-text-muted">({c.materiaCorrelativaCodigo})</span>
                                                 </span>
                                                 <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/materias/${c.materiaCorrelativaId}`)}>
                                                     Ver materia
@@ -159,18 +159,18 @@ export function MateriaDetailPage() {
 
                 <Card title="Es correlativa de">
                     {escGroups.length === 0 ? (
-                        <p className="text-sm text-slate-400">No es correlativa de ninguna materia.</p>
+                        <p className="text-sm text-text-muted">No es correlativa de ninguna materia.</p>
                     ) : (
                         <div className="space-y-4">
                             {escGroups.map((g) => (
                                 <div key={g.carreraNombre}>
-                                    <h4 className="text-sm font-medium text-neon-cyan mb-2">{g.carreraNombre}</h4>
+                                    <h4 className="text-sm font-medium text-accent-primary mb-2">{g.carreraNombre}</h4>
                                     <ul className="space-y-2">
                                         {g.items.map((c) => (
-                                            <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
-                                                <span className="text-sm text-slate-200">
+                                            <li key={c.correlativaId} className="flex items-center justify-between bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                                                <span className="text-sm text-text-default">
                                                     {c.materiaNombre}{' '}
-                                                    <span className="text-slate-400">({c.materiaCodigo})</span>
+                                                    <span className="text-text-muted">({c.materiaCodigo})</span>
                                                 </span>
                                                 <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/materias/${c.materiaId}`)}>
                                                     Ver materia

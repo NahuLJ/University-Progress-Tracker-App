@@ -33,9 +33,9 @@ export function LoginForm() {
                 Iniciar Sesión
             </Button>
 
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-center text-sm text-text-muted">
                 ¿No tenés cuenta?{' '}
-                <a href="/registro" className="text-neon-cyan hover:underline">Registrate</a>
+                <a href="/registro" className="text-accent-primary hover:underline">Registrate</a>
             </p>
         </form>
     );

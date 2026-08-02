@@ -28,22 +28,22 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(
         };
 
         return (
-        <div ref={ref} className={cn('border border-base-600 rounded-lg overflow-hidden bg-base-800/50', className)}>
+        <div ref={ref} className={cn('border border-hairline rounded-md overflow-hidden bg-bg-surface', className)}>
             <button
                 type="button"
                 onClick={handleToggle}
                 className={cn(
-                    'w-full px-4 py-3 bg-base-700/70 border-b border-base-600',
+                    'w-full px-4 py-3 border-b border-hairline',
                     'flex items-center justify-between',
-                    'hover:bg-base-600 transition-colors',
-                    'focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:ring-inset'
+                    'hover:bg-bg-surface-secondary transition-colors',
+                    'focus:outline-none focus:ring-1 focus:ring-accent-primary focus:ring-inset'
                 )}
                 aria-expanded={isOpen}
             >
-                <span className="font-semibold text-white">{title}</span>
+                <span className="text-sm font-semibold text-text-default">{title}</span>
                 <svg
                     className={cn(
-                        'w-5 h-5 text-neon-cyan transition-transform',
+                        'w-5 h-5 text-text-muted transition-transform',
                         isOpen && 'rotate-180'
                     )}
                     fill="none"

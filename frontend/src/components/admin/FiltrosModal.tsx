@@ -47,7 +47,7 @@ export function FiltrosModal({ isOpen, onClose, onApply, sortOptions, defaultVal
         <Modal isOpen={isOpen} onClose={onClose} title="Filtros y ordenamiento" size="sm">
             <div className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Ordenar por</label>
+                    <label className="block text-sm font-medium text-text-subtle mb-1">Ordenar por</label>
                     <Select
                         value={`${sortBy}-${sortOrder}`}
                         onChange={(e) => {
@@ -69,9 +69,9 @@ export function FiltrosModal({ isOpen, onClose, onApply, sortOptions, defaultVal
                         id="incluirInactivos"
                         checked={incluirInactivos}
                         onChange={(e) => setIncluirInactivos(e.target.checked)}
-                        className="rounded bg-base-800 border-base-500 text-neon-cyan"
+                        className="rounded bg-bg-surface-secondary border-hairline text-accent-primary"
                     />
-                    <label htmlFor="incluirInactivos" className="text-sm text-slate-300">
+                    <label htmlFor="incluirInactivos" className="text-sm text-text-subtle">
                         Incluir inactivas
                     </label>
                 </div>

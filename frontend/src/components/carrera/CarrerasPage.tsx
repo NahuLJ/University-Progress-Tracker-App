@@ -75,21 +75,21 @@ export function CarrerasPage() {
     return (
         <div className="space-y-10">
             <div>
-                <h1 className="text-2xl font-bold mb-1">Carreras</h1>
-                <p className="text-sm text-slate-400">Gestioná tus inscripciones y explorá el catálogo.</p>
+                <h1 className="text-lg font-semibold text-text-default mb-1">Carreras</h1>
+                <p className="text-sm text-text-muted">Gestioná tus inscripciones y explorá el catálogo.</p>
             </div>
 
             <section>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-text-default mb-3 flex items-center gap-2">
                     Mis carreras
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalActivas + totalInactivas}</span>
+                    <span className="badge badge-info">{totalActivas + totalInactivas}</span>
                 </h2>
 
                 {activasList.length > 0 && (
                     <div className="mb-6">
                         <div className="flex items-center gap-2 mb-3">
-                            <h3 className="text-sm font-medium text-slate-300">Activas</h3>
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalActivas}</span>
+                            <h3 className="label">Activas</h3>
+                            <span className="badge badge-info">{totalActivas}</span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {activasList.map((insc: any) => (
@@ -107,7 +107,7 @@ export function CarrerasPage() {
                                     type="button"
                                     onClick={() => activas.fetchNextPage()}
                                     disabled={activas.isFetchingNextPage}
-                                    className="px-6 py-2 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                    className="btn-ghost flex items-center gap-2"
                                 >
                                     {activas.isFetchingNextPage ? (
                                         <>
@@ -126,8 +126,8 @@ export function CarrerasPage() {
                 {inactivasList.length > 0 && (
                     <div>
                     <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-sm font-medium text-slate-300">Desinscriptas</h3>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalInactivas}</span>
+                        <h3 className="label">Desinscriptas</h3>
+                        <span className="badge badge-info">{totalInactivas}</span>
                     </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {inactivasList.map((insc: any) => (
@@ -145,7 +145,7 @@ export function CarrerasPage() {
                                     type="button"
                                     onClick={() => inactivas.fetchNextPage()}
                                     disabled={inactivas.isFetchingNextPage}
-                                    className="px-6 py-2 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                    className="btn-ghost flex items-center gap-2"
                                 >
                                     {inactivas.isFetchingNextPage ? (
                                         <>
@@ -163,7 +163,7 @@ export function CarrerasPage() {
 
                 {activasList.length === 0 && inactivasList.length === 0 && (
                     <Card>
-                        <p className="text-slate-400 text-center py-6">
+                        <p className="text-text-muted text-center py-6">
                             Aún no estás inscripto en ninguna carrera.
                         </p>
                     </Card>
@@ -171,13 +171,13 @@ export function CarrerasPage() {
             </section>
 
             <section>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-text-default mb-3 flex items-center gap-2">
                     Carreras disponibles
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30">{totalDisponibles}</span>
+                    <span className="badge badge-info">{totalDisponibles}</span>
                 </h2>
                 {restantes.length === 0 && !disponibles.isFetching ? (
                     <Card>
-                        <p className="text-slate-400 text-center py-6">
+                        <p className="text-text-muted text-center py-6">
                             No hay más carreras disponibles para inscribirte.
                         </p>
                     </Card>
@@ -194,7 +194,7 @@ export function CarrerasPage() {
                                     type="button"
                                     onClick={() => disponibles.fetchNextPage()}
                                     disabled={disponibles.isFetchingNextPage}
-                                    className="px-6 py-2 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                    className="btn-ghost flex items-center gap-2"
                                 >
                                     {disponibles.isFetchingNextPage ? (
                                         <>

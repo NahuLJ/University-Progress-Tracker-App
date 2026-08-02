@@ -71,14 +71,14 @@ export function BloqueHorarioCelda({ bloqueId, dia, materia, onDrop, onMoveDrop,
             data-bloque={bloqueId}
             data-dia={dia}
             style={style}
-            className={`h-12 p-1 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
-                isPreview ? 'border-neon-cyan bg-neon-cyan/10' : 'border-base-500 hover:border-neon-cyan/60'
+            className={`h-12 p-1 border-2 border-dashed rounded-md transition-colors cursor-pointer ${
+                isPreview ? 'border-accent-primary/40 bg-accent-primary/10' : 'border-hairline hover:border-accent-primary/40'
             }`}
             onDragEnter={handleDragEnter}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
         >
-            <div className="h-full flex items-center justify-center text-slate-500 text-xs">
+            <div className="h-full flex items-center justify-center text-text-muted text-xs">
                 Vacío
             </div>
         </div>

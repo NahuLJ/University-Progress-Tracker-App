@@ -19,9 +19,9 @@ const icons: Record<string, React.ReactNode> = {
 };
 
 const styles: Record<string, string> = {
-  success: 'border-neon-green/40 text-neon-green',
-  error: 'border-neon-red/40 text-neon-red',
-  info: 'border-neon-cyan/40 text-neon-cyan',
+  success: 'border-status-success/40 text-status-success',
+  error: 'border-status-danger/40 text-status-danger',
+  info: 'border-accent-primary/40 text-accent-primary',
 };
 
 export function Snackbar() {
@@ -35,7 +35,7 @@ export function Snackbar() {
       {notifications.map((n) => (
         <div
           key={n.id}
-          className={`flex items-start gap-3 p-4 rounded-lg border bg-base-900/95 backdrop-blur shadow-neon-soft animate-slide-in ${styles[n.type]}`}
+          className={`flex items-start gap-3 p-4 rounded-md border bg-bg-surface animate-fade-in ${styles[n.type]}`}
           role="alert"
         >
           <div className="flex-shrink-0">{icons[n.type]}</div>

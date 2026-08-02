@@ -5,25 +5,24 @@ interface ProgressBarProps {
     max?: number;
     className?: string;
     showLabel?: boolean;
-    color?: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange';
+    color?: 'primary' | 'cyan' | 'success' | 'warning' | 'danger';
 }
 
-export function ProgressBar({ value, max = 100, className, showLabel = false, color = 'blue' }: ProgressBarProps) {
+export function ProgressBar({ value, max = 100, className, showLabel = false, color = 'primary' }: ProgressBarProps) {
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
     const colors = {
-        blue: 'bg-neon-cyan shadow-neon-cyan',
-        green: 'bg-neon-green shadow-neon-green',
-        yellow: 'bg-neon-yellow shadow-neon-yellow',
-        red: 'bg-neon-red shadow-neon-red',
-        purple: 'bg-neon-violet shadow-neon-violet',
-        orange: 'bg-neon-orange',
+        primary: 'bg-accent-primary',
+        cyan: 'bg-gradient-to-r from-accent-primary to-accent-cyan',
+        success: 'bg-status-success',
+        warning: 'bg-status-warning',
+        danger: 'bg-status-danger',
     };
 
     return (
         <div className={cn('w-full', className)}>
-            <div className="h-2 bg-base-600 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-bg-surface-secondary rounded-full overflow-hidden">
                 <div
-                    className={cn('h-full transition-all duration-300 rounded-full', colors[color])}
+                    className={cn('h-full transition-[width] duration-500 ease-in-out rounded-full', colors[color])}
                     style={{ width: `${percentage}%` }}
                     role="progressbar"
                     aria-valuenow={value}
@@ -32,7 +31,7 @@ export function ProgressBar({ value, max = 100, className, showLabel = false, co
                 />
             </div>
             {showLabel && (
-                <p className="text-xs text-slate-400 mt-1 text-right">{Math.round(percentage)}%</p>
+                <p className="label mt-1 text-right">{Math.round(percentage)}%</p>
             )}
         </div>
     );

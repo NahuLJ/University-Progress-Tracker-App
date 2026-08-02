@@ -69,13 +69,13 @@ export function TablaMaterias() {
         <div className="space-y-4">
             <div className="flex items-center gap-3">
                 <div className="relative flex-1">
-                    <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                     <input
                         type="text"
                         placeholder="Buscar materias por nombre o código..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-base-800/80 border border-base-500 rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-neon-cyan"
+                        className="input pl-10"
                     />
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setFiltrosOpen(true)}>
@@ -91,20 +91,20 @@ export function TablaMaterias() {
                     {data.data.map((materia: MateriaAdminRow) => (
                         <div
                             key={materia.materiaId}
-                            className="flex items-center gap-4 bg-base-800/30 border border-base-700/50 rounded-lg px-5 py-4 hover:bg-base-800/50 hover:border-base-600/50 transition-all"
+                            className="flex items-center gap-4 bg-bg-surface-secondary/30 border border-hairline rounded-md px-5 py-4 hover:bg-bg-surface-secondary/60 transition-colors"
                         >
                             <div className="flex-1 min-w-0 flex items-center gap-4">
                                 <Badge variant="info" size="sm">{materia.codigo}</Badge>
-                                <span className="text-sm font-medium text-white truncate">
+                                <span className="text-sm font-medium text-text-default truncate">
                                     {materia.nombre}
                                 </span>
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-xs text-slate-400 bg-base-800/80 px-2.5 py-1 rounded-full border border-base-700/50">
+                                <span className="badge badge-gray">
                                     {materia.cargaHoraria} horas
                                 </span>
-                                <span className="text-xs text-slate-400 bg-base-800/80 px-2.5 py-1 rounded-full border border-base-700/50">
+                                <span className="badge badge-gray">
                                     {materia.creditos} créditos
                                 </span>
                                 <Badge variant="info" size="sm">{materia.totalCarreras ?? 0} carreras</Badge>
@@ -115,18 +115,18 @@ export function TablaMaterias() {
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0 border-l border-base-700/50 pl-3">
+                            <div className="flex items-center gap-1 shrink-0 border-l border-hairline pl-3">
                                 <button
                                     title="Ver detalle"
                                     onClick={() => navigate(`/admin/materias/${materia.materiaId}`)}
-                                    className="p-2 text-slate-400 hover:text-white hover:bg-base-700/60 rounded-lg transition-all"
+                                    className="p-2 text-text-muted hover:text-text-default hover:bg-bg-surface-secondary rounded-md transition-colors"
                                 >
                                     <Icon name="ver" className="w-4 h-4" />
                                 </button>
                                 <button
                                     title="Editar"
                                     onClick={() => navigate(`/admin/materias/${materia.materiaId}/editar`)}
-                                    className="p-2 text-slate-400 hover:text-neon-cyan hover:bg-base-700/60 rounded-lg transition-all"
+                                    className="p-2 text-text-muted hover:text-accent-primary hover:bg-bg-surface-secondary rounded-md transition-colors"
                                 >
                                     <Icon name="edit" className="w-4 h-4" />
                                 </button>
@@ -134,7 +134,7 @@ export function TablaMaterias() {
                                     <button
                                         title="Eliminar"
                                         onClick={() => setEliminarConfirm(materia)}
-                                        className="p-2 text-slate-400 hover:text-neon-red hover:bg-base-700/60 rounded-lg transition-all"
+                                        className="p-2 text-text-muted hover:text-status-danger hover:bg-bg-surface-secondary rounded-md transition-colors"
                                     >
                                         <Icon name="delete" className="w-4 h-4" />
                                     </button>
@@ -142,7 +142,7 @@ export function TablaMaterias() {
                                     <button
                                         title="Restaurar"
                                         onClick={() => restaurarMateria.mutate(materia.materiaId)}
-                                        className="p-2 text-slate-400 hover:text-neon-cyan hover:bg-base-700/60 rounded-lg transition-all"
+                                        className="p-2 text-text-muted hover:text-accent-primary hover:bg-bg-surface-secondary rounded-md transition-colors"
                                     >
                                         <Icon name="restore" className="w-4 h-4" />
                                     </button>
@@ -151,7 +151,7 @@ export function TablaMaterias() {
                         </div>
                     ))}
                     {data.data.length === 0 && (
-                        <div className="py-8 text-center text-slate-400">
+                        <div className="py-8 text-center text-text-muted">
                             No se encontraron materias
                         </div>
                     )}
@@ -188,12 +188,12 @@ export function TablaMaterias() {
             >
                 {eliminarConfirm && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-300">
-                            Estás por desactivar la materia <strong className="text-white">{eliminarConfirm.nombre}</strong> ({eliminarConfirm.codigo}).
+                        <p className="text-sm text-text-subtle">
+                            Estás por desactivar la materia <strong className="text-text-default">{eliminarConfirm.nombre}</strong> ({eliminarConfirm.codigo}).
                         </p>
-                        <div className="bg-neon-yellow/10 border border-neon-yellow/30 rounded-lg p-3">
-                            <p className="text-sm text-neon-yellow font-medium">Información importante</p>
-                            <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1">
+                        <div className="bg-status-warning/10 border border-status-warning/30 rounded-md p-3">
+                            <p className="text-sm text-status-warning font-medium">Información importante</p>
+                            <ul className="mt-2 text-sm text-text-subtle list-disc list-inside space-y-1">
                                 <li>Los datos de progreso de esta materia serán eliminados</li>
                                 <li>Las planificaciones que incluyan esta materia serán eliminadas</li>
                                 <li>Las correlativas asociadas serán eliminadas</li>

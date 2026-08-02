@@ -9,10 +9,10 @@ interface AlertProps {
 
 export function Alert({ children, variant = 'error', className, onClose }: AlertProps) {
     const variants = {
-        error: 'bg-neon-red/10 border-neon-red/40 text-neon-red',
-        success: 'bg-neon-green/10 border-neon-green/40 text-neon-green',
-        warning: 'bg-neon-yellow/10 border-neon-yellow/40 text-neon-yellow',
-        info: 'bg-neon-cyan/10 border-neon-cyan/40 text-neon-cyan',
+        error: 'bg-status-danger/10 border-status-danger/40 text-status-danger',
+        success: 'bg-status-success/10 border-status-success/40 text-status-success',
+        warning: 'bg-status-warning/10 border-status-warning/40 text-status-warning',
+        info: 'bg-accent-primary/10 border-accent-primary/40 text-accent-primary',
     };
 
     const icons = {
@@ -41,7 +41,7 @@ export function Alert({ children, variant = 'error', className, onClose }: Alert
     return (
         <div
             className={cn(
-                'flex items-start gap-3 p-4 rounded-lg border',
+                'flex items-start gap-3 p-4 rounded-md border',
                 variants[variant],
                 className,
             )}

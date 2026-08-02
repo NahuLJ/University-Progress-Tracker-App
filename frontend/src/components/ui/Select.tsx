@@ -66,7 +66,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         return (
             <div ref={containerRef} className="space-y-1 relative">
                 {label && (
-                    <label htmlFor={selectId} className="block text-sm font-medium text-slate-300">
+                    <label htmlFor={selectId} className="label block">
                         {label}
                     </label>
                 )}
@@ -75,9 +75,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                     id={selectId}
                     ref={ref as any}
                     className={cn(
-                        'w-full px-3 py-1.5 bg-base-800/80 border rounded-lg shadow-inner text-slate-100 text-sm transition-colors flex items-center justify-between',
-                        'focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60',
-                        error ? 'border-neon-red/70 focus:ring-neon-red' : 'border-base-500',
+                        'w-full px-3 py-2 text-sm rounded-md bg-bg-surface-secondary border border-hairline text-text-default transition-colors duration-150 flex items-center justify-between',
+                        'focus:outline-none focus:border-accent-primary',
+                        error ? 'border-status-danger/70 focus:border-status-danger' : '',
                         disabled && 'opacity-50 cursor-not-allowed',
                         className,
                     )}
@@ -87,12 +87,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                     aria-haspopup="listbox"
                 >
                     <span className="truncate">{displayText}</span>
-                    <svg className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-text-muted flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
                 {open && (
-                    <div className="absolute z-10 w-full mt-1 bg-base-800 border border-base-500 rounded-lg shadow-lg shadow-black/50 max-h-48 overflow-y-auto scrollbar-thin">
+                    <div className="absolute z-10 w-full mt-1 bg-bg-surface border border-hairline rounded-md max-h-48 overflow-y-auto scrollbar-none">
                         {options.map((option, index) => (
                             <div
                                 key={option.value + index}
@@ -101,8 +101,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                                 className={cn(
                                     'px-3 py-2 text-sm cursor-pointer transition-colors',
                                     option.value === String(value)
-                                        ? 'bg-base-700 text-neon-cyan'
-                                        : 'text-slate-100 hover:bg-base-700',
+                                        ? 'bg-accent-primary/10 text-accent-primary'
+                                        : 'text-text-default hover:bg-bg-surface-secondary',
                                     option.disabled && 'opacity-40 cursor-not-allowed',
                                 )}
                                 onClick={() => !option.disabled && handleSelect(option.value)}
@@ -113,7 +113,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                     </div>
                 )}
                 {error && (
-                    <p id={`${selectId}-error`} className="text-sm text-neon-red" role="alert">
+                    <p id={`${selectId}-error`} className="text-xs text-status-danger" role="alert">
                         {error}
                     </p>
                 )}

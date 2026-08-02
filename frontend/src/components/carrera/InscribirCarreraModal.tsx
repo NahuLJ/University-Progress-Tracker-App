@@ -43,9 +43,9 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, c
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Inscribirse a ${carreraNombre}`} size="md">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="p-3 bg-base-800/50 rounded-lg border border-base-600">
-                    <p className="text-sm font-medium text-slate-300 mb-1">Carrera</p>
-                    <p className="text-white">{carreraNombre}</p>
+                <div className="p-3 bg-bg-surface-secondary rounded-md border border-hairline">
+                    <p className="label mb-1">Carrera</p>
+                    <p className="text-text-default">{carreraNombre}</p>
                 </div>
 
                 <Input
@@ -56,7 +56,7 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, c
                 />
 
                 {inscribirCarrera.isError && (
-                    <p className="text-sm text-neon-red">
+                    <p className="text-sm text-status-danger">
                         No se pudo completar la inscripción. Intentá nuevamente.
                     </p>
                 )}

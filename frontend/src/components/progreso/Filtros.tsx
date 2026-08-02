@@ -20,10 +20,10 @@ export function FiltroEstado({ filtroEstado, setFiltroEstado }: FiltroEstadoProp
                 <button
                     key={e.value}
                     onClick={() => setFiltroEstado(e.value)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                         filtroEstado === e.value
-                            ? 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]'
-                            : 'border-2 border-base-600 text-slate-300 bg-transparent hover:bg-white/5 hover:text-white'
+                            ? 'bg-accent-primary/10 text-accent-primary'
+                            : 'bg-transparent border border-hairline text-text-muted hover:text-text-default hover:bg-bg-surface-secondary'
                     }`}
                 >
                     {e.label}
@@ -51,7 +51,7 @@ export function FiltroBusqueda({ busqueda, setBusqueda }: FiltroBusquedaProps) {
                 setValor(e.target.value);
                 debouncedSetBusqueda(setBusqueda, e.target.value);
             }}
-            className="w-full sm:w-64 px-3 py-2 bg-base-800/80 border border-base-500 rounded-lg text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60"
+            className="input w-full sm:w-64"
         />
     );
 }

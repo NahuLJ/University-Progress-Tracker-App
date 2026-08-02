@@ -26,18 +26,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         if (this.state.hasError) {
             return (
                 <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="max-w-md w-full card rounded-lg p-6 text-center">
-                        <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-neon-red/15 text-neon-red shadow-neon-soft">
+                    <div className="max-w-md w-full card rounded-card p-6 text-center">
+                        <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-xl bg-status-danger/15 text-status-danger">
                             <Icon name="warning" className="w-7 h-7" />
                         </div>
-                        <h1 className="text-lg font-semibold text-white mb-2">
+                        <h1 className="text-lg font-semibold text-text-default mb-2">
                             Algo salió mal
                         </h1>
-                        <p className="text-sm text-slate-300 mb-4">
+                        <p className="text-sm text-text-subtle mb-4">
                             Ocurrió un error inesperado. Podés reintentar recargando la página.
                         </p>
                         {this.state.message && (
-                            <p className="text-xs text-neon-red mb-4 break-words">{this.state.message}</p>
+                            <p className="text-xs text-status-danger mb-4 break-words">{this.state.message}</p>
                         )}
                         <button
                             onClick={this.handleReload}

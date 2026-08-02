@@ -13,7 +13,7 @@ export function CarrerasResumenList({ carreras, usuarioCarreraIdActivo, onSelecc
     if (!carreras || carreras.length === 0) {
         return (
             <Card>
-                <p className="text-slate-400 text-center py-4">No tenés carreras activas</p>
+                <p className="text-text-muted text-center py-4">No tenés carreras activas</p>
             </Card>
         );
     }
@@ -27,17 +27,17 @@ export function CarrerasResumenList({ carreras, usuarioCarreraIdActivo, onSelecc
                         <div
                             key={carrera.usuarioCarreraId}
                             className={cn(
-                                'flex items-center justify-between p-3 border rounded-lg transition-all',
-                                onSeleccionar ? 'cursor-pointer hover:border-neon-cyan/60 hover:shadow-neon-cyan' : 'border-base-600',
+                                'flex items-center justify-between p-3 rounded-md border transition-colors',
+                                onSeleccionar ? 'cursor-pointer hover:bg-bg-surface-secondary' : 'border-hairline',
                                 activa
-                                    ? 'border-neon-cyan/70 shadow-neon-cyan/20 shadow-sm'
-                                    : 'border-base-600',
+                                    ? 'bg-accent-primary/10 border-accent-primary/40'
+                                    : 'border-hairline',
                             )}
                             onClick={onSeleccionar ? () => onSeleccionar(carrera.usuarioCarreraId) : undefined}
                         >
                             <div className="min-w-0">
-                                <h3 className="font-medium truncate">{carrera.carrera.nombre}</h3>
-                                <p className="text-sm text-slate-400">
+                                <h3 className="text-sm font-medium truncate">{carrera.carrera.nombre}</h3>
+                                <p className="text-xs text-text-muted">
                                     {carrera.activo ? 'Carrera activa' : 'Inactiva'}
                                 </p>
                             </div>
@@ -48,7 +48,7 @@ export function CarrerasResumenList({ carreras, usuarioCarreraIdActivo, onSelecc
                                 <div className="w-48 mt-1">
                                     <ProgressBar value={carrera.progresoPorcentaje || 0} />
                                 </div>
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-xs text-text-muted mt-1">
                                     {carrera.materiasCompletadas || 0} / {carrera.materiasTotales || 0} materias
                                 </p>
                             </div>

@@ -15,7 +15,7 @@ export function AdminTabs({
     onChange: (key: TabKey) => void;
 }) {
     return (
-        <div className="flex gap-2 border-b border-base-600 mb-6">
+        <div className="flex gap-2 border-b border-hairline mb-6">
             {TABS.map((tab) => (
                 <button
                     key={tab.key}
@@ -23,8 +23,8 @@ export function AdminTabs({
                     className={cn(
                         'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
                         active === tab.key
-                            ? 'border-neon-cyan text-neon-cyan'
-                            : 'border-transparent text-slate-300 hover:text-white',
+                            ? 'border-accent-primary text-accent-primary'
+                            : 'border-transparent text-text-muted hover:text-text-default',
                     )}
                 >
                     {tab.label}

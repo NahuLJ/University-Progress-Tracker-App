@@ -84,7 +84,7 @@ export function CorrelativasEditor({ carreraId }: Props) {
             <Card className="p-4 lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-white">Seleccionar materia</h3>
+                        <h3 className="text-sm font-semibold text-text-default">Seleccionar materia</h3>
                         {materiaId > 0 && <Badge variant="info">{correlativasExistentes.length} correlativa(s)</Badge>}
                     </div>
                     <Button
@@ -109,19 +109,19 @@ export function CorrelativasEditor({ carreraId }: Props) {
                         {detalle.isLoading && <LoadingSpinner />}
                         {detalle.isError && <QueryError error={detalle.error} onRetry={() => detalle.refetch()} />}
                         {detalle.data && correlativasExistentes.length === 0 && (
-                            <p className="text-sm text-slate-400 mt-2">Esta materia no tiene correlativas en esta carrera.</p>
+                            <p className="text-sm text-text-muted mt-2">Esta materia no tiene correlativas en esta carrera.</p>
                         )}
                         <ul className="space-y-2 mt-2">
                             {correlativasExistentes.map((c) => (
-                                <li key={c.correlativaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
-                                    <span className="text-sm text-slate-200">
+                                <li key={c.correlativaId} className="flex items-center justify-between bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                                    <span className="text-sm text-text-default">
                                         {c.materiaCorrelativa.nombre}
                                         <Badge variant="info" size="sm" className="ml-2">{c.materiaCorrelativa.codigo}</Badge>
                                     </span>
                                     <button
                                         title="Eliminar correlativa"
                                         onClick={() => setEliminarConfirm({ correlativaId: c.correlativaId, nombre: c.materiaCorrelativa.nombre, codigo: c.materiaCorrelativa.codigo })}
-                                        className="text-slate-400 hover:text-neon-red transition-colors ml-3"
+                                        className="text-text-muted hover:text-status-danger transition-colors ml-3"
                                     >
                                         <Icon name="delete" className="w-4 h-4" />
                                     </button>
@@ -142,12 +142,12 @@ export function CorrelativasEditor({ carreraId }: Props) {
                     <p className="text-sm text-slate-400">Seleccioná una materia para gestionar sus correlativas.</p>
                 ) : (
                     <div className="space-y-4">
-                        <div className="p-3 bg-base-800/50 rounded-lg border border-base-600">
-                            <p className="text-sm font-medium text-slate-300 mb-1">Materia seleccionada</p>
-                            <p className="text-white">{materiasDelPlan.find((m) => m.materiaId === materiaId)?.nombre}</p>
+                        <div className="p-3 bg-bg-surface-secondary/60 rounded-md border border-hairline">
+                            <p className="text-sm font-medium text-text-subtle mb-1">Materia seleccionada</p>
+                            <p className="text-text-default">{materiasDelPlan.find((m) => m.materiaId === materiaId)?.nombre}</p>
                         </div>
                         {posibles.length === 0 ? (
-                            <p className="text-sm text-slate-400">No hay materias disponibles para asignar como correlativas.</p>
+                            <p className="text-sm text-text-muted">No hay materias disponibles para asignar como correlativas.</p>
                         ) : (
                             <Select
                                 label="Materia correlativa"
@@ -182,13 +182,13 @@ export function CorrelativasEditor({ carreraId }: Props) {
             >
                 {eliminarConfirm && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
-                            <span className="text-sm text-slate-200">
+                        <div className="flex items-center gap-2 flex-wrap bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+                            <span className="text-sm text-text-default">
                                 {eliminarConfirm.nombre}
                                 <Badge variant="info" size="sm" className="ml-2">{eliminarConfirm.codigo}</Badge>
                             </span>
                         </div>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-text-subtle">
                             Estás por eliminar esta materia como correlativa. Los estudiantes podrán cursar la materia seleccionada sin haberla aprobado.
                         </p>
                         <div className="flex justify-end gap-3 pt-2">

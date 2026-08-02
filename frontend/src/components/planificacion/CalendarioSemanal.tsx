@@ -56,14 +56,14 @@ export function CalendarioSemanal({ onBeforeQuitar, idsCompletadas }: Calendario
     const gridItems: React.ReactNode[] = [];
 
     gridItems.push(
-        <div key="header-time" className="font-semibold p-2 text-sm bg-base-700/60 text-slate-200" style={{ gridColumn: 1, gridRow: 1 }}>
+        <div key="header-time" className="font-semibold p-2 text-sm bg-bg-surface-secondary text-text-subtle" style={{ gridColumn: 1, gridRow: 1 }}>
             Horario
         </div>,
     );
 
     DIAS.forEach((dia, i) => {
         gridItems.push(
-            <div key={`header-${dia.id}`} className="font-semibold p-2 text-sm text-center bg-base-700/60 text-slate-200" style={{ gridColumn: i + 2, gridRow: 1 }}>
+            <div key={`header-${dia.id}`} className="font-semibold p-2 text-sm text-center bg-bg-surface-secondary text-text-subtle" style={{ gridColumn: i + 2, gridRow: 1 }}>
                 {dia.corto}
             </div>,
         );
@@ -71,7 +71,7 @@ export function CalendarioSemanal({ onBeforeQuitar, idsCompletadas }: Calendario
 
     BLOQUES.forEach((bloque) => {
         gridItems.push(
-            <div key={`time-${bloque.id}`} className="px-2 h-12 text-sm text-slate-400 font-medium flex items-center" style={{ gridColumn: 1, gridRow: bloque.id + 1 }}>
+            <div key={`time-${bloque.id}`} className="px-2 h-12 text-sm text-text-muted font-medium flex items-center" style={{ gridColumn: 1, gridRow: bloque.id + 1 }}>
                 {bloque.label}
             </div>,
         );

@@ -14,7 +14,7 @@ export function PasswordInput({ label, error, helperText, className, id, ...prop
     return (
         <div className="w-full">
             {label && (
-                <label htmlFor={inputId} className="block text-sm font-medium text-slate-300 mb-1">
+                <label htmlFor={inputId} className="label block mb-1">
                     {label}
                 </label>
             )}
@@ -23,11 +23,11 @@ export function PasswordInput({ label, error, helperText, className, id, ...prop
                     id={inputId}
                     type={showPassword ? 'text' : 'password'}
                     className={cn(
-                        'w-full px-3 py-2 bg-base-800/80 border rounded-lg shadow-inner text-slate-100 placeholder:text-slate-500 transition-colors',
-                        'focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60',
-                        'disabled:bg-base-700 disabled:text-slate-500 disabled:cursor-not-allowed',
+                        'w-full px-3 py-2 text-sm rounded-md bg-bg-surface-secondary border border-hairline text-text-default placeholder:text-text-muted/50 transition-colors duration-150',
+                        'focus:outline-none focus:border-accent-primary',
+                        'disabled:bg-bg-surface-secondary disabled:text-text-muted disabled:cursor-not-allowed',
                         'pr-10',
-                        error ? 'border-neon-red/70 text-neon-red placeholder-neon-red/50' : 'border-base-500',
+                        error ? 'border-status-danger/70 focus:border-status-danger' : '',
                         className,
                     )}
                     aria-invalid={error ? 'true' : 'false'}
@@ -37,7 +37,7 @@ export function PasswordInput({ label, error, helperText, className, id, ...prop
                 <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-neon-cyan"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-default"
                     aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                     {showPassword ? (
@@ -53,12 +53,12 @@ export function PasswordInput({ label, error, helperText, className, id, ...prop
                 </button>
             </div>
             {error && (
-                <p id={`${inputId}-error`} className="mt-1 text-sm text-neon-red" role="alert">
+                <p id={`${inputId}-error`} className="mt-1 text-xs text-status-danger" role="alert">
                     {error}
                 </p>
             )}
             {helperText && !error && (
-                <p id={`${inputId}-helper`} className="mt-1 text-sm text-slate-400">
+                <p id={`${inputId}-helper`} className="mt-1 text-xs text-text-muted">
                     {helperText}
                 </p>
             )}

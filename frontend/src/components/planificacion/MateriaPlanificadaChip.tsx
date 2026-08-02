@@ -47,20 +47,20 @@ export function MateriaPlanificadaChip({ materia, onQuitar, onBeforeQuitar, esCo
             draggable={!esCompletada}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            className={`flex flex-col justify-center items-center px-1 py-0.5 rounded-lg h-12 group border transition-colors overflow-hidden ${
+            className={`flex flex-col justify-center items-center px-1 py-0.5 rounded-md h-12 group border transition-colors overflow-hidden ${
                 esCompletada
-                    ? 'bg-green-900/20 text-green-400 border-green-500/30 cursor-default opacity-70'
-                    : 'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30 cursor-grab active:cursor-grabbing'
+                    ? 'bg-status-success/15 text-status-success border-status-success/30 cursor-default opacity-70'
+                    : 'bg-accent-primary/15 text-accent-primary border-accent-primary/30 cursor-grab active:cursor-grabbing'
             }`}
         >
             <span className="text-xs font-semibold leading-tight text-center truncate w-full">{materia.codigo}</span>
             <span className="text-[10px] leading-tight text-center truncate w-full">{materia.nombre}</span>
             {esCompletada ? (
-                <span className="text-[10px] text-green-400/70 leading-tight">Completada</span>
+                <span className="text-[10px] text-status-success/70 leading-tight">Completada</span>
             ) : (
                 <button
                     onClick={handleQuitarClick}
-                    className="opacity-0 group-hover:opacity-100 hover:text-white transition-all p-0.5 rounded hover:bg-neon-cyan/20"
+                    className="opacity-0 group-hover:opacity-100 hover:text-text-default transition-all p-0.5 rounded hover:bg-accent-primary/20"
                     aria-label="Quitar materia"
                 >
                     <Icon name="close" className="w-3 h-3" />

@@ -31,22 +31,22 @@ export function Paginador({ page, limit, total, totalPages, onPageChange, onLimi
 
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-            <p className="text-sm text-slate-400">
+            <p className="text-xs text-text-muted">
                 Mostrando {desde}-{hasta} de {total} resultados
             </p>
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                     {getPages().map((p, i) =>
                         p === '...' ? (
-                            <span key={`ellipsis-${i}`} className="px-1 text-slate-500">...</span>
+                            <span key={`ellipsis-${i}`} className="px-1 text-text-muted">...</span>
                         ) : (
                             <button
                                 key={p}
                                 onClick={() => onPageChange(p)}
-                                className={`px-3 py-1 text-sm rounded transition-colors ${
+                                className={`px-3 py-1 text-xs rounded-md transition-colors ${
                                     p === page
-                                        ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50'
-                                        : 'text-slate-400 hover:text-white hover:bg-base-700'
+                                        ? 'bg-accent-primary/15 text-accent-primary border border-accent-primary/30'
+                                        : 'text-text-muted hover:text-text-default hover:bg-bg-surface-secondary'
                                 }`}
                             >
                                 {p}

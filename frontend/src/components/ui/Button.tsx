@@ -16,27 +16,27 @@ export function Button({
     ...props
 }: ButtonProps) {
     const variants = {
-        primary: 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)]',
-        secondary: 'border-2 border-neon-violet/60 text-neon-violet bg-transparent hover:bg-neon-violet/10 hover:shadow-[0_0_10px_rgba(139,92,246,0.8)]',
-        outline: 'border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-neon-cyan',
-        ghost: 'text-slate-300 hover:bg-white/5 hover:text-white',
-        danger: 'border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)]',
-        warning: 'border-2 border-neon-yellow/60 text-neon-yellow bg-transparent hover:bg-neon-yellow/10 hover:shadow-[0_0_10px_rgba(251,146,60,0.8)]',
-        success: 'border-2 border-neon-green/60 text-neon-green bg-transparent hover:bg-neon-green/10 hover:shadow-[0_0_10px_rgba(34,197,94,0.8)]',
+        primary: 'bg-accent-primary text-accent-foreground hover:opacity-90',
+        secondary: 'bg-bg-surface-secondary text-text-default hover:bg-bg-surface-secondary/80',
+        outline: 'bg-transparent border border-hairline text-text-muted hover:text-text-default hover:border-text-muted/40',
+        ghost: 'bg-transparent text-text-muted hover:text-text-default hover:bg-bg-surface-secondary',
+        danger: 'bg-transparent border border-hairline text-text-muted hover:text-status-danger hover:border-status-danger/40',
+        warning: 'bg-transparent border border-hairline text-text-muted hover:text-status-warning hover:border-status-warning/40',
+        success: 'bg-transparent border border-hairline text-text-muted hover:text-status-success hover:border-status-success/40',
     };
 
     const sizes = {
-        sm: 'px-3 py-1.5 text-sm',
-        md: 'px-4 py-2 text-base',
-        lg: 'px-6 py-3 text-lg',
+        sm: 'px-3 py-1.5 text-xs',
+        md: 'px-3 py-2 text-xs',
+        lg: 'px-4 py-2.5 text-sm',
     };
 
     return (
         <button
             className={cn(
-                'inline-flex items-center justify-center font-medium rounded-lg transition-all',
-                'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-base-900',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'inline-flex items-center justify-center gap-2 font-medium rounded-md',
+                'transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent-primary',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
                 variants[variant],
                 sizes[size],
                 className,

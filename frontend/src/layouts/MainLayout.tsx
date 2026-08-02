@@ -40,27 +40,27 @@ export function MainLayout() {
 
     const sidebarContent = (
         <>
-            <div className="h-16 flex items-center justify-between px-4 border-b border-base-600">
+            <div className="h-16 flex items-center justify-between px-4 border-b border-hairline-subtle">
                 {!collapsed && (
-                    <span className="text-lg font-bold neon-text leading-tight">
+                    <span className="text-sm font-semibold text-text-default leading-tight">
                         Seguimiento Universitario
                     </span>
                 )}
                 <button
                     type="button"
                     onClick={toggle}
-                    className="hidden md:inline-flex p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                    className="hidden md:inline-flex p-2 rounded-md text-text-muted hover:bg-bg-surface-secondary hover:text-text-default transition-colors"
                     title={collapsed ? 'Desplegar' : 'Contraer'}
                 >
                     <Icon name="collapse" className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
                 </button>
             </div>
 
-            <div className={`p-3 border-b border-base-600 ${collapsed ? 'flex justify-center' : ''}`}>
+            <div className={`p-3 border-b border-hairline-subtle ${collapsed ? 'flex justify-center' : ''}`}>
                 <CarreraSelector collapsed={collapsed} />
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none">
                 {NAV_ITEMS.map((item) => (
                     <NavLink
                         key={item.to}
@@ -68,12 +68,12 @@ export function MainLayout() {
                         onClick={() => setMobileOpen(false)}
                         title={collapsed ? item.label : undefined}
                         className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            `flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-medium transition-colors duration-150 ${
                                 collapsed ? 'justify-center' : ''
                             } ${
                                 isActive
-                                    ? 'bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                    ? 'text-accent-primary bg-accent-primary/15'
+                                    : 'text-text-muted hover:text-text-default hover:bg-bg-surface-secondary'
                             }`
                         }
                     >
@@ -83,15 +83,15 @@ export function MainLayout() {
                 ))}
             </nav>
 
-            <div className="p-3 border-t border-base-600">
+            <div className="p-3 border-t border-hairline-subtle">
                 {!collapsed && usuario && (
                     <div className="flex items-center gap-3 mb-3 px-1">
-                        <div className="w-9 h-9 rounded-full bg-neon-violet/15 text-neon-violet shadow-neon-violet flex items-center justify-center font-semibold text-sm shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-accent-primary/15 text-accent-primary flex items-center justify-center font-semibold text-sm shrink-0">
                             {iniciales(usuario.nombre)}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{usuario.nombre}</p>
-                            <p className="text-xs text-slate-400 truncate">{usuario.email}</p>
+                            <p className="text-sm font-medium text-text-default truncate">{usuario.nombre}</p>
+                            <p className="text-xs text-text-muted truncate">{usuario.email}</p>
                         </div>
                     </div>
                 )}
@@ -99,7 +99,7 @@ export function MainLayout() {
                     type="button"
                     onClick={logout}
                     title={collapsed ? 'Cerrar sesión' : undefined}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border-2 border-neon-red/60 text-neon-red bg-transparent hover:bg-neon-red/10 hover:shadow-[0_0_10px_rgba(248,113,113,0.8)] transition-all"
+                    className="btn-danger w-full"
                 >
                     <Icon name="close" className="w-4 h-4 shrink-0" />
                     {!collapsed && 'Cerrar sesión'}
@@ -112,8 +112,8 @@ export function MainLayout() {
         <div className="min-h-screen flex">
             {/* Sidebar fijo en md+ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-40 bg-base-900/90 backdrop-blur-md border-r border-base-600 flex-col hidden md:flex transition-[width] duration-300 ${
-                    collapsed ? 'w-20' : 'w-64'
+                className={`fixed inset-y-0 left-0 z-40 bg-bg-sidebar border-r border-hairline-subtle flex-col hidden md:flex transition-[width] duration-300 ${
+                    collapsed ? 'w-20' : 'w-56'
                 }`}
             >
                 {sidebarContent}
@@ -129,7 +129,7 @@ export function MainLayout() {
 
             {/* Sidebar overlay en móvil */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 bg-base-900/95 backdrop-blur-md border-r border-base-600 flex flex-col w-64 transition-transform duration-300 md:hidden ${
+                className={`fixed inset-y-0 left-0 z-50 bg-bg-sidebar border-r border-hairline-subtle flex flex-col w-56 transition-transform duration-300 md:hidden ${
                     mobileOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -137,22 +137,22 @@ export function MainLayout() {
             </aside>
 
             {/* Barra superior móvil */}
-            <div className="md:hidden fixed top-0 inset-x-0 z-30 h-14 bg-base-900/90 backdrop-blur-md border-b border-base-600 flex items-center justify-between px-4">
+            <div className="md:hidden fixed top-0 inset-x-0 z-30 h-14 bg-bg-sidebar border-b border-hairline-subtle flex items-center justify-between px-4">
                 <button
                     type="button"
                     onClick={() => setMobileOpen(true)}
-                    className="p-2 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white"
+                    className="p-2 rounded-md text-text-muted hover:bg-bg-surface-secondary hover:text-text-default"
                     title="Abrir menú"
                 >
                     <Icon name="menu" className="w-6 h-6" />
                 </button>
-                <span className="text-sm font-bold neon-text">Seguimiento Universitario</span>
+                <span className="text-sm font-semibold text-text-default">Seguimiento Universitario</span>
                 <div className="w-10" />
             </div>
 
             <main
                 className={`flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-8 transition-[margin] duration-300 md:transition-none ${
-                    collapsed ? 'md:ml-20' : 'md:ml-64'
+                    collapsed ? 'md:ml-20' : 'md:ml-56'
                 } pt-20 md:pt-8`}
             >
                 <Outlet />

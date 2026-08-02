@@ -18,9 +18,9 @@ export const DIAS_SEMANA = [
 ] as const;
 
 export const ESTADOS_MATERIA = [
-    { id: 1, nombre: 'Pendiente', color: 'bg-red-100 text-red-700', emoji: '🔴' },
-    { id: 2, nombre: 'En Proceso', color: 'bg-yellow-100 text-yellow-700', emoji: '🟡' },
-    { id: 3, nombre: 'Completada', color: 'bg-green-100 text-green-700', emoji: '🟢' },
+    { id: 1, nombre: 'Pendiente', color: 'text-status-danger', badge: 'badge-danger' },
+    { id: 2, nombre: 'En Proceso', color: 'text-status-warning', badge: 'badge-warning' },
+    { id: 3, nombre: 'Completada', color: 'text-status-success', badge: 'badge-success' },
 ] as const;
 
 export const INSTANCIAS_PERIODO = [

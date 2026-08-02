@@ -36,10 +36,10 @@ export function CarreraCard({
             : '—';
 
     return (
-        <Card className="hover:border-neon-cyan/60 hover:shadow-neon-soft transition-shadow h-full">
+        <Card className="hover:bg-bg-surface-secondary transition-colors h-full">
             <div className="flex flex-col h-full">
                 <div className="flex justify-between items-start gap-4 mb-4">
-                    <h3 className="text-lg font-semibold text-white">{carrera.nombre}</h3>
+                    <h3 className="text-sm font-semibold text-text-default">{carrera.nombre}</h3>
                         {inscripto && (
                             <Badge variant="success" size="sm" className="shrink-0 text-xs">
                                 Inscripto
@@ -52,9 +52,9 @@ export function CarreraCard({
                         )}
                 </div>
 
-                <p className="text-sm text-slate-300 line-clamp-3">{carrera.descripcion}</p>
+                <p className="text-sm text-text-subtle line-clamp-3">{carrera.descripcion}</p>
 
-                <div className="mt-6 space-y-3 text-sm text-slate-300 pb-6">
+                <div className="mt-6 space-y-3 text-sm text-text-subtle pb-6">
                     <div className="flex justify-between">
                         <span>Duración:</span>
                         <span className="font-medium">{duracionTexto}</span>
@@ -67,11 +67,11 @@ export function CarreraCard({
                     )}
                 </div>
 
-                <div className="mt-auto pt-6 border-t flex gap-2">
+                <div className="mt-auto pt-6 border-t border-hairline flex gap-2">
                     <button
                         type="button"
                         onClick={verPlan}
-                        className="flex-1 px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
+                        className="btn-primary flex-1"
                     >
                         Ver plan de estudios
                     </button>

@@ -9,19 +9,19 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'default', size = 'md', className }: BadgeProps) {
     const variants = {
-        default: 'bg-slate-700/40 text-slate-300 border border-slate-600/50',
-        success: 'bg-neon-green/15 text-neon-green border border-neon-green/30',
-        warning: 'bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30',
-        danger: 'bg-neon-red/15 text-neon-red border border-neon-red/30',
-        info: 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30',
+        default: 'bg-slate-500/15 text-text-subtle',
+        success: 'bg-status-success/15 text-status-success',
+        warning: 'bg-status-warning/15 text-status-warning',
+        danger: 'bg-status-danger/15 text-status-danger',
+        info: 'bg-accent-primary/15 text-accent-primary',
     };
     const sizes = {
-        sm: 'px-2 py-0.5 text-xs',
-        md: 'px-2.5 py-1 text-sm',
+        sm: 'px-[6px] py-[2px] font-mono text-[9px]',
+        md: 'px-[6px] py-[2px] font-mono text-[10px]',
     };
 
     return (
-        <span className={cn('inline-flex items-center font-medium rounded-full', variants[variant], sizes[size], className)}>
+        <span className={cn('inline-flex items-center rounded transition-colors duration-150', variants[variant], sizes[size], className)}>
             {children}
         </span>
     );

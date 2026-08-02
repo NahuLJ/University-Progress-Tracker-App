@@ -4,25 +4,25 @@ type EstadoMateria = 'Completada' | 'En Proceso' | 'Pendiente';
 
 const ESTILOS: Record<EstadoMateria, { dot: string; badge: string; label: string }> = {
     Completada: {
-        dot: 'bg-neon-green shadow-neon-green',
-        badge: 'bg-neon-green/15 text-neon-green border border-neon-green/30',
+        dot: 'bg-status-success',
+        badge: 'badge badge-success',
         label: 'Completada',
     },
     'En Proceso': {
-        dot: 'bg-neon-yellow',
-        badge: 'bg-neon-yellow/15 text-neon-yellow border border-neon-yellow/30',
+        dot: 'bg-status-warning',
+        badge: 'badge badge-warning',
         label: 'En Proceso',
     },
     Pendiente: {
-        dot: 'bg-neon-red',
-        badge: 'bg-neon-red/15 text-neon-red border border-neon-red/30',
+        dot: 'bg-status-danger',
+        badge: 'badge badge-danger',
         label: 'Pendiente',
     },
 };
 
 const ESTILOS_FALLBACK = {
     dot: 'bg-slate-400',
-    badge: 'bg-slate-700/40 text-slate-300 border border-slate-600/50',
+    badge: 'badge badge-gray',
     label: 'Pendiente',
 };
 
@@ -41,7 +41,7 @@ export function StatusBadge({ estado, children, className }: { estado?: string; 
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full',
+                'inline-flex items-center gap-1.5',
                 estilo.badge,
                 className,
             )}

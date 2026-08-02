@@ -64,16 +64,16 @@ export function EditarProgresoModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-base-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="card rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                <h2 className="text-xl font-semibold mb-4">Editar progreso</h2>
-                <p className="text-slate-300 mb-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="card rounded-card max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-sm font-semibold mb-4">Editar progreso</h2>
+                <p className="text-text-subtle mb-6">
                     <strong>{materiaNombre}</strong>
                 </p>
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Estado</label>
+                        <label className="label block mb-1">Estado</label>
                         <Select
                             value={estado}
                             onChange={(e) => setEstado(e.target.value)}
@@ -87,7 +87,7 @@ export function EditarProgresoModal({
                     {estado === 'Completada' && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
+                                <label className="label block mb-1">
                                     Nota {tipoAprobacion === 'Promocion' ? '(7-10)' : '(4-10)'}
                                 </label>
                                 <input
@@ -96,15 +96,13 @@ export function EditarProgresoModal({
                                     max="10"
                                     value={nota}
                                     onChange={(e) => { setNota(e.target.value); setErrorNota(''); }}
-                                    className={`w-full border bg-base-800/80 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-neon-cyan focus:border-neon-cyan/60 ${
-                                        errorNota ? 'border-neon-red' : 'border-base-500'
-                                    }`}
+                                    className={`input ${errorNota ? 'input-error' : ''}`}
                                 />
-                                {errorNota && <p className="text-sm text-neon-red mt-1">{errorNota}</p>}
+                                {errorNota && <p className="text-xs text-status-danger mt-1">{errorNota}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">Tipo de aprobación</label>
+                                <label className="label block mb-1">Tipo de aprobación</label>
                             <Select
                                 value={tipoAprobacion}
                                 onChange={(e) => { setTipoAprobacion(e.target.value); setErrorTipo(''); }}
@@ -113,7 +111,7 @@ export function EditarProgresoModal({
                                 <option value="Final">Final</option>
                                 <option value="Promocion">Promoción</option>
                             </Select>
-                                {errorTipo && <p className="text-sm text-neon-red mt-1">{errorTipo}</p>}
+                                {errorTipo && <p className="text-xs text-status-danger mt-1">{errorTipo}</p>}
                             </div>
                         </>
                     )}
