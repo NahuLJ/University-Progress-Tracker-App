@@ -308,8 +308,8 @@ Toda mutación muestra snackbar de éxito/error y resetea la carrera activa del 
 - **Progreso:** grilla editable en línea (`MateriaProgresoRow` + RHF/Zod), `CompletarMateriaModal` y
   `Filtros` (debounce) ya integrados en `ProgresoPage`.
 - **Admin:** módulo `/admin` (tabs Carreras/Materias/Plan/Correlativas) implementado y verificado E2E.
-  Las tablas usan filas **card-based** (no `<table>`) con chips neon-cyan para códigos, pills
-  `rounded-full` para metadatos y botones de acción con `hover:bg-base-700/60`. El nombre no es
+   Las tablas usan filas **card-based** (no `<table>`) con `badge badge-info` para códigos, `badge`
+   para metadatos y botones de acción con `hover:bg-bg-surface-secondary`. El nombre no es
   clickeable; la navegación al detalle es solo por botón "Ver". El código de materia usa
   `<Badge variant="info">` en tabla admin y en ambas vistas del plan de estudios (árbol y tabla).
   La página de edición de carrera (`/admin/carreras/:id/editar`) usa tabs independientes

@@ -4,9 +4,9 @@
 > accedido vía nav `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 2 tabs (Carreras /
 > Materias) con `CrearCarreraModal`, `CrearMateriaModal`. Las tablas (`TablaCarreras`,
 > `TablaMaterias`) persisten tab activo, página y límite en `localStorage`.
-> Cada fila se renderiza como **card independiente** (no `<table>`) con chips neon-cyan para
-> códigos, pills `rounded-full` para metadatos y botones de acción con `hover:bg`.
-> El código de materia usa `<Badge variant="info">` (chip neon-cyan).
+> Cada fila se renderiza como **card independiente** (no `<table>`) con `badge badge-info`
+> para códigos, `badge` para metadatos y botones de acción con `hover:bg-bg-surface-secondary`.
+> El código de materia usa `<Badge variant="info">` (badge info).
 > El nombre de la fila **no es clickeable**; la navegación al detalle es solo por botón "Ver".
 > Usa `useAdminCarreras`/`useAdminMaterias` (React Query) sobre los servicios
 > `carrerasService`/`materiasAdminService`. Verificado end-to-end contra el backend.
@@ -103,7 +103,7 @@ El campo descripción es un `<textarea>` auto-creciente con contador de caracter
 
 ### PlanEstudiosEditor (en CarreraEditPage, tab "Plan de estudios")
 1. **Lista de materias** en el plan organizada por Año → Cuatrimestre. Cada materia se muestra como
-   `{nro} - {nombre}` con `<Badge variant="info">` (chip neon-cyan) para el código (no muestra
+    `{nro} - {nombre}` con `<Badge variant="info">` (badge info) para el código (no muestra
    "A/C" porque ya está agrupada por año y cuatrimestre). Botones de acción por fila: lápiz
    (editar posición) y "Quitar" (modal de confirmación con advertencia de irreversibilidad).
 2. **Botón "Agregar materia"** abre un `<Modal>` con:
@@ -132,9 +132,9 @@ El campo descripción es un `<textarea>` auto-creciente con contador de caracter
 ### Select personalizado (reemplaza `<select>` nativo)
 El componente `Select` (`components/ui/Select.tsx`) reemplaza el `<select>` nativo por un dropdown
 personalizado con:
-- Trigger button estilizado con tema oscuro (bg-base-800, border-base-500, focus ring neon-cyan)
-- Lista de opciones con `max-h-48 overflow-y-auto scrollbar-thin` (altura máxima fija de ~192px)
-- Opciones resaltadas al hover (bg-base-700) y seleccionadas (bg-base-700 + text-neon-cyan)
+- Trigger button estilizado con tema oscuro (bg-bg-surface-secondary, border-hairline, focus ring accent-primary)
+- Lista de opciones con `max-h-48 overflow-y-auto scrollbar-none` (altura máxima fija de ~192px)
+- Opciones resaltadas al hover (bg-bg-surface-secondary) y seleccionadas (bg-accent-primary/10 text-accent-primary)
 - Flecha caret SVG personalizada
 - Compatible con `label`, `error`, `placeholder`, `disabled`, `maxLength`
 

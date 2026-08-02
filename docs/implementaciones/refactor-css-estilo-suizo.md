@@ -286,7 +286,7 @@ export default {
             text-xs font-medium rounded-md
             bg-transparent border border-hairline text-text-muted
             transition-all duration-150
-            hover:text-text-default hover:border-slate-400/40
+            hover:text-text-default hover:border-text-muted/40
             focus:outline-none focus:ring-1 focus:ring-accent-primary
             disabled:opacity-40 disabled:cursor-not-allowed;
     }
@@ -692,7 +692,7 @@ Después:
 ```ts
 primary:  'bg-accent-primary text-accent-foreground hover:opacity-90',
 secondary:'bg-bg-surface-secondary text-text-default hover:bg-bg-surface-secondary/80',
-outline:  'bg-transparent border border-hairline text-text-muted hover:text-text-default hover:border-slate-400/40',
+outline:  'bg-transparent border border-hairline text-text-muted hover:text-text-default hover:border-text-muted/40',
 ghost:    'bg-transparent text-text-muted hover:text-text-default hover:bg-bg-surface-secondary',
 danger:   'bg-transparent border border-hairline text-text-muted hover:text-status-danger hover:border-status-danger/40',
 warning:  'bg-transparent border border-hairline text-text-muted hover:text-status-warning hover:border-status-warning/40',

@@ -284,10 +284,10 @@ Cada materia se muestra en modo lectura: `{orden} - {nombre}` + badge de código
 abre el modal de edición y el de papelera abre el modal de confirmación para quitar.
 
 ```tsx
-<li key={m.carreraMateriaId} className="flex items-center justify-between bg-base-700/60 rounded-lg px-3 py-2">
-  <span className="text-sm text-slate-200">
-    <span className="font-mono text-slate-400">{m.orden}</span>
-    <span className="mx-1 text-slate-500">-</span>
+<li key={m.carreraMateriaId} className="flex items-center justify-between bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+  <span className="text-sm text-text-default">
+    <span className="font-mono text-text-muted">{m.orden}</span>
+    <span className="mx-1 text-text-muted">-</span>
     {m.nombre}
     <Badge variant="info" size="sm" className="ml-2">{m.codigo}</Badge>
   </span>
@@ -295,11 +295,11 @@ abre el modal de edición y el de papelera abre el modal de confirmación para q
     <button
       title="Editar posición"
       onClick={() => { setEditandoMateria(m); setEditForm({ anio: m.anio, cuatrimestre: m.cuatrimestre, orden: m.orden }); }}
-      className="text-slate-400 hover:text-neon-cyan transition-colors"
+      className="text-text-muted hover:text-accent-primary transition-colors"
     >
       <Icon name="edit" className="w-4 h-4" />
     </button>
-    <button title="Quitar del plan" onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo, orden: m.orden })} className="text-slate-400 hover:text-neon-red transition-colors ml-3">
+    <button title="Quitar del plan" onClick={() => setQuitarConfirm({ carreraMateriaId: m.carreraMateriaId, nombre: m.nombre, codigo: m.codigo, orden: m.orden })} className="text-text-muted hover:text-status-danger transition-colors ml-3">
       <Icon name="delete" className="w-4 h-4" />
     </button>
   </div>
@@ -314,10 +314,10 @@ Se agrega un `Modal` "Editar posición de la materia" que se abre cuando `editan
 <Modal isOpen={!!editandoMateria} onClose={onCancelarEdicion} title="Editar posición de la materia" size="md">
   {editandoMateria && (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap bg-base-700/60 rounded-lg px-3 py-2">
-        <span className="text-sm text-slate-200">
-          <span className="font-mono text-slate-400">{editandoMateria.orden}</span>
-          <span className="mx-1 text-slate-500">-</span>
+      <div className="flex items-center gap-2 flex-wrap bg-bg-surface-secondary/60 rounded-md px-3 py-2">
+        <span className="text-sm text-text-default">
+          <span className="font-mono text-text-muted">{editandoMateria.orden}</span>
+          <span className="mx-1 text-text-muted">-</span>
           {editandoMateria.nombre}
           <Badge variant="info" size="sm" className="ml-2">{editandoMateria.codigo}</Badge>
         </span>
@@ -383,9 +383,9 @@ Agregar un `Modal` que se abra cuando `editErrorOpen` sea `true` y muestre la li
   size="sm"
 >
   <div className="space-y-3">
-    <div className="bg-neon-red/10 border border-neon-red/30 rounded-lg p-3">
-      <p className="text-sm text-neon-red font-medium text-justify">No se pudo actualizar la materia</p>
-      <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1 text-justify">
+    <div className="bg-status-danger/10 border border-status-danger/30 rounded-md p-3">
+      <p className="text-sm text-status-danger font-medium text-justify">No se pudo actualizar la materia</p>
+      <ul className="mt-2 text-sm text-text-subtle list-disc list-inside space-y-1 text-justify">
         {editErrors.map((err, i) => (
           <li key={i}>{err}</li>
         ))}
@@ -500,7 +500,7 @@ Y actualizar la importación en `PlanEstudiosEditor.tsx` para incluir `Actualiza
 
 ### UI/UX
 
-- [x] El botón de edición debe ser visible pero no dominante (usar icono con `text-slate-400` y hover `text-neon-cyan`)
+- [x] El botón de edición debe ser visible pero no dominante (usar icono con `text-text-muted` y hover `text-accent-primary`)
 - [x] Los campos de edición deben pre-poblar con los valores actuales al abrir el modal
 - [x] El modal de errores debe listar cada error de validación con viñetas
 - [x] El modal de errores debe tener un botón "Cerrar" para descartar los errores

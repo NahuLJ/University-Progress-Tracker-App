@@ -137,7 +137,7 @@ Colores del promedio: `<6` naranja ("Bajo"), `6–6.99` amarillo ("Aceptable"), 
 ## Gráficos (`Charts.tsx`)
 
 - **MateriasPorEstadoChart** `{ data: { estado, cantidad, porcentaje }[] }` — barras verticales por estado
-  (verde/amarillo/rojo con glow) con altura proporcional a `cantidad/total` y leyenda de colores. Si no hay datos,
+  (verde/amarillo/rojo, sin glow) con altura proporcional a `cantidad/total` y leyenda de colores. Si no hay datos,
   muestra "Sin datos de distribución".
 - **EvolucionPromedioChart** `{ data: { cuatrimestre, promedio }[] }` — barras por cuatrimestre con tooltip.
   Si vacío, "Sin datos de evolución".
@@ -158,8 +158,8 @@ Colores del promedio: `<6` naranja ("Bajo"), `6–6.99` amarillo ("Aceptable"), 
 
 El `CarreraSelector` vive en el sidebar del `MainLayout` (no en el dashboard). Es un botón que despliega
 un menú hacia abajo con la lista de carreras; al elegir una se cambia la carrera actual globalmente
-(`useCarreraStore`), afectando dashboard, progreso y planificación. Está estilizado con el tema neon
-(opción activa: `bg-neon-cyan/15 text-neon-cyan shadow-neon-cyan`). Ver `components/layout/CarreraSelector.tsx`.
+(`useCarreraStore`), afectando dashboard, progreso y planificación. Está estilizado con el tema Suizo
+(opción activa: `bg-accent-primary/15 text-accent-primary`). Ver `components/layout/CarreraSelector.tsx`.
 
 ### Sidebar responsive
 

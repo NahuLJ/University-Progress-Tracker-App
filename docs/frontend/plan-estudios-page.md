@@ -11,7 +11,7 @@
 > (alineado a la derecha). En vista árbol, la card "Plan de estudios" tiene en su header los botones
 > **Expandir todo / Contraer todo**. En vista tabla, se muestra como **grid** agrupado por Año → Cuatrimestre,
 > con columnas Nro | Código | Materia | Créditos | Carga Horaria | Estado.
-> El código de materia se muestra como `<Badge variant="info">` chip neon-cyan en ambas vistas.
+> El código de materia se muestra como `<Badge variant="info">` (badge info) en ambas vistas.
 > Incluye botón **Volver a carreras** arriba del todo. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
 > una materia. **Las correlativas ahora muestran su estado real (Pendiente/En Proceso/Completada) con nota y tipo si corresponde**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
@@ -165,7 +165,7 @@ export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?
 
 Usa `Accordion` anidados (controlados vía props `open`/`onOpenChange`): `AnioAccordion`
 (1° Año, 2° Año, …) → `CuatrimestreAccordion` (1° Cuatrimestre, …) → `MateriaRow`. Cada materia
-muestra orden, nombre, código (como `<Badge variant="info">` chip neon-cyan), créditos y carga
+muestra orden, nombre, código (como `<Badge variant="info">` badge info), créditos y carga
 horaria, y un `StatusBadge` con el estado del usuario (`estadoUsuario` como string directo).
 El componente recibe `expandirSignal` / `contraerSignal`
 (números) que disparan expandir/contraer todo vía `useEffect`. Click en una materia abre

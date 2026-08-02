@@ -36,7 +36,7 @@ store/
 - Cada card muestra: nombre, fecha de creación, cantidad de planificaciones.
 - Botón "+ Nueva trayectoria" abre modal de creación (RHF + Zod).
 - Al crear, invalida `['trayectorias', usuarioCarreraId]`.
-- El contador de trayectorias se muestra como chip neon-cyan a la derecha del título.
+- El contador de trayectorias se muestra como `badge badge-info` a la derecha del título.
 
 ### Query keys
 
@@ -104,13 +104,13 @@ Esto funciona sin 404s porque el backend retorna `[]` en vez de error cuando el 
 Renderiza el árbol de bifurcaciones en formato horizontal (izquierda→derecha). Cada nodo es una card de 288px (`w-72`) con:
 
 - Header: nombre + badge año/instancia
-- Body: lista de materias planificadas (bullet neon-cyan)
+- Body: lista de materias planificadas (bullet accent-primary)
 - Footer: botón "Ver planificación" (navega a `/planificacion/:id`) y "+ Continuar" (abre modal de período sucesivo)
 
 Las cards se conectan con elementos CSS:
-- Línea horizontal padre→hijos: `w-6 h-px bg-neon-cyan/40`
-- Barra vertical: `border-l-2 border-neon-cyan/40`
-- Conectores a cada hijo: `w-4 h-px bg-neon-cyan/40`
+- Línea horizontal padre→hijos: `w-6 h-px bg-accent-primary/40`
+- Barra vertical: `border-l-2 border-accent-primary/40`
+- Conectores a cada hijo: `w-4 h-px bg-accent-primary/40`
 
 El contenedor tiene `overflow: auto` con `scrollbar-none` (las barras de scroll están ocultas) y `touch-none` (desactiva el scroll nativo táctil). El scroll **horizontal es solo con drag** (Pointer Events, botón izquierdo, listeners en `document` sin `setPointerCapture` para no interferir con clicks en botones; se escuchan `pointerup` y `pointercancel`). Se aplica un umbral de 4px de movimiento para distinguir click de arrastre. La rueda del mouse conserva el scroll **vertical** nativo: no hay handler `wheel` custom.
 

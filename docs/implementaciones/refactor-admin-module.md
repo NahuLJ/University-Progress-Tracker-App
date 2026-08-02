@@ -616,7 +616,7 @@ Ruta: `/admin/carreras/:id/editar`
      ```
    - No hay opción de restaurar (la eliminación es física). Para volver a tener la materia
      en el plan, usar el formulario "Agregar materia al plan".
-   - Chip neon-cyan con total de materias en el plan.
+    - Badge info con total de materias en el plan.
 
 3. **Correlativas** — reutiliza la lógica del actual `MateriaCorrelativasAdmin`:
    - Select de materia del plan de esta carrera
@@ -992,7 +992,7 @@ Las funcionalidades de `PlanEstudiosAdmin` y `MateriaCorrelativasAdmin` se migra
   `MateriaDetailPage` también lo muestren correctamente en contexto de cada carrera.
 - Los botones de acción en las tablas son iconos (lucide-react) sin texto, con `title` para
   accesibilidad: "Ver detalle", "Editar", "Eliminar", "Restaurar". Usan el componente `<Icon>`
-  con `className` para colores hover: `hover:text-white`, `hover:text-neon-cyan`, `hover:text-neon-red`.
+  con `className` para colores hover: `hover:text-text-default`, `hover:text-accent-primary`, `hover:text-status-danger`.
 
 ---
 
@@ -1104,7 +1104,7 @@ total de resultados y pueda cambiar el límite por página. Se eliminó la condi
 En `PlanEstudiosEditor`, cada materia en el plan muestra su `orden`:
 
 ```tsx
-{m.nombre} <span className="text-slate-500">(orden {m.orden})</span>
+{m.nombre} <span className="text-text-muted">(orden {m.orden})</span>
 ```
 
 ### 9.9 Formularios centrados

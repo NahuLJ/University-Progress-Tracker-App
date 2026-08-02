@@ -65,9 +65,9 @@ Se usan elementos CSS simples (sin SVG) para las líneas de conexión:
 
 | Elemento | Clases CSS | Descripción |
 |---|---|---|
-| Línea horizontal padre→hijos | `w-6 shrink-0 flex items-center` + `w-full h-px bg-neon-cyan/40` | Sale del borde derecho de la card padre |
-| Barra vertical de hijos | `border-l-2 border-neon-cyan/40 py-2` | Aplica al contenedor `flex-col` de hijos |
-| Línea horizontal a cada hijo | `w-4 shrink-0 flex items-center` + `w-full h-px bg-neon-cyan/40` | Conecta la barra vertical a cada card hijo |
+| Línea horizontal padre→hijos | `w-6 shrink-0 flex items-center` + `w-full h-px bg-accent-primary/40` | Sale del borde derecho de la card padre |
+| Barra vertical de hijos | `border-l-2 border-accent-primary/40 py-2` | Aplica al contenedor `flex-col` de hijos |
+| Línea horizontal a cada hijo | `w-4 shrink-0 flex items-center` + `w-full h-px bg-accent-primary/40` | Conecta la barra vertical a cada card hijo |
 | Alineación vertical | `flex items-center gap-0` | En cada nivel para centrar cards con conectores |
 
 ### 3.4 Card de cada nodo
@@ -77,12 +77,12 @@ Cada card replica el formato visual de `PlanificacionCard` (estructura, colores,
 Estructura de la card:
 
 ```tsx
-<Card className="w-72 shrink-0 hover:border-neon-cyan/60 hover:shadow-neon-soft transition-shadow">
+<Card className="w-72 shrink-0 hover:bg-bg-surface-secondary transition-colors">
   <div className="flex flex-col h-full">
     {/* Header: nombre + badge */}
     <div className="flex items-start gap-3 mb-2">
       <div className="flex-1 min-w-0">
-        <h3 className="text-lg font-semibold text-white truncate">
+        <h3 className="text-sm font-semibold text-text-default truncate">
           {periodo.nombre || `${periodo.anio} ${periodo.instancia}`}
         </h3>
       </div>
@@ -92,35 +92,35 @@ Estructura de la card:
     </div>
 
     {/* Body: lista de materias */}
-    <div className="text-sm text-slate-300 pb-4">
-      <span className="text-slate-400">Materias planificadas:</span>
+    <div className="text-sm text-text-subtle pb-4">
+      <span className="text-text-muted">Materias planificadas:</span>
       {materiasUnicas.length > 0 ? (
         <ul className="mt-2 space-y-1">
           {materiasUnicas.map((nombre) => (
             <li key={nombre} className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-primary shrink-0" />
               {nombre}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-slate-500 mt-1 italic">Sin materias planificadas</p>
+        <p className="text-text-muted mt-1 italic">Sin materias planificadas</p>
       )}
     </div>
 
     {/* Footer: dos botones */}
-    <div className="mt-auto pt-4 border-t flex gap-2">
+    <div className="mt-auto pt-4 border-t border-hairline flex gap-2">
       <button
         type="button"
         onClick={() => onNavigate(periodo.periodoId)}
-        className="flex-1 px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-neon-cyan/60 text-neon-cyan bg-transparent hover:bg-neon-cyan/10 hover:shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-all"
+        className="btn-primary flex-1"
       >
         Ver planificación
       </button>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onContinuar(periodo.periodoId); }}
-        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-neon-cyan/30 text-neon-cyan/70 bg-transparent hover:bg-neon-cyan/10 hover:text-neon-cyan transition-all"
+        className="btn-ghost"
       >
         + Continuar
       </button>
@@ -368,7 +368,7 @@ Usuario hace pointerdown (botón izquierdo) en el contenedor →
 
 ### 6.2 Conectores
 
-- Color: `bg-neon-cyan/40` (más sutil que /60 para no robar atención)
+- Color: `bg-accent-primary/40` (más sutil que /60 para no robar atención)
 - Grosor línea horizontal: `h-px` (1px)
 - Grosor barra vertical: `border-l-2` (2px, usa border para mayor visibilidad)
 - Espaciado:

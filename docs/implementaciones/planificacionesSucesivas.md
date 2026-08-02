@@ -489,7 +489,7 @@ ALTER TABLE periodo_planificacion
 | Invalidation de trayectorias al eliminar período | Solo `['planificacion']` | Invalida `['trayectoria']`, `['trayectorias']` y `['planificacion']` antes de `navigate(-1)`. |
 | Navegación post-eliminación | Hard-coded a `/planificaciones` o `/trayectoria/:id` | `navigate(-1)` para volver a la página anterior. |
 | Backend 404 en materias/materias-desbloqueables | `NotFoundException` | Retorna `[]` si el período no existe, evitando errores por race conditions. |
-| Chips de contador | No especificado | CarrerasPage, CarreraDetailPage (años, cuatrimestres), PlanEstudiosAdmin, MateriaCorrelativasAdmin usan chips neon-cyan `px-2.5 py-0.5 rounded-full`. |
+| Chips de contador | No especificado | CarrerasPage, CarreraDetailPage (años, cuatrimestres), PlanEstudiosAdmin, MateriaCorrelativasAdmin usan `badge badge-info`. |
 | Estado `Planificado` (id=4) | Se menciona como necesario | No implementado. El cálculo de disponibles trayectoria se hace consultando `materia_planificada` de periodos previos, sin persistir estado adicional. |
 | Eliminación en cascada de periodos | `ON DELETE CASCADE` en `planificacion_origen_id` (migración SQL) | Se maneja manualmente vía `eliminarDescendientes` en `planificacion.service.ts`. La entity no declara `onDelete` explícito. |
 | Validación de correlativas al planificar | Llama a `validarCorrelativas` internamente | `planificarMateria` ahora usa `obtenerMateriasDisponibles` para validar (misma lógica que el listado del frontend), garantizando consistencia absoluta entre lo que se muestra y lo que se acepta. |
