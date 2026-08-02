@@ -396,6 +396,7 @@ export async function seedLicenciaturaVideojuegos(dataSource: DataSource) {
         where: {
           materia: { materiaId: materia.materiaId },
           materiaCorrelativa: { materiaId: materiaCorrelativa.materiaId },
+          carrera: { carreraId: carrera.carreraId },
         },
       });
       if (!existeCorr) {
