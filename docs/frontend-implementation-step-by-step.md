@@ -149,7 +149,7 @@ Cada paso depende del anterior. No saltear.
 | 7 | Dashboard de Estadísticas | Pasos 2, 5 |
 
 > **Nota de estado:** los pasos 1–7 están implementados y funcionales. `DashboardPage` ya cablea
-> `StatCards`/`Charts`/`CarrerasResumenList` con `useDashboard`; Progreso y Planificación resuelven la
+> `StatCards`/`Charts`/`CarrerasResumenList` con `useEstadisticas` (wrapper de `useDashboard`); Progreso y Planificación resuelven la
 > carrera activa vía `useCarreraActiva()` (ya no hay `usuarioCarreraId` hardcodeado); y la
 > inscripción/desinscripción de carreras usa los hooks reales.
 
@@ -316,14 +316,15 @@ progreso pertenece a una materia del plan de estudios.
 
 **Abrir y aplicar:**
 
-- **`docs/frontend/dashboard-page.md`** — `DashboardPage` con selector multi-carrera, `PromedioCard`, `TiempoRestanteCard`, `CreditosCard`, `ProgresoBarCard` (en `StatCards.tsx`), `MateriasPorEstadoChart` y `EvolucionPromedioChart` (en `Charts.tsx`), `CarrerasResumenList`, hook `useDashboard` con queries paralelas de estadísticas.
+- **`docs/frontend/dashboard-page.md`** — `DashboardPage` con selector multi-carrera en el sidebar, `MateriasAprobadasCard`, `PromedioCard`, `CreditosCard`, `MateriasDisponiblesCard` y `ProgresoBarCard` (en `StatCards.tsx`), `MateriasPorEstadoChart` (pastel), `NotasDistribucionChart` y `ProgresoPorAnioChart` (en `Charts.tsx`, con `recharts` y `ChartTooltip`), `CarrerasResumenList`, hooks `useDashboard` + `useEstadisticas` con queries paralelas de estadísticas.
 
 **Conexión con el paso anterior:** El Dashboard consume datos del endpoint de estadísticas (respaldado por
 el módulo de progreso del paso 3.5). Al cambiar de carrera en el selector, React Query refetch automáticamente.
 
-> **Nota:** `DashboardPage` ya cablea `PromedioCard`/`TiempoRestanteCard`/`CreditosCard`/`ProgresoBarCard`,
-> `MateriasPorEstadoChart`/`EvolucionPromedioChart` y `CarrerasResumenList` con los datos de `useDashboard`
-> (`resumen`, `distribucion`, `evolucion`). El selector multi-carrera cambia `usuarioCarreraId` y React Query refetch.
+> **Nota:** `DashboardPage` ya cablea `MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/
+> `MateriasDisponiblesCard`/`ProgresoBarCard`, `MateriasPorEstadoChart`/`NotasDistribucionChart`/
+> `ProgresoPorAnioChart` y `CarrerasResumenList` con los datos de `useEstadisticas`
+> (`resumen`, `distribucion`, `notasDistribucion`, `progresoPorAnio`). El selector multi-carrera cambia `usuarioCarreraId` y React Query refetch.
 
 ---
 

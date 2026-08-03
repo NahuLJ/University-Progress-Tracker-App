@@ -4,14 +4,14 @@ Sistema de seguimiento de carreras universitarias: gestión de planes de estudio
 
 ## Estado
 
-Backend implementado en `backend/`. Documentación en [`docs/`](docs/).
+Backend implementado en `backend/`. Frontend implementado en `frontend/` (estilo Suizo, gráficos recharts en el dashboard). Documentación en [`docs/`](docs/).
 
 ## Stack
 
 | Capa | Tecnologías |
 |---|---|
 | Backend | NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger |
-| Frontend | React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, oxlint |
+| Frontend | React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, recharts 3, oxlint |
 
 ## Documentación
 
@@ -23,6 +23,7 @@ Backend implementado en `backend/`. Documentación en [`docs/`](docs/).
 | [`docs/backend/`](docs/backend/) | Especificaciones detalladas por módulo (auth, users, carreras, progreso, planificación, estadísticas) |
 | [`docs/frontend/`](docs/frontend/) | Especificaciones detalladas por página (login, dashboard, plan de estudios, progreso, planificador) |
 | [`docs/security/`](docs/security/) | Especificación JWT unificada backend + frontend |
+| [`docs/implementaciones/`](docs/implementaciones/) | Documentos de implementación (dashboard, estilo Suizo, trayectorias, planificaciones sucesivas, etc.) |
 | [`AGENTS.md`](AGENTS.md) | Guía de contexto para asistentes de IA |
 
 ## Requisitos previos

@@ -11,8 +11,12 @@ Retorna un resumen completo de estadísticas académicas para una carrera espec�
 
 | Código | Descripción |
 |---|---|
-| 200 | `{ promedioGeneral, materiasCompletadas, materiasEnProceso, materiasPendientes, totalMaterias, creditosObtenidos, creditosTotales, cuatrimestresRestantes, progresoPorcentaje }` |
+| 200 | `{ promedioGeneral, materiasCompletadas, materiasEnProceso, materiasPendientes, totalMaterias, materiasDisponibles, creditosObtenidos, creditosTotales, cuatrimestresRestantes, progresoPorcentaje }` |
 | 404 | Inscripción no encontrada |
+
+> Nota: `totalMaterias`, `creditosTotales` e `idsMateriasPlan` se calculan sobre el **plan activo**
+> (excluye materias con `materia.activo = false`). `materiasDisponibles` cuenta las materias activas,
+> sin completar y con todas sus correlativas aprobadas para la carrera (ver `calcularMateriasDisponibles`).
 
 ### GET /api/estadisticas/distribucion-estados?usuarioCarreraId=:id
 
@@ -22,13 +26,46 @@ Retorna el conteo de materias agrupadas por estado para gráficos visuales.
 |---|---|
 | 200 | `[{ estado: "Pendiente", cantidad: 12 }, { estado: "En Proceso", cantidad: 5 }, { estado: "Completada", cantidad: 18 }]` |
 
-### GET /api/estadisticas/evolución?usuarioCarreraId=:id
+> `totalPlan` se calcula sobre el plan activo; `pendientes = max(0, totalPlan − completadas − enProceso)`.
 
-Retorna el promedio histórico por cuatrimestre para generar gráficos de evolución académica.
+### GET /api/estadisticas/notas-distribucion?usuarioCarreraId=:id
+
+Retorna la distribución de notas de materias aprobadas por rango para `NotasDistribucionChart`.
 
 | Código | Descripción |
 |---|---|
-| 200 | `[{ anio: 2024, cuatrimestre: 1, promedio: 7.5 }, { anio: 2024, cuatrimestre: 2, promedio: 8.2 }]` |
+| 200 | `{ promedioGeneral: 7.83, materiasConNota: 18, rangos: [{ rango: "4-5", cantidad: 1 }, { rango: "6", cantidad: 2 }, ..., { rango: "10", cantidad: 2 }] }` |
+| 404 | Inscripción no encontrada |
+
+> `rangos`: `'4-5' | '6' | '7' | '8' | '9' | '10'`. Considera solo progresos `Completada` con `nota != null`.
+
+### GET /api/estadisticas/progreso-por-anio?usuarioCarreraId=:id
+
+Retorna materias por año del plan (completadas, en proceso, pendientes) para `ProgresoPorAnioChart`.
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ anio: 1, completadas: 12, enProceso: 3, pendientes: 5 }, ...]` |
+| 404 | Inscripción no encontrada |
+
+> `pendientes = max(0, totalMateriasDelAnio − completadas − enProceso)`. Solo plan activo.
+
+### GET /api/estadisticas/evolucion?usuarioCarreraId=:id
+
+Retorna el promedio histórico por cuatrimestre para generar gráficos de evolución académica.
+(No se usa en el dashboard actual; permanece disponible en el backend.)
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ anio: 2024, cuatrimestre: 1, instancia: "1° Cuatrimestre", promedio: 7.5, materiasAprobadas: 4 }, ...]` |
+
+### GET /api/estadisticas/carreras-resumen?usuarioId=:id
+
+Retorna un resumen por cada carrera (inscripción activa) del usuario para la lista "Mis carreras".
+
+| Código | Descripción |
+|---|---|
+| 200 | `[{ usuarioCarreraId, carrera: { carreraId, nombre }, activo, materiasCompletadas, materiasTotales, progresoPorcentaje, promedioGeneral }]` |
 
 ---
 
@@ -55,6 +92,9 @@ export class ResumenResponseDto {
     @ApiProperty({ example: 35 })
     totalMaterias: number;
 
+    @ApiProperty({ example: 6 })
+    materiasDisponibles: number;
+
     @ApiProperty({ example: 144 })
     creditosObtenidos: number;
 
@@ -80,6 +120,57 @@ export class DistribucionEstadosDto {
 
     @ApiProperty({ example: 12 })
     cantidad: number;
+}
+```
+
+### NotasDistribucionDto
+
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+
+export class NotasDistribucionDto {
+    @ApiProperty({ example: 7.83 })
+    promedioGeneral: number;
+
+    @ApiProperty({ example: 18 })
+    materiasConNota: number;
+
+    @ApiProperty({
+        type: 'array',
+        items: {
+            type: 'object',
+            properties: {
+                rango: { type: 'string' },
+                cantidad: { type: 'number' },
+            },
+        },
+        example: [
+            { rango: '4-5', cantidad: 1 },
+            { rango: '7', cantidad: 5 },
+            { rango: '10', cantidad: 2 },
+        ],
+    })
+    rangos: { rango: string; cantidad: number }[];
+}
+```
+
+### ProgresoPorAnioDto
+
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ProgresoPorAnioDto {
+    @ApiProperty({ example: 1 })
+    anio: number;
+
+    @ApiProperty({ example: 12 })
+    completadas: number;
+
+    @ApiProperty({ example: 3 })
+    enProceso: number;
+
+    @ApiProperty({ example: 5 })
+    pendientes: number;
 }
 ```
 
@@ -111,14 +202,15 @@ export class EstadisticasService {
         if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
         const usuarioId = inscripcion.usuario.usuarioId;
 
-        // 2. Obtener materias del plan de estudios
+        // 2. Obtener materias del plan de estudios (solo activas: materia.activo !== false)
         const planEstudios = await this.carreraMateriaRepo.find({
             where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
             relations: ['materia'],
         });
-        const totalMaterias = planEstudios.length;
-        const creditosTotales = planEstudios.reduce((sum, cm) => sum + cm.materia.creditos, 0);
-        const idsMateriasPlan = planEstudios.map((cm) => cm.materia.materiaId);
+        const planActivo = planEstudios.filter((cm) => cm.materia?.activo !== false);
+        const totalMaterias = planActivo.length;
+        const creditosTotales = planActivo.reduce((sum, cm) => sum + cm.materia.creditos, 0);
+        const idsMateriasPlan = planActivo.map((cm) => cm.materia.materiaId);
 
         // 3. Obtener progreso compartido del usuario, filtrado a las materias del plan de esta carrera
         const progresos = await this.progresoRepo.find({
@@ -145,11 +237,17 @@ export class EstadisticasService {
             ? Math.round((notasValidas.reduce((sum, p) => sum + p.nota, 0) / notasValidas.length) * 100) / 100
             : 0;
 
-        // Créditos obtenidos (materias completadas)
+        // Créditos obtenidos (materias completadas del plan activo)
         const creditosObtenidos = completadas.reduce((sum, p) => {
-            const cm = planEstudios.find((e) => e.materia.materiaId === p.materia.materiaId);
+            const cm = planActivo.find((e) => e.materia.materiaId === p.materia.materiaId);
             return sum + (cm ? cm.materia.creditos : 0);
         }, 0);
+
+        // Materias disponibles para cursar ahora (activas, sin completar, correlativas aprobadas)
+        const materiasDisponibles = await this.calcularMateriasDisponibles(
+            inscripcion.carrera.carreraId,
+            usuarioId,
+        );
 
         // Cuatrimestres restantes
         const cuatrimestresRestantes = await this.calcularCuatrimestresRestantes(
@@ -168,11 +266,54 @@ export class EstadisticasService {
             materiasEnProceso,
             materiasPendientes,
             totalMaterias,
+            materiasDisponibles,
             creditosObtenidos,
             creditosTotales,
             cuatrimestresRestantes,
             progresoPorcentaje,
         };
+    }
+
+    private async calcularMateriasDisponibles(
+        carreraId: number,
+        usuarioId: number,
+    ): Promise<number> {
+        const plan = await this.carreraMateriaRepo.find({
+            where: { carrera: { carreraId } },
+            relations: {
+                materia: {
+                    correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+                },
+            },
+        });
+
+        const progresos = await this.progresoRepo.find({
+            where: { usuario: { usuarioId } },
+            relations: ['materia', 'estado'],
+        });
+        const idsCompletadas = new Set(
+            progresos
+                .filter((p) => p.estado?.nombre === 'Completada')
+                .map((p) => p.materia?.materiaId),
+        );
+
+        let disponibles = 0;
+        for (const cm of plan) {
+            const materia = cm.materia;
+            if (!materia?.activo) continue;
+            const materiaId = materia.materiaId;
+            if (idsCompletadas.has(materiaId)) continue;
+
+            const correlativas = (materia.correlativasRequeridas ?? []).filter(
+                (c) => c.carrera.carreraId === carreraId,
+            );
+            const todasAprobadas = correlativas.every((c) =>
+                idsCompletadas.has(c.materiaCorrelativa.materiaId),
+            );
+            if (todasAprobadas) disponibles++;
+        }
+
+        return disponibles;
     }
 
     private async calcularCuatrimestresRestantes(
@@ -221,10 +362,11 @@ export class EstadisticasService {
             where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
             relations: ['materia'],
         });
-        const totalPlan = plan.length;
-        const idsMateriasPlan = plan.map((cm) => cm.materia.materiaId);
+        const planActivo = plan.filter((cm) => cm.materia?.activo !== false);
+        const totalPlan = planActivo.length;
+        const idsMateriasPlan = planActivo.map((cm) => cm.materia.materiaId);
 
-        // La distribución se calcula sobre las materias del plan de la carrera actual
+        // La distribución se calcula sobre las materias del plan activo de la carrera actual
         const progresos = await this.progresoRepo.find({
             where: {
                 usuario: { usuarioId: inscripcion.usuario.usuarioId },
@@ -242,6 +384,46 @@ export class EstadisticasService {
             { estado: 'En Proceso', cantidad: enProceso },
             { estado: 'Pendiente', cantidad: Math.max(0, pendientes) },
         ];
+    }
+
+    async obtenerNotasDistribucion(
+        usuarioCarreraId: number,
+    ): Promise<NotasDistribucionDto> {
+        // 1) Inscripción (404 si no existe) -> carreraId + usuarioId
+        // 2) Plan activo + ids del plan
+        // 3) Progresos del usuario de esas materias (relations: ['estado'])
+        // 4) notasValidas = Completada && nota != null
+        // 5) Agrupar por rango: '4-5' | '6' | '7' | '8' | '9' | '10'
+        const RANGOS = ['4-5', '6', '7', '8', '9', '10'] as const;
+        const conteo: Record<string, number> = Object.fromEntries(RANGOS.map((r) => [r, 0]));
+        for (const nota of notasValidas) {
+            const rango = nota <= 5 ? '4-5'
+                : nota === 6 ? '6'
+                : nota === 7 ? '7'
+                : nota === 8 ? '8'
+                : nota === 9 ? '9'
+                : '10';
+            conteo[rango] += 1;
+        }
+
+        return {
+            promedioGeneral: notasValidas.length > 0
+                ? Math.round((notasValidas.reduce((s, n) => s + n, 0) / notasValidas.length) * 100) / 100
+                : 0,
+            materiasConNota: notasValidas.length,
+            rangos: RANGOS.map((rango) => ({ rango, cantidad: conteo[rango] })),
+        };
+    }
+
+    async obtenerProgresoPorAnio(
+        usuarioCarreraId: number,
+    ): Promise<ProgresoPorAnioDto[]> {
+        // 1) Inscripción (404 si no existe) -> carreraId + usuarioId
+        // 2) Plan activo ordenado por anio ASC + ids del plan
+        // 3) Progresos del usuario de esas materias (relations: ['estado', 'materia'])
+        // 4) Anios únicos del plan activo (ASC); por cada año:
+        //    completadas/enProceso = progresos de ese año; pendientes = max(0, total - completadas - enProceso)
+        // 5) Devolver [{ anio, completadas, enProceso, pendientes }]
     }
 
     async obtenerEvolucion(usuarioCarreraId: number): Promise<any[]> {

@@ -102,8 +102,9 @@ frontend/
     │   │   └── RegisterForm.tsx
     │   │
     │   ├── dashboard/
-    │   │   ├── StatCards.tsx       # PromedioCard, TiempoRestanteCard, CreditosCard, ProgresoBarCard
-    │   │   ├── Charts.tsx          # MateriasPorEstadoChart, EvolucionPromedioChart, EstadisticasSkeleton
+    │   │   ├── StatCards.tsx       # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
+    │   │   ├── Charts.tsx          # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
+    │   │   ├── ChartTooltip.tsx    # tooltip recharts que sigue el cursor
     │   │   └── CarrerasResumenList.tsx
     │   │
     │   ├── carrera/
@@ -285,7 +286,7 @@ las especificaciones originales pero **no existen** en `src/`:
 
 - `components/auth/AuthCard.tsx` → el layout de auth lo hace directamente `LoginPage`/`RegisterPage`.
 - `components/ui/PasswordStrengthBar.tsx` → `RegisterForm` muestra una barra de fortaleza inline simple (no usa `utils/fortaleza.ts`).
-- `components/ui/StatCard.tsx` (genérico) → existen `StatCards.tsx` con las 4 tarjetas nombradas.
+- `components/ui/StatCard.tsx` (genérico) → existe `StatCard` interno en `StatCards.tsx` (dashboard) con las 5 tarjetas nombradas.
 - `components/ui/Tabs.tsx`, `ScrollArea.tsx`, `ConfirmDialog.tsx` → no existen; se usan `Button`/`Modal`/HTML nativo.
 - `components/carrera/CarreraList.tsx`, `PlanEstudiosTable.tsx`, `MateriaBadge.tsx` → no existen; el árbol usa `Accordion` + `Badge`.
 - `components/progreso/ProgresoStatsBar.tsx`, `ConfirmarCambioModal.tsx`, `ProgresoBulkActions.tsx` → no existen.
@@ -298,7 +299,8 @@ las especificaciones originales pero **no existen** en `src/`:
 - **Carrera activa:** `ProgresoPage`, `PlanificacionPage` y `DashboardPage` resuelven la carrera activa
   con `useCarreraActiva()` (del `auth.store`/inscripciones), no un id fijo. `ProgresoPage` además permite
   cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
-- **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useDashboard`.
+- **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useEstadisticas` (wrapper de `useDashboard`
+  que agrega `notas-distribucion` y `progreso-por-anio`). Gráficos con `recharts@^3.10.1` y `ChartTooltip`.
 - **Inscripción/desinscripción:** `CarrerasPage` lista inscripciones (activas e inactivas) y disponibles.
 Cada `CarreraCard` solo tiene "Ver plan de estudios". Las listas de activas, inactivas y disponibles
 usan `useInfiniteQuery` con botón "Ver más" para paginación.

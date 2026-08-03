@@ -43,6 +43,26 @@ export class EstadisticasController {
     return this.estadisticasService.obtenerEvolucion(usuarioCarreraId);
   }
 
+  @Get('notas-distribucion')
+  @ApiOperation({ summary: 'Distribución de notas por rango de aprobación' })
+  @ApiResponse({ status: 200, description: 'Rangos de notas y conteos' })
+  async obtenerNotasDistribucion(
+    @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
+  ) {
+    return this.estadisticasService.obtenerNotasDistribucion(usuarioCarreraId);
+  }
+
+  @Get('progreso-por-anio')
+  @ApiOperation({
+    summary: 'Materias por año del plan (completadas, en proceso, pendientes)',
+  })
+  @ApiResponse({ status: 200, description: 'Progreso agrupado por año' })
+  async obtenerProgresoPorAnio(
+    @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
+  ) {
+    return this.estadisticasService.obtenerProgresoPorAnio(usuarioCarreraId);
+  }
+
   @Get('carreras-resumen')
   @ApiOperation({ summary: 'Resumen de progreso por cada carrera del usuario' })
   @ApiResponse({ status: 200, description: 'Lista de resúmenes por carrera' })

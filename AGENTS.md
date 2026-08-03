@@ -7,8 +7,9 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 ## Stack definido en la documentación
 
 - **Backend:** NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger, class-validator
-- **Frontend (real):** React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, oxlint (no ESLint).
+- **Frontend (real):** React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, recharts 3, oxlint (no ESLint).
 - **Módulo admin implementado:** página `/admin` (tabs Carreras/Materias/Plan/Correlativas) para gestión del catálogo académico. Backend sin `RolesGuard` aún (cualquier usuario autenticado puede usarla). Ver `docs/backend/admin-carreras-materias-module.md`.
+- **Dashboard refactorizado (HECHO):** estilo Suizo + gráficos recharts (pastel de estados, distribución de notas, progreso por año), tarjetas `StatCard` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`), hook `useEstadisticas`, `ChartTooltip`, endpoints `notas-distribucion` y `progreso-por-anio`. Ver `docs/implementaciones/refactor-dashboard-page.md`.
 - **Package manager:** npm (ambos)
 - **Node:** 20 LTS
 
@@ -57,3 +58,5 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 | `docs/frontend/admin-page.md` | Módulo admin: carreras, materias, plan, correlativas, chips neon-cyan |
 | `docs/frontend/trayectorias-page.md` | Páginas TrayectoriasPage y TrayectoriaPage, ArbolTrayectoria, chips, navegación |
 | `docs/security/jwt-auth-specification.md` | Payload JWT, Passport strategy, Axios interceptor, PrivateRoute |
+| `docs/implementaciones/refactor-dashboard-page.md` | Dashboard final: StatCards, gráficos recharts, useEstadisticas, ChartTooltip, fixes UX, animaciones |
+| `docs/implementaciones/refactor-css-estilo-suizo.md` | Design tokens Suizo, migración de componentes, secciones 7.10/7.11 (Charts/StatCards) |

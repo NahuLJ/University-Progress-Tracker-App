@@ -7,6 +7,8 @@ import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { ResumenResponseDto } from './dto/resumen-carrera.dto';
 import { CarreraResumenDto } from './dto/carrera-resumen.dto';
 import { DistribucionEstadosDto } from './dto/estadisticas-response.dto';
+import { NotasDistribucionDto } from './dto/notas-distribucion.dto';
+import { ProgresoPorAnioDto } from './dto/progreso-por-anio.dto';
 
 @Injectable()
 export class EstadisticasService {
@@ -32,12 +34,15 @@ export class EstadisticasService {
       where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
       relations: { materia: true },
     });
-    const totalMaterias = planEstudios.length;
-    const creditosTotales = planEstudios.reduce(
+    const planActivo = planEstudios.filter(
+      (cm) => cm.materia?.activo !== false,
+    );
+    const totalMaterias = planActivo.length;
+    const creditosTotales = planActivo.reduce(
       (sum, cm) => sum + (cm.materia?.creditos ?? 0),
       0,
     );
-    const idsMateriasPlan = planEstudios
+    const idsMateriasPlan = planActivo
       .map((cm) => cm.materia?.materiaId)
       .filter((id): id is number => id !== undefined);
 
@@ -73,11 +78,16 @@ export class EstadisticasService {
         : 0;
 
     const creditosObtenidos = completadas.reduce((sum, p) => {
-      const cm = planEstudios.find(
+      const cm = planActivo.find(
         (e) => e.materia?.materiaId === p.materia?.materiaId,
       );
       return sum + (cm?.materia?.creditos ?? 0);
     }, 0);
+
+    const materiasDisponibles = await this.calcularMateriasDisponibles(
+      inscripcion.carrera.carreraId,
+      usuarioId,
+    );
 
     const cuatrimestresRestantes = await this.calcularCuatrimestresRestantes(
       inscripcion.carrera.carreraId,
@@ -95,11 +105,54 @@ export class EstadisticasService {
       materiasEnProceso,
       materiasPendientes,
       totalMaterias,
+      materiasDisponibles,
       creditosObtenidos,
       creditosTotales,
       cuatrimestresRestantes,
       progresoPorcentaje,
     };
+  }
+
+  private async calcularMateriasDisponibles(
+    carreraId: number,
+    usuarioId: number,
+  ): Promise<number> {
+    const plan = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId } },
+      relations: {
+        materia: {
+          correlativasRequeridas: { materiaCorrelativa: true, carrera: true },
+        },
+      },
+    });
+
+    const progresos = await this.progresoRepo.find({
+      where: { usuario: { usuarioId } },
+      relations: { materia: true, estado: true },
+    });
+    const idsCompletadas = new Set(
+      progresos
+        .filter((p) => p.estado?.nombre === 'Completada')
+        .map((p) => p.materia?.materiaId),
+    );
+
+    let disponibles = 0;
+    for (const cm of plan) {
+      const materia = cm.materia;
+      if (!materia?.activo) continue;
+      const materiaId = materia.materiaId;
+      if (idsCompletadas.has(materiaId)) continue;
+
+      const correlativas = (materia.correlativasRequeridas ?? []).filter(
+        (c) => c.carrera.carreraId === carreraId,
+      );
+      const todasAprobadas = correlativas.every((c) =>
+        idsCompletadas.has(c.materiaCorrelativa.materiaId),
+      );
+      if (todasAprobadas) disponibles++;
+    }
+
+    return disponibles;
   }
 
   private async calcularCuatrimestresRestantes(
@@ -181,8 +234,9 @@ export class EstadisticasService {
       where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
       relations: { materia: true },
     });
-    const totalPlan = plan.length;
-    const idsMateriasPlan = plan
+    const planActivo = plan.filter((cm) => cm.materia?.activo !== false);
+    const totalPlan = planActivo.length;
+    const idsMateriasPlan = planActivo
       .map((cm) => cm.materia?.materiaId)
       .filter((id): id is number => id !== undefined);
 
@@ -207,6 +261,124 @@ export class EstadisticasService {
       { estado: 'En Proceso', cantidad: enProceso },
       { estado: 'Pendiente', cantidad: Math.max(0, pendientes) },
     ];
+  }
+
+  async obtenerNotasDistribucion(
+    usuarioCarreraId: number,
+  ): Promise<NotasDistribucionDto> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { carrera: true, usuario: true },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
+    const plan = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+      relations: { materia: true },
+    });
+    const planActivo = plan.filter((cm) => cm.materia?.activo !== false);
+    const idsMateriasPlan = planActivo
+      .map((cm) => cm.materia?.materiaId)
+      .filter((id): id is number => id !== undefined);
+
+    const progresos = await this.progresoRepo.find({
+      where: {
+        usuario: { usuarioId: inscripcion.usuario.usuarioId },
+        materia: { materiaId: In(idsMateriasPlan) },
+      },
+      relations: { estado: true },
+    });
+    const notasValidas = progresos
+      .filter((p) => p.estado.nombre === 'Completada' && p.nota !== null)
+      .map((p) => p.nota!);
+
+    const RANGOS = ['4-5', '6', '7', '8', '9', '10'] as const;
+    const conteo: Record<string, number> = Object.fromEntries(
+      RANGOS.map((r) => [r, 0]),
+    );
+    for (const nota of notasValidas) {
+      const rango =
+        nota <= 5
+          ? '4-5'
+          : nota === 6
+            ? '6'
+            : nota === 7
+              ? '7'
+              : nota === 8
+                ? '8'
+                : nota === 9
+                  ? '9'
+                  : '10';
+      conteo[rango] += 1;
+    }
+
+    return {
+      promedioGeneral:
+        notasValidas.length > 0
+          ? Math.round(
+              (notasValidas.reduce((s, n) => s + n, 0) / notasValidas.length) *
+                100,
+            ) / 100
+          : 0,
+      materiasConNota: notasValidas.length,
+      rangos: RANGOS.map((rango) => ({ rango, cantidad: conteo[rango] })),
+    };
+  }
+
+  async obtenerProgresoPorAnio(
+    usuarioCarreraId: number,
+  ): Promise<ProgresoPorAnioDto[]> {
+    const inscripcion = await this.usuarioCarreraRepo.findOne({
+      where: { usuarioCarreraId },
+      relations: { carrera: true, usuario: true },
+    });
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+
+    const plan = await this.carreraMateriaRepo.find({
+      where: { carrera: { carreraId: inscripcion.carrera.carreraId } },
+      relations: { materia: true },
+      order: { anio: 'ASC' },
+    });
+    const planActivo = plan.filter((cm) => cm.materia?.activo !== false);
+    const idsMateriasPlan = planActivo
+      .map((cm) => cm.materia?.materiaId)
+      .filter((id): id is number => id !== undefined);
+
+    const progresos = await this.progresoRepo.find({
+      where: {
+        usuario: { usuarioId: inscripcion.usuario.usuarioId },
+        materia: { materiaId: In(idsMateriasPlan) },
+      },
+      relations: { estado: true, materia: true },
+    });
+
+    const anios = [...new Set(planActivo.map((cm) => cm.anio))].sort(
+      (a, b) => a - b,
+    );
+
+    return anios.map((anio) => {
+      const materiasDelAnio = planActivo.filter((cm) => cm.anio === anio);
+      const total = materiasDelAnio.length;
+      const idsDelAnio = new Set(
+        materiasDelAnio.map((cm) => cm.materia?.materiaId),
+      );
+      const progresosDelAnio = progresos.filter((p) =>
+        idsDelAnio.has(p.materia?.materiaId),
+      );
+      const completadas = progresosDelAnio.filter(
+        (p) => p.estado.nombre === 'Completada',
+      ).length;
+      const enProceso = progresosDelAnio.filter(
+        (p) => p.estado.nombre === 'En Proceso',
+      ).length;
+
+      return {
+        anio,
+        completadas,
+        enProceso,
+        pendientes: Math.max(0, total - completadas - enProceso),
+      };
+    });
   }
 
   async obtenerEvolucion(usuarioCarreraId: number): Promise<any[]> {

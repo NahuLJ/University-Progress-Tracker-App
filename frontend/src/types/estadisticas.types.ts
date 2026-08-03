@@ -5,7 +5,22 @@ export interface EstadisticasResumen {
     creditosTotales: number;
     progresoPorcentaje: number;
     materiasCompletadas: number;
-    materiasTotales: number;
+    materiasPendientes: number;
+    materiasDisponibles: number;
+    totalMaterias: number;
+}
+
+export interface NotasDistribucion {
+    promedioGeneral: number;
+    materiasConNota: number;
+    rangos: { rango: string; cantidad: number }[];
+}
+
+export interface ProgresoPorAnio {
+    anio: number;
+    completadas: number;
+    enProceso: number;
+    pendientes: number;
 }
 
 export interface DistribucionEstados {

@@ -290,9 +290,11 @@ interface MateriaAdminRow {
 
 | Método | Ruta | Auth | Query | Respuestas |
 |--------|------|------|-------|------------|
-| `GET` | `/estadisticas/resumen` | ✅ Bearer | `usuarioCarreraId` | `200`: Resumen (promedio, créditos, cuatrimestres restantes) · `404`: Inscripción no encontrada |
+| `GET` | `/estadisticas/resumen` | ✅ Bearer | `usuarioCarreraId` | `200`: Resumen (promedio, créditos, cuatrimestres restantes, materiasDisponibles) · `404`: Inscripción no encontrada |
 | `GET` | `/estadisticas/distribucion-estados` | ✅ Bearer | `usuarioCarreraId` | `200`: Conteo por estado |
 | `GET` | `/estadisticas/evolucion` | ✅ Bearer | `usuarioCarreraId` | `200`: Evolución histórica de promedios |
+| `GET` | `/estadisticas/notas-distribucion` | ✅ Bearer | `usuarioCarreraId` | `200`: Rangos de nota y conteos (`NotasDistribucion`) · `404`: Inscripción no encontrada |
+| `GET` | `/estadisticas/progreso-por-anio` | ✅ Bearer | `usuarioCarreraId` | `200`: Materias por año (completadas, en proceso, pendientes) · `404`: Inscripción no encontrada |
 | `GET` | `/estadisticas/carreras-resumen` | ✅ Bearer | `usuarioId` | `200`: CarreraResumen[] (progreso por carrera del usuario) |
 
 ---
@@ -311,7 +313,7 @@ interface MateriaAdminRow {
 | `progreso/` | 4 |
 | `planificacion/` | 11 |
 | `trayectorias/` | 6 |
-| `estadisticas/` | 4 |
-| **Total únicos** | **56** |
+| `estadisticas/` | 6 |
+| **Total únicos** | **58** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

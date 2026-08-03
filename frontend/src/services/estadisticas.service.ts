@@ -4,6 +4,8 @@ import type {
     DistribucionEstados,
     EvolucionPromedio,
     CarreraResumen,
+    NotasDistribucion,
+    ProgresoPorAnio,
 } from '../types/estadisticas.types';
 
 export const estadisticasService = {
@@ -31,6 +33,20 @@ export const estadisticasService = {
     async obtenerCarrerasResumen(usuarioId: number): Promise<CarreraResumen[]> {
         const response = await api.get('/estadisticas/carreras-resumen', {
             params: { usuarioId },
+        });
+        return response.data;
+    },
+
+    async obtenerNotasDistribucion(usuarioCarreraId: number): Promise<NotasDistribucion> {
+        const response = await api.get('/estadisticas/notas-distribucion', {
+            params: { usuarioCarreraId },
+        });
+        return response.data;
+    },
+
+    async obtenerProgresoPorAnio(usuarioCarreraId: number): Promise<ProgresoPorAnio[]> {
+        const response = await api.get('/estadisticas/progreso-por-anio', {
+            params: { usuarioCarreraId },
         });
         return response.data;
     },

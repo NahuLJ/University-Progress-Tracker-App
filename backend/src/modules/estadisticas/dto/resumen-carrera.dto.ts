@@ -16,6 +16,9 @@ export class ResumenResponseDto {
   @ApiProperty({ example: 35 })
   totalMaterias: number;
 
+  @ApiProperty({ example: 6 })
+  materiasDisponibles: number;
+
   @ApiProperty({ example: 144 })
   creditosObtenidos: number;
 

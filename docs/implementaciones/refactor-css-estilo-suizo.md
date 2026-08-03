@@ -848,15 +848,28 @@ const colors = {
 
 ### 7.10 `Charts.tsx`
 
-- Barras `Completada/En Proceso/Pendiente`: reemplazar `neon-green/yellow/red` por `status-success/#10b981`, `status-warning/#f59e0b`, `status-danger/#ef4444`. Sin `shadow-neon-*`.
-- Barras de promedio: `bg-accent-cyan` (o gradiente primary→cyan), sin sombra.
+> **Estado final (con Recharts):** el dashboard usa `recharts@^3.10.1` (`MateriasPorEstadoChart` como
+> `PieChart` donut, `NotasDistribucionChart` y `ProgresoPorAnioChart` como `BarChart`). Aplicado lo de abajo.
+
+- Pastel `MateriasPorEstadoChart`: `Completada` `#10b981`, `En Proceso` `#f59e0b`, `Pendiente` `#ef4444`. Sin `shadow-neon-*`.
+- `ProgresoPorAnioChart`: mismos colores de estado que el pastel (pendientes `#ef4444`).
+- `NotasDistribucionChart`: color por rango de nota (`COLORES_NOTA`: 4-5 `#64748b`, 6 `#8b5cf6`, 7 `#3b82f6`, 8 `#22d3ee`, 9 `#34d399`, 10 `#10b981`).
+- Footer de `NotasDistribucionChart` con promedio y materias con nota en `text-accent-cyan`.
 - Labels de valores y estados: `.label` (10px mono uppercase), `text-text-muted`.
 - Dots de leyenda: `rounded-full` (permitido — dot indicator) sin sombra.
-- Radios de barras: `rounded-sm`/`rounded-t` (nunca `rounded-full`).
-
-> Si en el futuro se agrega una librería de charts (p.ej. Recharts): fondo `#111520`, sin grid o `rgba(148,163,184,0.05)`, eje `#64748b` 10px JetBrains Mono, `axisLine={false} tickLine={false}`, paleta `#6366f1, #22d3ee, #10b981, #f59e0b, #f87171`.
+- Radios de barras: `radius={[4,4,0,0]}` (notas) y `radius={[3,3,0,0]}` (progreso por año) — nunca `rounded-full`.
+- Ejes/grid de recharts: grid `rgba(148,163,184,0.09)`, eje `#64748b` 10px JetBrains Mono, `axisLine={false} tickLine={false}`.
+- `isAnimationActive` forzado a `true` (recharts deshabilita con `prefers-reduced-motion` por defecto), `animationBegin={0}`, pastel 1200ms / barras 900ms `ease-out`, envoltorio `animate-fade-in`.
+- Cards de gráficos con `hover:bg-bg-surface-secondary transition-colors`.
+- Hover oscuro en barras/pastel: `activeBar={BAR_ACTIVE_STYLE}` (`stroke: #0a0c12, strokeWidth: 2`) y `activeShape` `ActivePieSlice` (expande `outerRadius + 3`).
 
 ### 7.11 `StatCards.tsx`
+
+> **Estado final:** existe un componente interno `StatCard` genérico
+> `{ label, value, subtext?, accentClassName, iconName }` usado por `MateriasAprobadasCard`,
+> `PromedioCard` y `MateriasDisponiblesCard`. `CreditosCard` y `ProgresoBarCard` usan estructura propia
+> (incluyen `ProgressBar`). `TiempoRestanteCard` fue eliminada. `subtext` es **opcional**:
+> `MateriasAprobadasCard` y `PromedioCard` no muestran subtexto.
 
 Antes (icon chips con neon y glow):
 
@@ -871,15 +884,17 @@ Después (sin sombra, color semántico):
 
 ```ts
 'bg-accent-primary/10 text-accent-primary'  // Promedio (interacción/info)
-'bg-status-success/15 text-status-success'  // Tiempo (positivo)
+'bg-status-success/15 text-status-success'  // Materias Aprobadas (positivo)
 'bg-accent-primary/10 text-accent-primary'  // Créditos
-'bg-accent-primary/10 text-accent-primary'  // Progreso
+'bg-accent-cyan/15 text-accent-cyan'        // Materias Disponibles (info/cyan)
+'bg-accent-primary/10 text-accent-primary'  // Progreso General
 ```
 
 - Títulos (`text-sm font-medium text-slate-400`) → `.label`.
 - Números grandes (`text-2xl font-bold text-white`): mantener jerarquía, usar `text-text-default` y `font-mono` para los valores numéricos.
 - Captions (`text-xs text-slate-400 mt-1`) → `.label`.
-- `ProgressBar` con colores según 7.8.
+- `ProgressBar` con colores según 7.8: `CreditosCard` usa `color="primary"`, `ProgresoBarCard` usa `color="cyan"` (gradiente `accent-primary → accent-cyan`).
+- `ProgresoBarCard`: `materiasRestantes` opcional; si se pasa, se muestra como `label mt-2` **debajo** de la barra (`"materias restantes: N"`). En `DashboardPage` se calcula `totalMaterias − materiasCompletadas`.
 
 ### 7.12 `constants.ts` — `ESTADOS_MATERIA`
 

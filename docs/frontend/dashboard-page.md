@@ -1,9 +1,10 @@
 # Página Dashboard — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. `DashboardPage` cablea `StatCards`
-> (`PromedioCard`/`TiempoRestanteCard`/`CreditosCard`/`ProgresoBarCard`), `Charts`
-> (`MateriasPorEstadoChart`/`EvolucionPromedioChart`) y `CarrerasResumenList` con datos reales de
-> `useDashboard` (`resumen`, `distribucion`, `evolucion`) y `useCarrerasResumen` (lista "Mis carreras").
+> (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`),
+> `Charts` (`MateriasPorEstadoChart`/`NotasDistribucionChart`/`ProgresoPorAnioChart`/`EstadisticasSkeleton`) y
+> `CarrerasResumenList` con datos reales de `useEstadisticas` (wrapper de `useDashboard` + gráficos nuevos)
+> y `useCarrerasResumen` (lista "Mis carreras").
 > El selector multi-carrera (en el navbar lateral) cambia `usuarioCarreraId` y React Query refetch
 > automáticamente. Sin placeholders ni datos mockeados.
 
@@ -14,9 +15,10 @@ pages/
 └── DashboardPage.tsx              # orquesta el dashboard
 
 components/dashboard/
-├── StatCards.tsx                  # PromedioCard, TiempoRestanteCard, CreditosCard, ProgresoBarCard
-├── Charts.tsx                     # MateriasPorEstadoChart, EvolucionPromedioChart, EstadisticasSkeleton
-└── CarrerasResumenList.tsx        # lista de carreras activas con mini ProgressBar
+├── StatCards.tsx                  # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
+├── Charts.tsx                     # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
+├── CarrerasResumenList.tsx        # lista de carreras activas con mini ProgressBar
+└── ChartTooltip.tsx               # tooltip recharts que sigue el cursor (coordinate)
 
 components/layout/
 └── CarreraSelector.tsx            # selector global de carrera (dropdown en el sidebar)
@@ -30,6 +32,7 @@ components/ui/
 
 hooks/
 ├── useDashboard.ts                # carrera activa + resumen + distribución + evolución (React Query)
+├── useEstadisticas.ts             # wrapper de useDashboard + notas-distribucion + progreso-por-anio
 ├── useCarreras.ts                 # carreras del usuario
 └── useCarrerasResumen.ts          # resumen por carrera (materias completadas/totales)
 
@@ -37,13 +40,15 @@ store/
 ├── carrera.store.ts               # usuarioCarreraId activo (persistido en localStorage)
 └── sidebar.store.ts               # estado colapsado/expandido del sidebar (persistido)
 
-services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados, obtenerEvolucion, obtenerCarrerasResumen
+services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados, obtenerEvolucion, obtenerCarrerasResumen, obtenerNotasDistribucion, obtenerProgresoPorAnio
 ```
 
-> **Estado:** `DashboardPage` ya cablea `StatCards` (`PromedioCard`/`TiempoRestanteCard`/`CreditosCard`/
-> `ProgresoBarCard`), `Charts` (`MateriasPorEstadoChart`/`EvolucionPromedioChart`) y `CarrerasResumenList`
-> con los datos reales de `useDashboard` y `useCarrerasResumen`. El selector multi-carrera
-> cambia `usuarioCarreraId` y React Query refetch automáticamente.
+> **Estado:** `DashboardPage` cablea `StatCards` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/
+> `MateriasDisponiblesCard`/`ProgresoBarCard`), `Charts` (`MateriasPorEstadoChart` pastel/
+> `NotasDistribucionChart`/`ProgresoPorAnioChart`) y `CarrerasResumenList`
+> con los datos reales de `useEstadisticas` y `useCarrerasResumen`. El selector multi-carrera
+> cambia `usuarioCarreraId` y React Query refetch automáticamente. `EvolucionPromedioChart` fue
+> eliminado del dashboard y `TiempoRestanteCard` ya no existe.
 
 ### Árbol de Composición (objetivo)
 
@@ -55,9 +60,11 @@ MainLayout (sidebar lateral izquierdo, colapsable y responsive)
 ├── Datos del usuario (avatar iniciales + nombre + email)
 └── Botón Cerrar sesión
 └── DashboardPage
-    ├── Header: título "Dashboard"
-    ├── Grid de 4 tarjetas: PromedioCard · TiempoRestanteCard · CreditosCard · ProgresoBarCard
-    ├── Fila de 2 gráficos: MateriasPorEstadoChart · EvolucionPromedioChart
+    ├── Header: título "Estadísticas académicas" + subtítulo + carrera activa
+    ├── Grid de 4 tarjetas: MateriasAprobadasCard · PromedioCard · CreditosCard · MateriasDisponiblesCard
+    ├── ProgresoBarCard (ancho completo, "materias restantes: N" debajo de la barra)
+    ├── Fila de 2 gráficos: MateriasPorEstadoChart (pastel) · NotasDistribucionChart
+    ├── ProgresoPorAnioChart (ancho completo)
     └── CarrerasResumenList ("Mis carreras")
 ```
 
@@ -69,7 +76,7 @@ MainLayout (sidebar lateral izquierdo, colapsable y responsive)
 
 ---
 
-## Manejo del Estado — `useDashboard`
+## Manejo del Estado — `useDashboard` y `useEstadisticas`
 
 ```typescript
 export function useDashboard() {
@@ -103,6 +110,21 @@ export function useDashboard() {
 }
 ```
 
+`DashboardPage` usa `useEstadisticas()`, wrapper sobre `useDashboard` que además consulta los dos
+gráficos nuevos (ambos `enabled: !!usuarioCarreraId`):
+
+```typescript
+export function useEstadisticas() {
+    const dashboard = useDashboard();
+    const usuarioCarreraId = dashboard.usuarioCarreraId;
+
+    // notasDistribucion → obtenerNotasDistribucion, queryKey ['estadisticas','notas-distribucion',usuarioCarreraId]
+    // progresoPorAnio   → obtenerProgresoPorAnio,   queryKey ['estadisticas','progreso-por-anio',usuarioCarreraId]
+
+    return { ...dashboard, notasDistribucion, progresoPorAnio };
+}
+```
+
 El selector de carrera se guarda en un store global (`useCarreraStore`) persistido en `localStorage`;
 al cambiar, las queries se re-ejecutan por su `queryKey`. El hook `useDashboard` lee el
 `usuarioCarreraId` del store y:
@@ -120,28 +142,46 @@ dashboard refleja el cambio de estado (activa/inactiva) sin recargar la página.
 
 ## Componentes de Tarjeta (`StatCards.tsx`)
 
-Todas las tarjetas usan estructura uniforme (icono + título + valor grande + subtítulo) para que
-iconos y textos queden a la misma altura (`items-start`, `h-full` en el grid). No usan `Badge` para
-el promedio; la etiqueta (Excelente/Bueno/Aceptable/Bajo) se muestra como subtítulo.
+Todas las tarjetas usan estructura uniforme (icono + título + valor grande + subtítulo **opcional**)
+para que iconos y textos queden a la misma altura (`items-start`, `h-full` en el grid). El componente
+interno `StatCard` recibe `{ label, value, subtext?, accentClassName, iconName }`; si no se pasa
+`subtext`, no se renderiza.
 
-- **PromedioCard** `{ promedio }` — muestra `promedio.toFixed(2)`. Subtítulo: etiqueta según rango
-  (≥8.5 Excelente, ≥7 Bueno, ≥6 Aceptable, sino Bajo). Sin "Sin datos" ni "de N materias".
-- **TiempoRestanteCard** `{ cuatrimestres }` — muestra `N cuatrimestre(s)` y subtítulo `≈ N años` si ≥2.
-- **CreditosCard** `{ obtenidos, totales }` — `obtenidos/totales` + `ProgressBar` con `%` completado.
-- **ProgresoBarCard** `{ porcentaje }` — `porcentaje%` + `ProgressBar` de progreso general.
-
-Colores del promedio: `<6` naranja ("Bajo"), `6–6.99` amarillo ("Aceptable"), `7–8.49` verde ("Bueno"), `≥8.5` azul ("Excelente").
+- **MateriasAprobadasCard** `{ aprobadas, total }` — `aprobadas/total` en `font-mono`, icono `chart`,
+  acento `bg-status-success/15 text-status-success`. **Sin subtexto**.
+- **PromedioCard** `{ promedio }` — `promedio.toFixed(2)` (o `—` sin datos), icono `chart`,
+  acento `bg-accent-primary/10 text-accent-primary`. **Sin subtexto**.
+- **CreditosCard** `{ obtenidos, totales }` — `obtenidos/totales` + `ProgressBar color="primary"`
+  con `{porcentaje}% completados` como subtexto.
+- **MateriasDisponiblesCard** `{ cantidad }` — `cantidad` + subtexto `"pueden cursarse ahora"`,
+  icono `books`, acento `bg-accent-cyan/15 text-accent-cyan`.
+- **ProgresoBarCard** `{ porcentaje, materiasRestantes }` — `%` en `text-accent-cyan` a la derecha
+  del label, `ProgressBar color="cyan"`, y **`"materias restantes: N"` debajo de la barra**. En
+  `DashboardPage` se pasa `materiasRestantes = totalMaterias − materiasCompletadas` (no descuenta En Proceso).
 
 ---
 
 ## Gráficos (`Charts.tsx`)
 
-- **MateriasPorEstadoChart** `{ data: { estado, cantidad, porcentaje }[] }` — barras verticales por estado
-  (verde/amarillo/rojo, sin glow) con altura proporcional a `cantidad/total` y leyenda de colores. Si no hay datos,
-  muestra "Sin datos de distribución".
-- **EvolucionPromedioChart** `{ data: { cuatrimestre, promedio }[] }` — barras por cuatrimestre con tooltip.
-  Si vacío, "Sin datos de evolución".
-- **EstadisticasSkeleton** — skeletons de 4 tarjetas + 2 gráficos para el estado de carga.
+Todos los gráficos usan `recharts@^3.10.1`, tooltip `ChartTooltip` (sigue el cursor con `coordinate`
+de recharts, posicionamiento `absolute`), ejes `#64748b` 10px JetBrains Mono, grid
+`rgba(148,163,184,0.09)`, y `isAnimationActive` forzado a `true` con `animationBegin={0}`
+(pastel 1200ms, barras 900ms `ease-out`). Cards de gráficos con
+`hover:bg-bg-surface-secondary transition-colors`.
+
+- **MateriasPorEstadoChart** `{ data: { estado, cantidad }[] }` — **PieChart (donut)** con
+  `innerRadius={44}`, `outerRadius={72}`, `paddingAngle={2}`, leyenda con dots y porcentaje.
+  Paleta: Completada `#10b981` · En Proceso `#f59e0b` · Pendiente `#ef4444`. Subtítulo de Card:
+  `"Materias según su estado de avance"`.
+- **NotasDistribucionChart** `{ data: NotasDistribucion }` — BarChart de rangos de nota con
+  **color por barra** (`COLORES_NOTA`: 4-5 `#64748b`, 6 `#8b5cf6`, 7 `#3b82f6`, 8 `#22d3ee`,
+  9 `#34d399`, 10 `#10b981`). Footer con promedio general y materias con nota en `text-accent-cyan`.
+  Subtítulo de Card: `"Notas de materias aprobadas"`.
+- **ProgresoPorAnioChart** `{ data: ProgresoPorAnio[] }` — BarChart agrupado por año con los mismos
+  colores de estado que el pastel. **Tick personalizado que muestra el año y debajo `"N materias"`**
+  (total del año). Subtítulo de Card: `"Materias por año del plan"`.
+- **EstadisticasSkeleton** — skeletons del layout completo (header, 4 tarjetas, `ProgresoBarCard`,
+  2 gráficos, `ProgresoPorAnioChart`, "Mis carreras") para el estado de carga.
 
 ---
 
@@ -150,9 +190,10 @@ Colores del promedio: `<6` naranja ("Bajo"), `6–6.99` amarillo ("Aceptable"), 
 `DashboardPage` hoy:
 
 1. Si `isLoading` → `EstadisticasSkeleton`.
-2. Si el usuario no tiene carreras → `EmptyState` con CTA a `/carreras`.
-3. Si hay carreras → header y los valores reales en las 4 tarjetas y en los dos bloques
-   de gráficos (datos del backend vía `useDashboard`), más "Mis carreras" con datos reales.
+2. Si `error` → `QueryError` con retry que invalida `['estadisticas']`.
+3. Si el usuario no tiene carreras → `EmptyState` con CTA a `/carreras`.
+4. Si hay carreras → header y los valores reales en las 4 tarjetas, `ProgresoBarCard`,
+   los 3 gráficos (datos del backend vía `useEstadisticas`), más "Mis carreras" con datos reales.
 
 ### Selector de Carrera (Multi-carrera)
 
