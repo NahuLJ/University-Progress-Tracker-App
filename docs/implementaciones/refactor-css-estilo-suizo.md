@@ -95,6 +95,14 @@ La app maneja **3 estados reales de materia** (`estado_materia` / `ESTADOS_MATER
 
 > **Nota:** el mapeo del componente `StatusBadge.tsx` actual es `Completada→verde`, `En Proceso→ámbar`, `Pendiente→rojo` (+ fallback gris). Con la migración pasa a `badge-success`, `badge-warning`, `badge-danger` y `badge-gray` respectivamente. Pendiente **no** significa "desaprobado"; usa `danger` por ser el estado de alerta inicial, igual que hoy.
 
+**Chips complementarios definidos en `index.css` (misma capa `components`):**
+
+| Clase | Uso | Estilo |
+|---|---|---|
+| `.nota-chip` + `.nota-baja` / `.nota-media` / `.nota-alta` | Nota en `MateriaProgresoRow` | Pill mono con `border` del color semántico, fondo 15% + texto acento: rojo 4-6, ámbar 7-8, verde 9-10 |
+| `.tipo-chip-final` / `.tipo-chip-promo` | Tipo de aprobación | Badge "Final" (`accent-primary/15`) o "Promoción" (`accent-cyan/15`) |
+| `.codigo-chip` | Código de materia | Mono uppercase con tracking, `bg-bg-surface-secondary` + `border-hairline`, texto `accent-primary` |
+
 ### 3.2 Tipografía
 
 - Importar en `frontend/index.html` (o vía `@import` en `index.css`):
@@ -924,6 +932,7 @@ Reemplazos puntuales (ver 6.3 para ubicaciones exactas):
 |---|---|
 | `px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30` (contadores de carrera/materias) | `badge badge-info` (`bg-accent-primary/15 text-accent-primary rounded px-[6px] py-[2px] font-mono text-[9px]`) |
 | `chipClass`/`dotClass` en `MateriaProgresoRow.tsx` y badges de `progreso/index.tsx` | `badge badge-success/warning/danger` + dots `bg-status-*` |
+| Nota / tipo / código en `MateriaProgresoRow.tsx` (texto plano) | `nota-chip nota-baja/media/alta`, `tipo-chip-final/promo`, `codigo-chip` (definidos en `index.css`) |
 | `Extras.tsx` (colores de extra por materia) | `bg-accent-primary/15 text-accent-primary` y `status-*` según semántica; sin `border-neon-*/30` |
 | `MateriaPlanificadaChip.tsx` (`bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30 cursor-grab`) | `bg-accent-primary/15 text-accent-primary border-hairline` |
 | `ErrorBoundary.tsx` (`bg-neon-red/15 text-neon-red shadow-neon-soft`, `btn-primary`) | `bg-status-danger/15 text-status-danger`, `btn-primary` |

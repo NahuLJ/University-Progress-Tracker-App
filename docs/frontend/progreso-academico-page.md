@@ -148,10 +148,17 @@ se usa para deshabilitar botones durante la mutación sin mostrar el skeleton ni
 ### Fila Individual — `MateriaProgresoRow`
 
 Cada fila ya no edita en línea. Usa:
-- **Chip de estado** con color (verde/amarillo/rojo) y nombre
+- **Chip de estado** con color (verde/amarillo/rojo), punto de color y nombre
+- **Chip de código** (`.codigo-chip`) para el código de la materia: mono, uppercase, fondo `bg-bg-surface-secondary`, borde `hairline` y texto acento primario
+- **Chip de nota** (`.nota-chip`) con color según rango: rojo (4-6), ámbar (7-8), verde (9-10)
+- **Chip de tipo de aprobación** (`.tipo-chip-final`/`.tipo-chip-promo`): badge "Final" (acento primario) o "Promoción" (cyan)
 - **Click en nombre de materia** → abre `MateriaDetailModal` con correlativas filtradas por `carreraId` (heredado desde `ProgresoPage` → `ProgresoTree` → `MateriaProgresoRow`). Las correlativas muestran su estado real (`estadoUsuario`) consultado desde el `progresoMap` (materiaId → estado) construido en `ProgresoPage`, en lugar del antiguo valor hardcodeado `'Pendiente'`.
 - **Pencil icon** → abre `EditarProgresoModal` para cambiar estado/nota/tipo
 - **Trash icon** (solo si no es Pendiente) → modal de confirmación para resetear a Pendiente
+
+> **Estilos (CSS Suizo):** las clases `.nota-chip`, `.nota-baja|media|alta`, `.tipo-chip-final|promo` y
+> `.codigo-chip` están definidas en `src/index.css` (capa `components`). Los chips de nota usan
+> `border` + fondo al 15% + texto de acento, consistente con los badges del tema.
 
 Columnas: Nro (1) | Materia (3) | Código (2) | Créd. (1) | Estado (2) | Nota (1) | Tipo (1) | acciones (1).
 

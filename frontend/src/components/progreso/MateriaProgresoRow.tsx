@@ -31,6 +31,12 @@ function dotClass(estado: string) {
     return 'bg-status-danger';
 }
 
+function notaClass(nota: number) {
+    if (nota >= 9) return 'nota-chip nota-alta';
+    if (nota >= 7) return 'nota-chip nota-media';
+    return 'nota-chip nota-baja';
+}
+
 export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carreraId, progresoMap }: MateriaProgresoRowProps) {
     const [modalEdit, setModalEdit] = useState(false);
     const [modalReset, setModalReset] = useState(false);
@@ -72,7 +78,9 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
         <div className="grid grid-cols-12 gap-2 items-center p-3 hover:bg-bg-surface-secondary">
             <span className="col-span-1 text-center text-text-muted font-mono text-sm">{progreso.orden}</span>
             <span className="col-span-3 text-center font-medium text-text-default truncate cursor-pointer hover:text-accent-primary transition-colors" title={materia.nombre} onClick={() => setModalDetalle(true)}>{materia.nombre}</span>
-            <span className="col-span-2 text-center text-text-muted font-mono text-sm">{materia.codigo}</span>
+            <span className="col-span-2 flex items-center justify-center">
+                <span className="codigo-chip">{materia.codigo}</span>
+            </span>
             <span className="col-span-1 text-center text-text-subtle text-sm">{materia.creditos}</span>
 
             <div className="col-span-2 flex items-center justify-center">
@@ -84,8 +92,24 @@ export function MateriaProgresoRow({ materia, progreso, onSave, isSaving, carrer
 
             {progreso.estado.nombre === 'Completada' ? (
                 <>
-                    <span className="col-span-1 text-center text-text-subtle">{progreso.nota ?? '—'}</span>
-                    <span className="col-span-1 text-center text-text-muted">{progreso.tipoAprobacion ?? '—'}</span>
+                    <span className="col-span-1 flex items-center justify-center">
+                        {progreso.nota != null ? (
+                            <span className={notaClass(progreso.nota)}>{progreso.nota}</span>
+                        ) : (
+                            <span className="text-text-subtle">—</span>
+                        )}
+                    </span>
+                    <span className="col-span-1 flex items-center justify-center">
+                        {progreso.tipoAprobacion ? (
+                            <span
+                                className={progreso.tipoAprobacion === 'Promocion' ? 'badge tipo-chip-promo' : 'badge tipo-chip-final'}
+                            >
+                                {progreso.tipoAprobacion === 'Promocion' ? 'Promoción' : 'Final'}
+                            </span>
+                        ) : (
+                            <span className="text-text-muted">—</span>
+                        )}
+                    </span>
                 </>
             ) : (
                 <div className="col-span-2" />
