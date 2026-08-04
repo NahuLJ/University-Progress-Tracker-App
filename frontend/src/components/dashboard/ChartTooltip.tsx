@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 interface ChartTooltipPayloadItem {
     name?: string | number;
     value?: number | string | Array<number | string>;
@@ -9,13 +11,23 @@ interface ChartTooltipPayloadItem {
 interface ChartTooltipProps {
     active?: boolean;
     payload?: ChartTooltipPayloadItem[];
+    x?: number;
+    y?: number;
 }
 
-export function ChartTooltip({ active, payload }: ChartTooltipProps) {
+export function ChartTooltip({ active, payload, x, y }: ChartTooltipProps) {
     if (!active || !payload || payload.length === 0) return null;
 
+    const fixedStyle: CSSProperties | undefined =
+        x !== undefined && y !== undefined
+            ? { position: 'fixed', left: x + 14, top: y + 14, zIndex: 50 }
+            : undefined;
+
     return (
-        <div className="rounded-md border border-hairline bg-bg-surface px-3 py-2 text-xs shadow-lg pointer-events-none">
+        <div
+            className="rounded-md border border-hairline bg-bg-surface px-3 py-2 text-xs shadow-lg pointer-events-none"
+            style={fixedStyle}
+        >
             {payload.map((entry, index) => (
                 <div key={`${entry.dataKey ?? index}`} className="flex items-center gap-2">
                     <span

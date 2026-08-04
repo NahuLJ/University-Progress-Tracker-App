@@ -14,6 +14,7 @@ Este documento describe el estado **final** del refactor: todo está implementad
 - `CarreraSelector` usa `useCarreraStore` (`usuarioCarreraId` / `setUsuarioCarreraId`) para la carrera activa global.
 - Backend: filtro de materias inactivas (`planActivo`) en `obtenerResumen` y `obtenerDistribucionEstados`; nuevo campo `materiasDisponibles`; nuevos endpoints `GET /estadisticas/notas-distribucion` y `GET /estadisticas/progreso-por-anio` con sus DTOs.
 - Frontend: `useEstadisticas`, `StatCard` genérico + tarjetas nuevas, gráficos (pastel, `NotasDistribucionChart`, `ProgresoPorAnioChart`, `ChartTooltip`), `DashboardPage`, tipos y service.
+- Tooltips que siguen el cursor: hooks `useTooltipPosition` (barras) y `usePieTooltip` (pastel). Los tooltips de los gráficos de barras se posicionan con `position: fixed` en `clientX/clientY`; en el pastel el sector activo se calcula con la posición angular del cursor relativa al centro (`Math.atan2(-dy, dx)`, convención de recharts: 0° = derecha, 90° = arriba, antihorario), no con `activeIndex` de recharts.
 - Dependencia `recharts@^3.10.1` en `frontend/package.json`.
 - Fixes de UX aplicados (sección 4.4 bis): sin subtexto en Materias Aprobadas/Promedio, "materias restantes" debajo de la barra de progreso (total − aprobadas), subtítulo en Distribución de materias, color por barra en notas, "N materias" bajo cada año, y animaciones recharts forzadas.
 
@@ -49,7 +50,7 @@ La página Dashboard (`DashboardPage`) se refactoriza en dos ejes principales:
 | `NotasDistribucionChart` con un solo color para todas las barras | **Fix UX:** color distinto por rango de nota (`COLORES_NOTA`) |
 | `ProgresoPorAnioChart` solo con el número de año en el eje | **Fix UX:** debajo de cada año muestra `"N materias"` (total del año) mediante tick personalizado |
 | Animaciones recharts con `isAnimationActive="auto"` (recharts las deshabilita con `prefers-reduced-motion`) | **Fix UX:** `isAnimationActive` forzado a `true`, `animationBegin={0}`, pastel 1200ms, barras 900ms `ease-out`, envoltorio `animate-fade-in` |
-| Chart tooltips | Ahora siguen el cursor del mouse libremente por el gráfico. `ChartTooltip.tsx` es un componente **nuevo** que usa `coordinate` de Recharts para posicionamiento absoluto |
+| Chart tooltips | Tooltip estático (recharts lo posicionaba en la coordenada activa, no bajo el cursor) | Siguen el cursor libremente. Los gráficos de barras usan `useTooltipPosition` (`clientX/clientY`) + `wrapperStyle={{ position: 'fixed', transform: 'none' }}`; el pastel usa `usePieTooltip` (hit-test angular sobre la posición del mouse). `ChartTooltip.tsx` acepta `x`/`y` opcionales y renderiza con `position: fixed` |
 | Chart cards hover | Fondo no se pone blanco al hover, sino que oscurece levemente (`bg-bg-surface-secondary`) — `hover:bg-bg-surface-secondary transition-colors` |
 | Chart sections hover (barras/pastel) | El color no se aclara al hover, sino que oscurece (opacidad 1 + stroke oscuro) — `activeBar` en BarChart y `activeShape` en PieChart con `BAR_ACTIVE_STYLE` y `ActivePieSlice` |
 | Clases neon (`shadow-neon-*`, `bg-neon-*/15`, `text-slate-400`) | Tokens Suizo (`bg-accent-primary/10`, `text-text-muted`, `border-hairline`) |
@@ -263,12 +264,14 @@ components/dashboard/
 ├── StatCards.tsx                  # HECHO: StatCard genérico, MateriasAprobadas/MateriasDisponibles, ProgresoBarCard
 ├── Charts.tsx                     # HECHO: pastel, NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
 ├── CarrerasResumenList.tsx        # HECHO: cn(), selección activa, click handler, estilo Suizo
-└── ChartTooltip.tsx               # HECHO: tooltip que sigue al cursor con `coordinate` de Recharts
+├── ChartTooltip.tsx               # HECHO: tooltip que sigue al cursor (position: fixed, x/y opcionales)
 
 hooks/
 ├── useDashboard.ts                # Sin cambios (ahora usado por useEstadisticas)
 ├── useEstadisticas.ts             # HECHO: wrapper de useDashboard + queries de los 2 gráficos nuevos
-└── useCarrerasResumen.ts          # HECHO: query para resumen por carrera
+├── useCarrerasResumen.ts          # HECHO: query para resumen por carrera
+├── useTooltipPosition.ts          # HECHO: captura clientX/clientY (barras)
+└── usePieTooltip.ts               # HECHO: sector activo del pastel por ángulo del cursor
 
 services/
 └── estadisticas.service.ts        # HECHO: + obtenerNotasDistribucion, obtenerProgresoPorAnio
@@ -361,7 +364,9 @@ Estructura: `Card.h-full > flex items-start gap-3 > icon chip (rounded-md, shrin
 
 #### `MateriasPorEstadoChart` — de barras a pastel
 
-`PieChart` de recharts con `innerRadius={44}`, `outerRadius={72}`, `paddingAngle={2}`, `stroke="#0a0c12"`, tooltip personalizado (`ChartTooltip`), leyenda con dots de círculo y porcentaje (`{cantidad} ({pct}%)`). La Card lleva subtítulo `"Materias según su estado de avance"` (fix UX).
+`PieChart` de recharts con `innerRadius={44}`, `outerRadius={72}`, `paddingAngle={2}`, `stroke="#0a0c12"`, leyenda con dots de círculo y porcentaje (`{cantidad} ({pct}%)`). La Card lleva subtítulo `"Materias según su estado de avance"` (fix UX).
+
+> **Tooltip del pastel:** NO usa el `<Tooltip>` de recharts para los datos. El hover se resuelve con el hook `usePieTooltip` (`hooks/usePieTooltip.ts`): a partir de la posición del mouse relativa al centro del contenedor (`getBoundingClientRect`) se calcula distancia (fuera del anillo → sin tooltip) y ángulo `Math.atan2(-dy, dx)` normalizado a `[0, 360)`. El ángulo se busca en los rangos `[start, end)` de cada sector (mismos ángulos que calcula recharts: `sum`, `paddingAngle=2`, `realTotalAngle = 360 - (n-1)*2`, 0° en las 3, antihorario). El dato mostrado y la posición del tooltip salen del **mismo** origen (el cursor), evitando el `activeIndex` enter-based de recharts que quedaba desincronizado con el cursor. El `<Tooltip>` de recharts se elimina del pastel; el highlight (`activeShape`/`ActivePieSlice`) lo gestiona recharts internamente.
 
 Paleta (sin `'Disponible'`: `obtenerDistribucionEstados` solo devuelve `Completada`, `En Proceso` y `Pendiente`; si más adelante se agrega el estado "Disponible" al backend, se suma acá):
 ```typescript
@@ -412,7 +417,14 @@ Skeleton con tokens Suizo (`bg-bg-surface-secondary` en vez de `bg-base-600/70`)
 
 #### `ChartTooltip` — componente NUEVO
 
-`components/dashboard/ChartTooltip.tsx`. Tooltip de recharts (usado por pastel y barras) que sigue el cursor del mouse usando `coordinate` de Recharts y `position: absolute` para mantener el tooltip alineado con la interacción del usuario.
+`components/dashboard/ChartTooltip.tsx`. Tooltip compartido (usado por barras y por el overlay del pastel) que sigue el cursor del mouse. Acepta props opcionales `x`/`y` (coordenadas de viewport): si están definidas renderiza con `position: fixed` en `left: x + 14, top: y + 14, zIndex: 50`; si no, recharts lo posiciona por su cuenta (fallback).
+
+#### Tooltips que siguen el cursor — hooks NUEVOS
+
+- `hooks/useTooltipPosition.ts` — usado por `NotasDistribucionChart` y `ProgresoPorAnioChart`. Expone `pos` (`{ x, y }` en `clientX/clientY`) y handlers `onMouseMove`/`onMouseLeave`. Se pasa al `<Tooltip>` de recharts como `content={(props) => <ChartTooltip {...props} x={pos?.x} y={pos?.y} />}` y se neutraliza el posicionamiento interno de recharts con `wrapperStyle={{ position: 'fixed', left: 0, top: 0, transform: 'none', pointerEvents: 'none' }}` (solo cuando hay `pos`).
+- `hooks/usePieTooltip.ts` — usado por `MateriasPorEstadoChart`. Calcula el sector hovereado por ángulo/radio del cursor (ver sección `MateriasPorEstadoChart`) y devuelve `{ index, pos }` para renderizar un `ChartTooltip` propio (overlay) con el payload del sector correspondiente.
+
+> Recharts no sigue el cursor en todos los casos: para barras usa la coordenada activa del eje y para el pastel solo actualiza `activeIndex` al **entrar** a un sector. Por eso el posicionamiento se resuelve en el frontend y, en el pastel, también el dato.
 
 #### Ajustes de interacción visual
 
@@ -608,7 +620,7 @@ No se aplican reglas de negocio nuevas en el refactor del dashboard. El cálculo
 | 7 | Frontend: corregir `EstadisticasResumen` (`totalMaterias`, `materiasDisponibles`) y agregar `NotasDistribucion` / `ProgresoPorAnio` | `types/estadisticas.types.ts` |
 | 8 | Frontend: agregar `obtenerNotasDistribucion` y `obtenerProgresoPorAnio` al service | `services/estadisticas.service.ts` |
 | 9 | Refactor `StatCards.tsx`: `StatCard` genérico, `MateriasAprobadasCard`, `MateriasDisponiblesCard`, `ProgresoBarCard`, eliminar `TiempoRestanteCard` | `StatCards.tsx` |
-| 10 | Crear `ChartTooltip.tsx` (sigue el cursor con `coordinate`) | `components/dashboard/ChartTooltip.tsx` |
+| 10 | Crear `ChartTooltip.tsx` (x/y opcionales, `position: fixed`) + hooks `useTooltipPosition` (barras) y `usePieTooltip` (pastel) | `components/dashboard/ChartTooltip.tsx`, `hooks/useTooltipPosition.ts`, `hooks/usePieTooltip.ts` |
 | 11 | Refactor `Charts.tsx`: pastel (sin `'Disponible'`), `NotasDistribucionChart`, `ProgresoPorAnioChart`, eliminar `EvolucionPromedioChart`, `EstadisticasSkeleton`, hover (`activeBar`/`activeShape`) | `Charts.tsx` |
 | 12 | Crear `useEstadisticas.ts` (wrapper + queries nuevas) | `hooks/useEstadisticas.ts` |
 | 13 | Refactor `DashboardPage.tsx`: usar `useEstadisticas` + `useCarrerasResumen`, nuevo layout, header | `DashboardPage.tsx` |
@@ -629,6 +641,7 @@ Pasos pre-existentes (no requerían trabajo): tokens Suizo y `ProgressBar`/`Card
 | 7 | Mismos colores por estado en `ProgresoPorAnioChart` y `MateriasPorEstadoChart` (`pendientes` `#ef4444`) |
 | 8 | Animaciones recharts forzadas (`isAnimationActive`, `animationBegin={0}`, duraciones/easing) + `animate-fade-in` |
 | 9 | `EstadisticasSkeleton` actualizado al layout final completo |
+| 10 | Tooltips siguen el cursor: barras con `useTooltipPosition` + `position: fixed`; pastel con `usePieTooltip` (hit-test angular, `Math.atan2(-dy, dx)` para respetar la convención antihoraria de recharts) |
 
 ---
 

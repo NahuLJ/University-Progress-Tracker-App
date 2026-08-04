@@ -104,7 +104,7 @@ frontend/
     │   ├── dashboard/
     │   │   ├── StatCards.tsx       # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
     │   │   ├── Charts.tsx          # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
-    │   │   ├── ChartTooltip.tsx    # tooltip recharts que sigue el cursor
+    │   │   ├── ChartTooltip.tsx    # tooltip que sigue el cursor (position: fixed; barras con useTooltipPosition, pastel con usePieTooltip)
     │   │   └── CarrerasResumenList.tsx
     │   │
     │   ├── carrera/
@@ -301,6 +301,8 @@ las especificaciones originales pero **no existen** en `src/`:
   cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
 - **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useEstadisticas` (wrapper de `useDashboard`
   que agrega `notas-distribucion` y `progreso-por-anio`). Gráficos con `recharts@^3.10.1` y `ChartTooltip`.
+  Los tooltips siguen el cursor: en barras con `useTooltipPosition` (`position: fixed` en `clientX/clientY`);
+  en el pastel con `usePieTooltip` (hit-test por ángulo/radio del cursor, `Math.atan2(-dy, dx)`).
 - **Inscripción/desinscripción:** `CarrerasPage` lista inscripciones (activas e inactivas) y disponibles.
 Cada `CarreraCard` solo tiene "Ver plan de estudios". Las listas de activas, inactivas y disponibles
 usan `useInfiniteQuery` con botón "Ver más" para paginación.

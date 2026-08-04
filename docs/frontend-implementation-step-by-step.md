@@ -316,7 +316,7 @@ progreso pertenece a una materia del plan de estudios.
 
 **Abrir y aplicar:**
 
-- **`docs/frontend/dashboard-page.md`** — `DashboardPage` con selector multi-carrera en el sidebar, `MateriasAprobadasCard`, `PromedioCard`, `CreditosCard`, `MateriasDisponiblesCard` y `ProgresoBarCard` (en `StatCards.tsx`), `MateriasPorEstadoChart` (pastel), `NotasDistribucionChart` y `ProgresoPorAnioChart` (en `Charts.tsx`, con `recharts` y `ChartTooltip`), `CarrerasResumenList`, hooks `useDashboard` + `useEstadisticas` con queries paralelas de estadísticas.
+- **`docs/frontend/dashboard-page.md`** — `DashboardPage` con selector multi-carrera en el sidebar, `MateriasAprobadasCard`, `PromedioCard`, `CreditosCard`, `MateriasDisponiblesCard` y `ProgresoBarCard` (en `StatCards.tsx`), `MateriasPorEstadoChart` (pastel), `NotasDistribucionChart` y `ProgresoPorAnioChart` (en `Charts.tsx`, con `recharts` y `ChartTooltip`), `CarrerasResumenList`, hooks `useDashboard` + `useEstadisticas` con queries paralelas de estadísticas. Los tooltips siguen el cursor: `useTooltipPosition` (barras, `position: fixed`) y `usePieTooltip` (pastel, sector por ángulo/radio del cursor).
 
 **Conexión con el paso anterior:** El Dashboard consume datos del endpoint de estadísticas (respaldado por
 el módulo de progreso del paso 3.5). Al cambiar de carrera en el selector, React Query refetch automáticamente.

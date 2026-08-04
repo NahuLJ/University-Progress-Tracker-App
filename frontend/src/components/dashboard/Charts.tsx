@@ -12,7 +12,10 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from 'recharts';
+import type { CSSProperties } from 'react';
 import { ChartTooltip } from './ChartTooltip';
+import { useTooltipPosition, type TooltipPosition } from '../../hooks/useTooltipPosition';
+import { usePieTooltip } from '../../hooks/usePieTooltip';
 import type {
     NotasDistribucion,
     ProgresoPorAnio,
@@ -42,6 +45,16 @@ const COLORES_NOTA: Record<string, string> = {
     '9': '#34d399',
     '10': '#10b981',
 };
+
+function tooltipContent(pos: TooltipPosition | null) {
+    return (props: any) => <ChartTooltip {...props} x={pos?.x} y={pos?.y} />;
+}
+
+function tooltipWrapperStyle(pos: TooltipPosition | null): CSSProperties | undefined {
+    return pos
+        ? { position: 'fixed', left: 0, top: 0, transform: 'none', pointerEvents: 'none' }
+        : undefined;
+}
 
 function ChartEmpty({ message }: { message: string }) {
     return (
@@ -82,6 +95,8 @@ export function MateriasPorEstadoChart({
 }: {
     data: Array<{ estado: EstadoMateria; cantidad: number }>;
 }) {
+    const { containerRef, hovered, onMouseMove, onMouseLeave } = usePieTooltip(data, 44, 72);
+
     if (!data || data.length === 0) {
         return (
             <Card title="Distribución de materias" subtitle="Materias según su estado de avance">
@@ -98,7 +113,12 @@ export function MateriasPorEstadoChart({
             subtitle="Materias según su estado de avance"
             className="transition-colors hover:bg-bg-surface-secondary"
         >
-            <div className="animate-fade-in">
+            <div
+                className="animate-fade-in"
+                ref={containerRef}
+                onMouseMove={onMouseMove}
+                onMouseLeave={onMouseLeave}
+            >
                 <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                         <Pie
@@ -119,23 +139,36 @@ export function MateriasPorEstadoChart({
                                 <Cell key={d.estado} fill={COLORES[d.estado]} />
                             ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="flex justify-center gap-4 mt-2">
-                    {data.map((d) => (
-                        <div key={d.estado} className="flex items-center gap-1.5">
-                            <span
-                                className="w-3 h-3 rounded-full shrink-0"
-                                style={{ background: COLORES[d.estado] }}
-                            />
-                            <span className="label">{d.estado}</span>
-                            <span className="label font-mono">
-                                {d.cantidad} ({total > 0 ? Math.round((d.cantidad / total) * 100) : 0}%)
-                            </span>
-                        </div>
-                    ))}
-                </div>
+                {hovered && data[hovered.index] && (
+                    <ChartTooltip
+                        active
+                        x={hovered.pos.x}
+                        y={hovered.pos.y}
+                        payload={[
+                            {
+                                name: data[hovered.index].estado,
+                                value: data[hovered.index].cantidad,
+                                color: COLORES[data[hovered.index].estado],
+                            },
+                        ]}
+                    />
+                )}
+            </div>
+            <div className="flex justify-center gap-4 mt-2">
+                {data.map((d) => (
+                    <div key={d.estado} className="flex items-center gap-1.5">
+                        <span
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ background: COLORES[d.estado] }}
+                        />
+                        <span className="label">{d.estado}</span>
+                        <span className="label font-mono">
+                            {d.cantidad} ({total > 0 ? Math.round((d.cantidad / total) * 100) : 0}%)
+                        </span>
+                    </div>
+                ))}
             </div>
         </Card>
     );
@@ -146,19 +179,22 @@ export function NotasDistribucionChart({
 }: {
     data: NotasDistribucion | undefined;
 }) {
+    const { pos, onMouseMove, onMouseLeave } = useTooltipPosition();
+
     return (
         <Card title="Distribución de notas" subtitle="Notas de materias aprobadas" className="transition-colors hover:bg-bg-surface-secondary">
             {!data || data.rangos.length === 0 || data.materiasConNota === 0 ? (
                 <ChartEmpty message="Sin notas registradas" />
             ) : (
-                <div className="animate-fade-in">
+                <div className="animate-fade-in" onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={data.rangos} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                             <CartesianGrid stroke="rgba(148,163,184,0.09)" vertical={false} />
                             <XAxis dataKey="rango" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                             <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
                             <Tooltip
-                                content={<ChartTooltip />}
+                                content={tooltipContent(pos)}
+                                wrapperStyle={tooltipWrapperStyle(pos)}
                                 cursor={{ fill: 'rgba(148,163,184,0.06)' }}
                             />
                             <Bar
@@ -201,6 +237,8 @@ export function NotasDistribucionChart({
 }
 
 export function ProgresoPorAnioChart({ data }: { data: ProgresoPorAnio[] }) {
+    const { pos, onMouseMove, onMouseLeave } = useTooltipPosition();
+
     const anioTick = ({ x, y, payload }: any) => {
         const totalDelAnio = data.find((d) => d.anio === payload.value);
         return (
@@ -238,7 +276,7 @@ export function ProgresoPorAnioChart({ data }: { data: ProgresoPorAnio[] }) {
             {!data || data.length === 0 ? (
                 <ChartEmpty message="Sin datos de progreso por año" />
             ) : (
-                <div className="animate-fade-in">
+                <div className="animate-fade-in" onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
                     <ResponsiveContainer width="100%" height={220}>
                         <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                             <CartesianGrid stroke="rgba(148,163,184,0.09)" vertical={false} />
@@ -252,7 +290,8 @@ export function ProgresoPorAnioChart({ data }: { data: ProgresoPorAnio[] }) {
                             />
                             <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
                             <Tooltip
-                                content={<ChartTooltip />}
+                                content={tooltipContent(pos)}
+                                wrapperStyle={tooltipWrapperStyle(pos)}
                                 cursor={{ fill: 'rgba(148,163,184,0.06)' }}
                             />
                             <Bar

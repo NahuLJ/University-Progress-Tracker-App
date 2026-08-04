@@ -18,7 +18,7 @@ components/dashboard/
 ├── StatCards.tsx                  # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
 ├── Charts.tsx                     # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
 ├── CarrerasResumenList.tsx        # lista de carreras activas con mini ProgressBar
-└── ChartTooltip.tsx               # tooltip recharts que sigue el cursor (coordinate)
+└── ChartTooltip.tsx               # tooltip que sigue el cursor (position: fixed, x/y opcionales)
 
 components/layout/
 └── CarreraSelector.tsx            # selector global de carrera (dropdown en el sidebar)
@@ -34,7 +34,9 @@ hooks/
 ├── useDashboard.ts                # carrera activa + resumen + distribución + evolución (React Query)
 ├── useEstadisticas.ts             # wrapper de useDashboard + notas-distribucion + progreso-por-anio
 ├── useCarreras.ts                 # carreras del usuario
-└── useCarrerasResumen.ts          # resumen por carrera (materias completadas/totales)
+├── useCarrerasResumen.ts          # resumen por carrera (materias completadas/totales)
+├── useTooltipPosition.ts          # clientX/clientY del cursor (gráficos de barras)
+└── usePieTooltip.ts               # sector activo del pastel por ángulo del cursor
 
 store/
 ├── carrera.store.ts               # usuarioCarreraId activo (persistido en localStorage)
@@ -163,12 +165,18 @@ interno `StatCard` recibe `{ label, value, subtext?, accentClassName, iconName }
 
 ## Gráficos (`Charts.tsx`)
 
-Todos los gráficos usan `recharts@^3.10.1`, tooltip `ChartTooltip` (sigue el cursor con `coordinate`
-de recharts, posicionamiento `absolute`), ejes `#64748b` 10px JetBrains Mono, grid
-`rgba(148,163,184,0.09)`, y `isAnimationActive` forzado a `true` con `animationBegin={0}`
-(pastel 1200ms, barras 900ms `ease-out`). Cards de gráficos con
+Todos los gráficos usan `recharts@^3.10.1`, tooltip `ChartTooltip` que **sigue el cursor del mouse**,
+ejes `#64748b` 10px JetBrains Mono, grid `rgba(148,163,184,0.09)`, y `isAnimationActive` forzado
+a `true` con `animationBegin={0}` (pastel 1200ms, barras 900ms `ease-out`). Cards de gráficos con
 `hover:bg-bg-surface-secondary transition-colors`.
 
+- **Tooltip por gráfico** — En barras (`NotasDistribucionChart` y `ProgresoPorAnioChart`) se usa
+  `useTooltipPosition` (`clientX/clientY`) y se neutraliza el posicionamiento de recharts con
+  `wrapperStyle={{ position: 'fixed', transform: 'none' }}`; el `ChartTooltip` se renderiza con
+  `position: fixed` en el cursor. En el pastel (`MateriasPorEstadoChart`) el dato y la posición salen
+  del hook `usePieTooltip`, que calcula el sector por **ángulo/radio** del cursor relativo al centro
+  (`Math.atan2(-dy, dx)`, convención de recharts: 0° = derecha, 90° = arriba, antihorario); el
+  `<Tooltip>` de recharts no se usa para los datos del pastel.
 - **MateriasPorEstadoChart** `{ data: { estado, cantidad }[] }` — **PieChart (donut)** con
   `innerRadius={44}`, `outerRadius={72}`, `paddingAngle={2}`, leyenda con dots y porcentaje.
   Paleta: Completada `#10b981` · En Proceso `#f59e0b` · Pendiente `#ef4444`. Subtítulo de Card:
