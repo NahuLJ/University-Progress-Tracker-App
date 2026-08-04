@@ -12,6 +12,14 @@ export function formatearPromedio(promedio: number | null): string {
     return promedio.toFixed(2);
 }
 
+export function formatearDuracion(anios: number | string | null | undefined): string {
+    if (anios === null || anios === undefined) return '—';
+    const num = Number(anios);
+    if (Number.isNaN(num)) return '—';
+    if (Number.isInteger(num)) return String(num);
+    return String(num).replace('.', ',');
+}
+
 export function obtenerColorPromedio(promedio: number | null): string {
     if (promedio === null || promedio === undefined) return 'text-gray-500';
     if (promedio >= 8.5) return 'text-blue-600';

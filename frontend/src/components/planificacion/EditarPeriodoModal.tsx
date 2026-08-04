@@ -53,7 +53,7 @@ export function EditarPeriodoModal({ isOpen, onClose, onSuccess, initialData, re
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Editar planificación" size="md">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                 <Input
                     label="Año"
                     type="number"

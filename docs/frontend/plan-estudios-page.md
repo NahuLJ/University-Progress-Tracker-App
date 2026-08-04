@@ -13,7 +13,7 @@
 > con columnas Nro | Código | Materia | Créditos | Carga Horaria | Estado.
 > El código de materia se muestra como `<Badge variant="info">` (badge info) en ambas vistas.
 > Incluye botón **Volver a carreras** arriba del todo. Abre `MateriaDetailModal` (info + `CorrelativasList`) al click en
-> una materia. **Las correlativas ahora muestran su estado real (Pendiente/En Proceso/Completada) con nota y tipo si corresponde**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
+> una materia. **Las correlativas muestran su estado real (Pendiente/En Proceso/Completada) en cards de un grid de 2 columnas**. Sin datos mockeados. Snackbar global para notificaciones de éxito/error.
 
 ## Estructura de Componentes (real)
 
@@ -174,12 +174,13 @@ El componente recibe `expandirSignal` / `contraerSignal`
 
 ### MateriaDetailModal — Detalle de Materia
 
-Muestra código, créditos, carga horaria, `StatusBadge` con el texto del estado (ej: "Pendiente",
-"Completada (Nota: 7) (Final)"), descripción y `CorrelativasList`. `CorrelativasList` renderiza dos
-secciones: "Correlativas (para cursar esta materia)" y "Es correlativa de", cada una con
-`StatusBadge` que muestra el **estado real del usuario** para esa materia correlativa (Pendiente /
-En Proceso / Completada con nota y tipo de aprobación). El backend ahora devuelve `estadoUsuario`,
-`nota` y `tipoAprobacion` para cada correlativa en `GET /carreras/:id/plan-estudios`.
+Muestra código, créditos, carga horaria, `StatusBadge` con el texto del estado, descripción y
+`CorrelativasList`. `CorrelativasList` renderiza dos secciones: "Correlativas (para cursar esta
+materia)" y "Es correlativa de". Cada sección es un **grid de 2 columnas** (`grid-cols-1 sm:grid-cols-2`)
+y cada elemento es una card vertical con: nombre de la materia, línea de código + créditos y el
+`StatusBadge` con el **estado real del usuario** para esa materia correlativa (Pendiente / En Proceso /
+Completada). El backend devuelve `estadoUsuario`, `nota` y `tipoAprobacion` para cada correlativa en
+`GET /carreras/:id/plan-estudios` (la nota y el tipo no se muestran en estas cards).
 
 ### InscribirCarreraModal
 

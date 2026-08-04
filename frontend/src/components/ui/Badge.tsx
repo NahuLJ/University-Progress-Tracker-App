@@ -16,8 +16,8 @@ export function Badge({ children, variant = 'default', size = 'md', className }:
         info: 'bg-accent-primary/15 text-accent-primary',
     };
     const sizes = {
-        sm: 'px-[6px] py-[2px] font-mono text-[9px]',
-        md: 'px-[6px] py-[2px] font-mono text-[10px]',
+        sm: 'px-[6px] py-[2px] font-mono text-[11px]',
+        md: 'px-[6px] py-[2px] font-mono text-xs',
     };
 
     return (

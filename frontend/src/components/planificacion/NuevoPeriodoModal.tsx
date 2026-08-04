@@ -95,7 +95,7 @@ export function NuevoPeriodoModal({ isOpen, onClose, onSuccess, trayectoriaId, p
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={isSucesiva ? 'Nueva planificación sucesiva' : 'Nueva planificación'} size="md">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                 {isSucesiva && (
                     <div className="bg-accent-primary/10 border border-accent-primary/30 rounded-md p-3 text-sm text-accent-primary">
                         {planificacionOrigenId

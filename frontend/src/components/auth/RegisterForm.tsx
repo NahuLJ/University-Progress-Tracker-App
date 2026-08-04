@@ -18,7 +18,7 @@ export function RegisterForm() {
         : { label: 'Débil', color: 'bg-status-danger', text: 'text-status-danger' };
 
     return (
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} noValidate className="space-y-4">
             {errors.root && (
                 <Alert variant="error">{errors.root.message}</Alert>
             )}

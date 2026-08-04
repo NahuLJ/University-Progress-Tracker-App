@@ -10,7 +10,11 @@ import { useAdminCarreras } from '../../hooks/useAdminCarreras';
 const carreraSchema = z.object({
     nombre: z.string().min(3, 'Mínimo 3 caracteres').max(200, 'Máximo 200 caracteres'),
     descripcion: z.string().max(500, 'Máximo 500 caracteres').optional(),
-    duracionAnios: z.coerce.number().min(1, 'Mínimo 1 año').max(10, 'Máximo 10 años'),
+    duracionAnios: z.coerce
+        .number()
+        .min(1, 'Mínimo 1 año')
+        .max(10, 'Máximo 10 años')
+        .refine((v) => Number.isInteger(v * 2), 'La duración debe ser múltiplo de 0.5'),
 });
 
 type CarreraFormInput = z.input<typeof carreraSchema>;
@@ -48,7 +52,7 @@ export function CrearCarreraModal({ isOpen, onClose, onSuccess }: CrearCarreraMo
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Nueva carrera" size="md">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                 <Input
                     label="Nombre"
                     placeholder="Ej. Ingeniería en Informática"
@@ -66,7 +70,7 @@ export function CrearCarreraModal({ isOpen, onClose, onSuccess }: CrearCarreraMo
                 <Input
                     label="Duración (años)"
                     type="number"
-                    step="0.1"
+                    step="0.5"
                     min={1}
                     max={10}
                     error={form.formState.errors.duracionAnios?.message}

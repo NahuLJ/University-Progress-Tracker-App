@@ -97,7 +97,7 @@ export function LoginForm() {
     const { form, mutation } = useLoginForm();
     const { register, handleSubmit, formState: { errors } } = form;
     return (
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} noValidate className="space-y-4">
             {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
             <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
             <Input label="Contraseña" type="password" error={errors.password?.message} {...register('password')} />
@@ -127,6 +127,9 @@ ancho 50%/100% y color rojo/verde según `password.length >= 8`, con etiqueta "D
 | password | Mín 8 chars, 1 mayúscula, 1 minúscula, 1 número, 1 especial | Validación Zod en `onSubmit` |
 | confirmarPassword | Debe coincidir con password | Error en `confirmarPassword` |
 | Error de servidor | Email duplicado / credenciales inválidas | `Alert` rojo sobre el formulario (`errors.root`) |
+
+> Los formularios usan `noValidate` (react-hook-form) para evitar la validación nativa del navegador;
+> todos los errores se muestran inline debajo de cada campo vía el prop `error` de `Input`/`PasswordInput`.
 | Estado loading | Mientras se envía | Botón deshabilitado con spinner |
 
 ### Redirecciones Post-Autenticación

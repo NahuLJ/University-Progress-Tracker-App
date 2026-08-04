@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { formatearDuracion } from '../../utils/formato';
 
 interface CarreraCardProps {
     carrera: any;
@@ -30,7 +31,7 @@ export function CarreraCard({
         (duracionAnios ? Math.round(duracionAnios * 2) : null);
 
     const duracionTexto = duracionAnios != null && duracionCuatrimestres != null
-        ? `${duracionAnios} años (${duracionCuatrimestres} cuatrimestres)`
+        ? `${formatearDuracion(duracionAnios)} años (${duracionCuatrimestres} cuatrimestres)`
         : duracionCuatrimestres != null
             ? `${duracionCuatrimestres} cuatrimestres`
             : '—';

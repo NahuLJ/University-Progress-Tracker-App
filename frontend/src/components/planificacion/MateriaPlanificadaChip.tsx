@@ -54,9 +54,9 @@ export function MateriaPlanificadaChip({ materia, onQuitar, onBeforeQuitar, esCo
             }`}
         >
             <span className="text-xs font-semibold leading-tight text-center truncate w-full">{materia.codigo}</span>
-            <span className="text-[10px] leading-tight text-center truncate w-full">{materia.nombre}</span>
+            <span className="text-[11px] leading-tight text-center truncate w-full">{materia.nombre}</span>
             {esCompletada ? (
-                <span className="text-[10px] text-status-success/70 leading-tight">Completada</span>
+                <span className="text-[11px] text-status-success/70 leading-tight">Completada</span>
             ) : (
                 <button
                     onClick={handleQuitarClick}

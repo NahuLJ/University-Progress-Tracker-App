@@ -185,6 +185,7 @@ Elimina una correlativa existente. Acepta query param opcional `?carreraId=` par
 ```typescript
 import { IsString, IsOptional, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { EsMultiploDe } from '../../../common/validators/es-multiplo.decorator';
 
 export class CrearCarreraDto {
     @ApiProperty({ example: 'Ingeniería en Sistemas' })
@@ -202,6 +203,7 @@ export class CrearCarreraDto {
     @IsNumber({ maxDecimalPlaces: 1 })
     @Min(1)
     @Max(10)
+    @EsMultiploDe(0.5, { message: 'La duración debe ser múltiplo de 0.5' })
     duracionAnios: number;
 }
 ```

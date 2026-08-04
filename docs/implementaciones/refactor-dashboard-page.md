@@ -570,7 +570,7 @@ export interface ProgresoPorAnio {
 | `bg-accent-foreground` | `#ffffff` | Texto sobre accent-primary |
 | `border-hairline` | `rgba(148,163,184,0.09)` | Borde universal |
 | `bg-bg-surface-secondary` | `#1a1f2e` | Hover, skeleton, track de progress |
-| `.label` | `text-[10px] font-mono uppercase tracking-widest text-text-muted` | Labels de sección, captions |
+| `.label` | `text-[11px] font-mono uppercase tracking-widest text-text-muted` | Labels de sección, captions |
 | `font-mono` | JetBrains Mono | Valores numéricos |
 | `rounded-md` | `border-radius: 6px` | Bordes de cards e icon chips |
 | `rounded-full` | Solo en barras de progreso | Indicadores y spinner |

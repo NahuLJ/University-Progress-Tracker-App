@@ -72,7 +72,7 @@ frontend/src/
 ## Comportamiento esperado
 
 ### Crear carrera
-1. `CrearCarreraModal` con campos `nombre` (3–200), `descripcion` (opcional), `duracionAnios` (1–10, 1 decimal).
+1. `CrearCarreraModal` con campos `nombre` (3–200), `descripcion` (opcional), `duracionAnios` (1–10, 1 decimal, múltiplo de 0.5).
 2. Al guardar → `carrerasService.crearCarrera` → `invalidateQueries(['carreras'])` y feedback con `Alert`.
 
 ### Crear materia (catálogo global)
@@ -93,7 +93,7 @@ frontend/src/
 
 | DTO | Reglas |
 |---|---|
-| `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (1 decimal) |
+| `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (1 decimal, múltiplo de 0.5) |
 | `CrearMateriaDto` | nombre ≤200, codigo ≤20, cargaHoraria ≥1, creditos ≥1 |
 | `AgregarMateriaPlanDto` | materiaId entero, anio ≥1, cuatrimestre 1–2, orden ≥1 |
 | `ActualizarMateriaPlanDto` | anio ≥1, cuatrimestre 1–2, orden ≥1 (al menos un campo) |

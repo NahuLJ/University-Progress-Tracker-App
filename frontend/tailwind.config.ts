@@ -35,7 +35,7 @@ export default {
                 mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
             },
             fontSize: {
-                base: '15px',
+                base: '16px',
             },
             borderRadius: {
                 card: '0.75rem',

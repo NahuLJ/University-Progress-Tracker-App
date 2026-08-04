@@ -8,7 +8,7 @@
     }
     html {
         color-scheme: dark;
-        font-size: 15px;
+        font-size: 16px;
     }
     body {
         @apply bg-bg-page text-text-default font-sans antialiased;
@@ -26,7 +26,7 @@
 @layer components {
     /* ---------- Label firma: 10px mono uppercase ---------- */
     .label {
-        @apply text-[10px] font-mono font-medium uppercase tracking-widest text-text-muted;
+        @apply text-[11px] font-mono font-medium uppercase tracking-widest text-text-muted;
     }
 
     /* ---------- Botones ---------- */
@@ -93,7 +93,7 @@
     /* ---------- Badges (fondo 15% + texto acento, sin borde) ---------- */
     .badge {
         @apply inline-flex items-center gap-1 px-[6px] py-[2px] rounded
-            font-mono text-[9px] font-medium;
+            font-mono text-[11px] font-medium;
     }
     .badge-success { @apply badge bg-status-success/15 text-status-success; }
     .badge-warning { @apply badge bg-status-warning/15 text-status-warning; }

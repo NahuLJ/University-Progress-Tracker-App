@@ -86,7 +86,7 @@ export function MateriaEditPage() {
             <Card className="p-6 max-w-xl mx-auto">
                     <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">Datos generales</h2>
                     <p className="text-sm text-text-muted mb-4 pl-3">Información de la materia</p>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                     <Input
                         label="Nombre"
                         placeholder="Ej. Álgebra Lineal"

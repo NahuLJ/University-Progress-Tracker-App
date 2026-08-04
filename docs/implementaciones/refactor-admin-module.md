@@ -440,7 +440,7 @@ Tabla con las columnas:
 |---|---|
 | Nombre | Link a detalle (`/carreras/:id`) |
 | Descripción | Texto truncado (máx 100 chars) |
-| Duración | `{duracionAnios} años` |
+| Duración | `{formatearDuracion(duracionAnios)} años` (sin `.0` si es entero) |
 | Materias en plan | Chip con el total |
 | Estado | Badge "Activa" / "Inactiva" (solo si `incluirInactivos=true`) |
 | Acciones | 3 iconos: `[ver]` `[editar]` `[eliminar]` (ver detalle más abajo) |

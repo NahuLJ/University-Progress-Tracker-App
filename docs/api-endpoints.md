@@ -87,13 +87,13 @@ interface InscribirCarreraDto {
 interface CrearCarreraDto {
   nombre: string;            // 3-200
   descripcion?: string;
-  duracionAnios: number;     // 1-10, acepta 1 decimal
+  duracionAnios: number;     // 1-10, 1 decimal, múltiplo de 0.5
 }
 
 interface ActualizarCarreraDto {
   nombre?: string;           // 3-200
   descripcion?: string;
-  duracionAnios?: number;    // 1-10
+  duracionAnios?: number;    // 1-10, 1 decimal, múltiplo de 0.5
 }
 
 interface AgregarMateriaPlanDto {

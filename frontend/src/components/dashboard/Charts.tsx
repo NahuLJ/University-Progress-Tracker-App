@@ -31,7 +31,7 @@ const COLORES: Record<EstadoMateria, string> = {
 
 const AXIS_TICK = {
     fill: '#64748b',
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'JetBrains Mono, monospace',
 } as const;
 
@@ -249,7 +249,7 @@ export function ProgresoPorAnioChart({ data }: { data: ProgresoPorAnio[] }) {
                     dy={14}
                     textAnchor="middle"
                     fill="#64748b"
-                    fontSize={10}
+                    fontSize={12}
                     fontFamily="JetBrains Mono, monospace"
                 >
                     {payload.value}
@@ -261,7 +261,7 @@ export function ProgresoPorAnioChart({ data }: { data: ProgresoPorAnio[] }) {
                         dy={29}
                         textAnchor="middle"
                         fill="#94a3b8"
-                        fontSize={9}
+                        fontSize={11}
                         fontFamily="JetBrains Mono, monospace"
                     >
                         {totalDelAnio.completadas + totalDelAnio.enProceso + totalDelAnio.pendientes} materias

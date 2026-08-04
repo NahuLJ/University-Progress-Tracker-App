@@ -166,7 +166,8 @@ interno `StatCard` recibe `{ label, value, subtext?, accentClassName, iconName }
 ## Gráficos (`Charts.tsx`)
 
 Todos los gráficos usan `recharts@^3.10.1`, tooltip `ChartTooltip` que **sigue el cursor del mouse**,
-ejes `#64748b` 10px JetBrains Mono, grid `rgba(148,163,184,0.09)`, y `isAnimationActive` forzado
+ejes `#64748b` 12px JetBrains Mono (año en `ProgresoPorAnioChart`: 12px + subtítulo 11px), grid
+`rgba(148,163,184,0.09)`, y `isAnimationActive` forzado
 a `true` con `animationBegin={0}` (pastel 1200ms, barras 900ms `ease-out`). Cards de gráficos con
 `hover:bg-bg-surface-secondary transition-colors`.
 

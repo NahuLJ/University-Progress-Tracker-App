@@ -126,7 +126,7 @@ export function TrayectoriasPage() {
                             },
                         },
                     );
-                })} className="space-y-4">
+                })} noValidate className="space-y-4">
                     <Input
                         label="Nombre"
                         placeholder="Ej: Inteligencia Artificial, Redes, etc."

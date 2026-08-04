@@ -119,10 +119,10 @@ La app maneja **3 estados reales de materia** (`estado_materia` / `ESTADOS_MATER
 | Título de página / display | `text-lg font-semibold` | 1.125rem (18px), w600 |
 | Encabezado de sección | `text-sm font-semibold` | 0.875rem (14px), w600 |
 | Cuerpo de texto | `text-xs` | 0.75rem (12px), w400 |
-| Label pequeño (firma) | `text-[10px] font-mono font-medium uppercase tracking-widest` | 0.625rem (10px), w500, uppercase, tracking 0.1em |
-| Datos mono (números, códigos, %s) | `font-mono text-[10px]` … `text-xs` | JetBrains Mono, 0.625–0.75rem |
+| Label pequeño (firma) | `text-[11px] font-mono font-medium uppercase tracking-widest` | 0.6875rem (11px), w500, uppercase, tracking 0.1em |
+| Datos mono (números, códigos, %s) | `font-mono text-[11px]` … `text-xs` | JetBrains Mono, 0.6875–0.75rem |
 
-> **Regla de oro:** el label de 10px mono en mayúsculas se aplica a TODOS los títulos de sección, filas de metadata y captions de estadísticas. Es la firma visual del estilo.
+> **Regla de oro:** el label de 11px mono en mayúsculas se aplica a TODOS los títulos de sección, filas de metadata y captions de estadísticas. Es la firma visual del estilo.
 
 ### 3.3 Espaciado
 
@@ -195,7 +195,7 @@ export default {
                 mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
             },
             fontSize: {
-                base: '15px',
+                base: '16px',
             },
             borderRadius: {
                 card: '0.75rem',
@@ -254,7 +254,7 @@ export default {
     }
     html {
         color-scheme: dark;
-        font-size: 15px;
+        font-size: 16px;
     }
     body {
         @apply bg-bg-page text-text-default font-sans antialiased;
@@ -274,9 +274,9 @@ export default {
 
 ```css
 @layer components {
-    /* ---------- Label firma: 10px mono uppercase ---------- */
+    /* ---------- Label firma: 11px mono uppercase ---------- */
     .label {
-        @apply text-[10px] font-mono font-medium uppercase tracking-widest text-text-muted;
+        @apply text-[11px] font-mono font-medium uppercase tracking-widest text-text-muted;
     }
 
     /* ---------- Botones ---------- */
@@ -343,7 +343,7 @@ export default {
     /* ---------- Badges (fondo 15% + texto acento, sin borde) ---------- */
     .badge {
         @apply inline-flex items-center gap-1 px-[6px] py-[2px] rounded
-            font-mono text-[9px] font-medium;
+            font-mono text-[11px] font-medium;
     }
     .badge-success { @apply badge bg-status-success/15 text-status-success; }
     .badge-warning { @apply badge bg-status-warning/15 text-status-warning; }
@@ -732,7 +732,7 @@ success: 'bg-status-success/15 text-status-success',
 warning: 'bg-status-warning/15 text-status-warning',
 danger:  'bg-status-danger/15 text-status-danger',
 info:    'bg-accent-primary/15 text-accent-primary',
-// sizes: sm 'px-[6px] py-[2px] font-mono text-[9px]' | md 'px-[6px] py-[2px] font-mono text-[10px]'
+// sizes: sm 'px-[6px] py-[2px] font-mono text-[11px]' | md 'px-[6px] py-[2px] font-mono text-xs'
 // base: 'inline-flex items-center rounded transition-colors duration-150'
 ```
 
@@ -863,10 +863,10 @@ const colors = {
 - `ProgresoPorAnioChart`: mismos colores de estado que el pastel (pendientes `#ef4444`).
 - `NotasDistribucionChart`: color por rango de nota (`COLORES_NOTA`: 4-5 `#64748b`, 6 `#8b5cf6`, 7 `#3b82f6`, 8 `#22d3ee`, 9 `#34d399`, 10 `#10b981`).
 - Footer de `NotasDistribucionChart` con promedio y materias con nota en `text-accent-cyan`.
-- Labels de valores y estados: `.label` (10px mono uppercase), `text-text-muted`.
+- Labels de valores y estados: `.label` (11px mono uppercase), `text-text-muted`.
 - Dots de leyenda: `rounded-full` (permitido — dot indicator) sin sombra.
 - Radios de barras: `radius={[4,4,0,0]}` (notas) y `radius={[3,3,0,0]}` (progreso por año) — nunca `rounded-full`.
-- Ejes/grid de recharts: grid `rgba(148,163,184,0.09)`, eje `#64748b` 10px JetBrains Mono, `axisLine={false} tickLine={false}`.
+- Ejes/grid de recharts: grid `rgba(148,163,184,0.09)`, eje `#64748b` 12px JetBrains Mono, `axisLine={false} tickLine={false}`.
 - `isAnimationActive` forzado a `true` (recharts deshabilita con `prefers-reduced-motion` por defecto), `animationBegin={0}`, pastel 1200ms / barras 900ms `ease-out`, envoltorio `animate-fade-in`.
 - Cards de gráficos con `hover:bg-bg-surface-secondary transition-colors`.
 - Hover oscuro en barras/pastel: `activeBar={BAR_ACTIVE_STYLE}` (`stroke: #0a0c12, strokeWidth: 2`) y `activeShape` `ActivePieSlice` (expande `outerRadius + 3`).
@@ -930,7 +930,7 @@ Reemplazos puntuales (ver 6.3 para ubicaciones exactas):
 
 | Patrón actual | Nuevo |
 |---|---|
-| `px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30` (contadores de carrera/materias) | `badge badge-info` (`bg-accent-primary/15 text-accent-primary rounded px-[6px] py-[2px] font-mono text-[9px]`) |
+| `px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30` (contadores de carrera/materias) | `badge badge-info` (`bg-accent-primary/15 text-accent-primary rounded px-[6px] py-[2px] font-mono text-[11px]`) |
 | `chipClass`/`dotClass` en `MateriaProgresoRow.tsx` y badges de `progreso/index.tsx` | `badge badge-success/warning/danger` + dots `bg-status-*` |
 | Nota / tipo / código en `MateriaProgresoRow.tsx` (texto plano) | `nota-chip nota-baja/media/alta`, `tipo-chip-final/promo`, `codigo-chip` (definidos en `index.css`) |
 | `Extras.tsx` (colores de extra por materia) | `bg-accent-primary/15 text-accent-primary` y `status-*` según semántica; sin `border-neon-*/30` |
@@ -954,7 +954,7 @@ Reemplazos puntuales (ver 6.3 para ubicaciones exactas):
 ### 7.14 Tablas
 
 - Sin bordes de tabla: solo `border-b border-hairline` en filas.
-- Header: `.label` (`text-[10px] font-mono uppercase tracking-widest text-text-muted`).
+- Header: `.label` (`text-[11px] font-mono uppercase tracking-widest text-text-muted`).
 - Celdas: `text-xs font-normal text-text-default`.
 - Row hover: `hover:bg-bg-surface-secondary`.
 - Sin zebra striping.

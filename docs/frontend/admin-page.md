@@ -91,10 +91,11 @@ MainLayout
 ## Comportamiento UX/UI
 
 ### CrearCarreraModal
-RHF + Zod (`nombre` 3–200, `descripcion` opcional ≤500, `duracionAnios` 1–10). Al guardar invoca
+RHF + Zod (`nombre` 3–200, `descripcion` opcional ≤500, `duracionAnios` 1–10 con `step 0.5` y
+`refine` de múltiplo de 0.5). Al guardar invoca
 `useAdminCarreras().crearCarrera` → invalida `['carreras','disponibles']` (el catálogo de carreras se
 refresca en el selector del plan). El campo descripción es un `<textarea>` auto-creciente con
-contador de caracteres.
+contador de caracteres. Los formularios usan `noValidate` y muestran errores inline debajo de cada campo.
 
 ### CrearMateriaModal
 RHF + Zod (`nombre`, `codigo` ≤20, `cargaHoraria` ≥1 entero, `creditos` ≥1 entero, `descripcion`
@@ -149,7 +150,7 @@ El componente `Input` (`components/ui/Input.tsx`) soporta un prop `textarea` que
 
 | DTO | Reglas |
 |---|---|
-| `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (coerce a number) |
+| `CrearCarreraDto` | nombre 3–200, duracionAnios 1–10 (coerce a number, múltiplo de 0.5) |
 | `CrearMateriaDto` | nombre ≤200, codigo ≤20, cargaHoraria ≥1 (int), creditos ≥1 (int) |
 | `AgregarMateriaPlanDto` | materiaId, anio ≥1, cuatrimestre 1–2, orden ≥1 |
 | `ActualizarMateriaPlanDto` | anio ≥1, cuatrimestre 1–2, orden ≥1 (al menos un campo) |

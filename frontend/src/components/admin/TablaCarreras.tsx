@@ -10,6 +10,7 @@ import { FiltrosModal, type FiltrosState } from './FiltrosModal';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { formatearDuracion } from '../../utils/formato';
 import type { CarreraAdminRow } from '../../types/carrera.types';
 
 const SORT_OPTIONS = [
@@ -98,7 +99,7 @@ export function TablaCarreras() {
 
                             <div className="flex items-center gap-3 shrink-0">
                                 <span className="badge badge-gray">
-                                    {carrera.duracionAnios} años
+                                    {formatearDuracion(carrera.duracionAnios)} años
                                 </span>
                                 <Badge variant="info" size="sm">{carrera.totalMaterias ?? 0} materias</Badge>
                                 {filters.incluirInactivos && (

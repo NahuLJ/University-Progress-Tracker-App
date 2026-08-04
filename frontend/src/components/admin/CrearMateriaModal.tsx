@@ -52,7 +52,7 @@ export function CrearMateriaModal({ isOpen, onClose, onSuccess }: CrearMateriaMo
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Nueva materia" size="md">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                 <Input
                     label="Nombre"
                     placeholder="Ej. Análisis Matemático I"

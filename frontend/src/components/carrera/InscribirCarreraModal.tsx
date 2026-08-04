@@ -42,7 +42,7 @@ export function InscribirCarreraModal({ isOpen, onClose, onSuccess, carreraId, c
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Inscribirse a ${carreraNombre}`} size="md">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4">
                 <div className="p-3 bg-bg-surface-secondary rounded-md border border-hairline">
                     <p className="label mb-1">Carrera</p>
                     <p className="text-text-default">{carreraNombre}</p>
