@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { CategoriaCredito } from './categoria-credito.entity';
 import { CarreraActividadCredito } from './carrera-actividad-credito.entity';
-import { ActividadRequisitoMateria } from './actividad-requisito-materia.entity';
 
 @Entity('actividad_credito')
 @Unique(['nombre', 'categoria'])
@@ -39,7 +38,4 @@ export class ActividadCredito {
 
   @OneToMany(() => CarreraActividadCredito, (ca) => ca.actividad)
   carreras: CarreraActividadCredito[];
-
-  @OneToMany(() => ActividadRequisitoMateria, (r) => r.actividad)
-  materiasRequeridas: ActividadRequisitoMateria[];
 }

@@ -12,7 +12,7 @@ import { Card } from '../components/ui/Card';
 import { Icon } from '../components/ui/Icon';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { QueryError } from '../components/common/QueryError';
-import { CarreraEditTabs } from '../components/admin/CarreraEditTabs';
+import { CarreraEditTabs, type TabKey } from '../components/admin/CarreraEditTabs';
 import { PlanEstudiosEditor } from '../components/admin/PlanEstudiosEditor';
 import { CorrelativasEditor } from '../components/admin/CorrelativasEditor';
 import { CreditosEditor } from '../components/admin/CreditosEditor';
@@ -33,7 +33,18 @@ export function CarreraEditPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const carreraId = Number(id);
-    const [tab, setTab] = useState<'datos' | 'plan' | 'correlativas' | 'creditos'>('datos');
+
+    const TAB_KEY = 'carrera-edit-tab';
+    const guardarTab = (key: TabKey) => {
+        localStorage.setItem(TAB_KEY, key);
+        setTab(key);
+    };
+    const [tab, setTab] = useState<TabKey>(() => {
+        const guardado = localStorage.getItem(TAB_KEY);
+        return guardado === 'datos' || guardado === 'plan' || guardado === 'correlativas' || guardado === 'creditos'
+            ? guardado
+            : 'datos';
+    });
 
     const { data: carrera, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['carrera', carreraId],
@@ -79,7 +90,7 @@ export function CarreraEditPage() {
                 </div>
             </div>
 
-            <CarreraEditTabs active={tab} onChange={setTab} />
+            <CarreraEditTabs active={tab} onChange={guardarTab} />
 
             {tab === 'datos' && (
                 <Card className="p-6 max-w-xl mx-auto">

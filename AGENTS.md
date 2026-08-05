@@ -9,7 +9,8 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 - **Backend:** NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger, class-validator
 - **Frontend (real):** React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, recharts 3, oxlint (no ESLint).
 - **Módulo admin implementado:** página `/admin` (tabs Carreras/Materias/Plan/Correlativas) para gestión del catálogo académico. Backend sin `RolesGuard` aún (cualquier usuario autenticado puede usarla). Ver `docs/backend/admin-carreras-materias-module.md`.
-- **Dashboard refactorizado (HECHO):** estilo Suizo + gráficos recharts (pastel de estados, distribución de notas, progreso por año), tarjetas `StatCard` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`), hook `useEstadisticas`, `ChartTooltip`, endpoints `notas-distribucion` y `progreso-por-anio`. Ver `docs/implementaciones/refactor-dashboard-page.md`.
+- **Sistema de créditos por actividades (HECHO):** modelo de créditos por actividades (seminarios, proyectos, idiomas, etc.) con requisitos por carrera. Backend en `backend/src/modules/creditos/` (8 tablas: `sistema_creditos`, `categoria_credito`, `actividad_credito`, `carrera_categoria_credito`, `carrera_actividad_credito`, `carrera_actividad_requisito_materia`, `progreso_actividad`), endpoint `PUT /carreras/:id/creditos/actividades/:carreraActividadCreditoId/requisitos`, `GET /estadisticas/creditos-progreso`. Frontend: editor en pestaña Créditos de `/admin/carreras/:id` (tab persistido en localStorage), página `/creditos`, `SistemaCreditosCard` en detalle de carrera, `CreditosProgresoChart` en dashboard. Ver `docs/implementaciones/sistema-de-creditos.md`.
+- **Dashboard refactorizado (HECHO):** estilo Suizo + gráficos recharts (pastel de estados, distribución de notas, progreso por año, progreso de créditos), tarjetas `StatCard` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`), hook `useEstadisticas`, `ChartTooltip`, endpoints `notas-distribucion` y `progreso-por-anio`. Ver `docs/implementaciones/refactor-dashboard-page.md`.
 - **Package manager:** npm (ambos)
 - **Node:** 20 LTS
 
@@ -60,3 +61,4 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 | `docs/security/jwt-auth-specification.md` | Payload JWT, Passport strategy, Axios interceptor, PrivateRoute |
 | `docs/implementaciones/refactor-dashboard-page.md` | Dashboard final: StatCards, gráficos recharts, useEstadisticas, ChartTooltip, fixes UX, animaciones |
 | `docs/implementaciones/refactor-css-estilo-suizo.md` | Design tokens Suizo, migración de componentes, secciones 7.10/7.11 (Charts/StatCards) |
+| `docs/implementaciones/sistema-de-creditos.md` | Créditos por actividades: 8 tablas, requisitos por carrera, CreditosEditor, página `/creditos`, CreditosProgresoChart |

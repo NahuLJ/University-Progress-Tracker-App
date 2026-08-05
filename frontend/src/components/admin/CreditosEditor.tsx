@@ -10,6 +10,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Modal } from '../ui/Modal';
 import { Icon } from '../ui/Icon';
+import { Alert } from '../ui/Alert';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { QueryError } from '../common/QueryError';
 
@@ -29,6 +30,7 @@ export function CreditosEditor({ carreraId }: Props) {
         quitarCategoria,
         crearActividad,
         agregarActividad,
+        actualizarRequisitos,
         quitarActividad,
     } = useAdminCreditos(carreraId);
 
@@ -43,14 +45,14 @@ export function CreditosEditor({ carreraId }: Props) {
     const [minimosEdicion, setMinimosEdicion] = useState<Record<number, string>>({});
 
     const [agregarCatOpen, setAgregarCatOpen] = useState(false);
-    const [catModo, setCatModo] = useState<'existente' | 'nueva'>('existente');
+    const [catModo, setCatModo] = useState<'existente' | 'nueva'>('nueva');
     const [catSeleccion, setCatSeleccion] = useState(0);
     const [catMinimo, setCatMinimo] = useState('1');
     const [catNuevoNombre, setCatNuevoNombre] = useState('');
     const [catNuevaDescripcion, setCatNuevaDescripcion] = useState('');
 
     const [agregarActOpen, setAgregarActOpen] = useState(false);
-    const [actModo, setActModo] = useState<'existente' | 'nueva'>('existente');
+    const [actModo, setActModo] = useState<'existente' | 'nueva'>('nueva');
     const [actCategoriaId, setActCategoriaId] = useState(0);
     const [actSeleccion, setActSeleccion] = useState(0);
     const [actNombre, setActNombre] = useState('');
@@ -60,6 +62,13 @@ export function CreditosEditor({ carreraId }: Props) {
 
     const [quitarCatConfirm, setQuitarCatConfirm] = useState<{ id: number; nombre: string } | null>(null);
     const [quitarActConfirm, setQuitarActConfirm] = useState<{ id: number; nombre: string } | null>(null);
+
+    const [requisitosEdit, setRequisitosEdit] = useState<{
+        carreraActividadCreditoId: number;
+        nombre: string;
+    } | null>(null);
+    const [requisitosSeleccion, setRequisitosSeleccion] = useState<number[]>([]);
+    const [desactivarConfirmOpen, setDesactivarConfirmOpen] = useState(false);
 
     useEffect(() => {
         if (!config.data) return;
@@ -84,17 +93,18 @@ export function CreditosEditor({ carreraId }: Props) {
     const actividadesCatalogo = actividades.data ?? [];
     const materiasPlan = planEstudios.data?.materias ?? [];
 
-    const sumaMinimos = sistema.categorias.reduce((s, c) => s + c.minimoCreditos, 0);
-    const totalValido = Number(totalCreditos);
-    const cumplimientoOk = !habilitado || (totalValido > 0 && sumaMinimos <= totalValido);
-
     const onToggleSistema = () => {
         if (habilitado) {
-            setHabilitado(false);
-            actualizarSistema.mutate({ creditosHabilitado: false });
+            setDesactivarConfirmOpen(true);
         } else {
             setHabilitado(true);
         }
+    };
+
+    const onDesactivarConfirmado = () => {
+        setHabilitado(false);
+        setDesactivarConfirmOpen(false);
+        actualizarSistema.mutate({ creditosHabilitado: false });
     };
 
     const onGuardarSistema = () => {
@@ -118,7 +128,7 @@ export function CreditosEditor({ carreraId }: Props) {
 
     const resetCategoriaModal = () => {
         setAgregarCatOpen(false);
-        setCatModo('existente');
+        setCatModo('nueva');
         setCatSeleccion(0);
         setCatMinimo('1');
         setCatNuevoNombre('');
@@ -155,7 +165,7 @@ export function CreditosEditor({ carreraId }: Props) {
 
     const resetActividadModal = () => {
         setAgregarActOpen(false);
-        setActModo('existente');
+        setActModo('nueva');
         setActCategoriaId(0);
         setActSeleccion(0);
         setActNombre('');
@@ -177,16 +187,46 @@ export function CreditosEditor({ carreraId }: Props) {
                     descripcion: actDescripcion || undefined,
                     categoriaCreditoId: actCategoriaId,
                     creditos,
+                });
+                await agregarActividad.mutateAsync({
+                    actividadCreditoId: creada.actividadCreditoId,
                     materiasRequeridas: actRequisitos.length > 0 ? actRequisitos : undefined,
                 });
-                await agregarActividad.mutateAsync(creada.actividadCreditoId);
             } else {
-                await agregarActividad.mutateAsync(actSeleccion);
+                await agregarActividad.mutateAsync({
+                    actividadCreditoId: actSeleccion,
+                    materiasRequeridas: actRequisitos.length > 0 ? actRequisitos : undefined,
+                });
             }
             resetActividadModal();
         } catch {
             // notificaciones en las mutations
         }
+    };
+
+    const abrirEditarRequisitos = (actividad: (typeof sistema.actividades)[number]) => {
+        setRequisitosEdit({
+            carreraActividadCreditoId: actividad.carreraActividadCreditoId,
+            nombre: actividad.nombre,
+        });
+        setRequisitosSeleccion(actividad.materiasRequeridas.map((m) => m.materiaId));
+    };
+
+    const cerrarEditarRequisitos = () => {
+        setRequisitosEdit(null);
+        setRequisitosSeleccion([]);
+        actualizarRequisitos.reset();
+    };
+
+    const onGuardarRequisitos = () => {
+        if (!requisitosEdit) return;
+        actualizarRequisitos.mutate(
+            {
+                carreraActividadCreditoId: requisitosEdit.carreraActividadCreditoId,
+                materiasRequeridas: requisitosSeleccion,
+            },
+            { onSuccess: cerrarEditarRequisitos },
+        );
     };
 
     const onGuardarMinimo = (carreraCategoriaCreditoId: number) => {
@@ -209,65 +249,74 @@ export function CreditosEditor({ carreraId }: Props) {
                     <h2 className="text-sm font-semibold text-text-default mb-1 border-l-2 border-accent-primary pl-3">
                         Sistema de créditos por actividades
                     </h2>
-                    <p className="text-sm text-text-muted mb-4 pl-3">
+                    <p className="text-sm text-text-muted mb-6 pl-3">
                         Créditos que se suman al completar actividades (seminarios, proyectos, etc.)
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={onToggleSistema}
-                                aria-pressed={habilitado}
-                                className={cn(
-                                    'w-11 h-6 rounded-full transition-colors relative shrink-0',
-                                    habilitado
-                                        ? 'bg-accent-primary'
-                                        : 'bg-bg-surface-secondary border border-hairline',
-                                )}
-                            >
-                                <span
+                    <div className="space-y-6">
+                        <div>
+                            <label className="label mb-2 block">Estado del sistema</label>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onToggleSistema}
+                                    aria-pressed={habilitado}
                                     className={cn(
-                                        'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
-                                        habilitado && 'translate-x-5',
+                                        'w-11 h-6 rounded-full transition-colors relative shrink-0',
+                                        habilitado
+                                            ? 'bg-accent-primary'
+                                            : 'bg-bg-surface-secondary border border-hairline',
                                     )}
-                                />
-                            </button>
-                            <span className="text-sm font-medium text-text-default">
-                                {habilitado ? 'Sistema activado' : 'Sistema desactivado'}
-                            </span>
-                        </div>
-                        {habilitado && (
-                            <div className="flex items-end gap-3">
-                                <div className="w-40">
-                                    <Input
-                                        label="Total de créditos requeridos"
-                                        type="number"
-                                        min={1}
-                                        value={totalCreditos}
-                                        onChange={(e) => setTotalCreditos(e.target.value)}
+                                >
+                                    <span
+                                        className={cn(
+                                            'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
+                                            habilitado && 'translate-x-5',
+                                        )}
                                     />
+                                </button>
+                                <span className="text-sm font-medium text-text-default">
+                                    {habilitado ? 'Sistema activado' : 'Sistema desactivado'}
+                                </span>
+                            </div>
+                            <p className="text-xs text-text-muted mt-2">
+                                {habilitado
+                                    ? 'La carrera exige créditos por actividades. Configurá el total y los mínimos por categoría.'
+                                    : 'Al desactivar el sistema, la carrera no exige créditos por actividades.'}
+                            </p>
+                            {habilitado && !sistema.sistemaCreditos && (
+                                <Alert variant="warning" className="mt-3">
+                                    Ingresá el total de créditos requeridos y presioná{' '}
+                                    <strong>Guardar total</strong> para activar el sistema.
+                                </Alert>
+                            )}
+                        </div>
+
+                        {habilitado && (
+                            <div className="pt-6 border-t border-hairline">
+                                <label className="label mb-2 block">Total de créditos requeridos</label>
+                                <div className="flex items-end gap-3 max-w-sm">
+                                    <div className="w-40">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            value={totalCreditos}
+                                            onChange={(e) => setTotalCreditos(e.target.value)}
+                                        />
+                                    </div>
+                                    <Button onClick={onGuardarSistema} loading={actualizarSistema.isPending}>
+                                        Guardar total
+                                    </Button>
                                 </div>
-                                <Button onClick={onGuardarSistema} loading={actualizarSistema.isPending}>
-                                    Guardar total
-                                </Button>
+                                <p className="text-xs text-text-muted mt-2">
+                                    Cantidad total de créditos que la carrera exige sumar entre todas las
+                                    actividades.
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    {habilitado && !cumplimientoOk && (
-                        <div className="rounded-md border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger mb-4">
-                            La suma de mínimos por categoría ({sumaMinimos}) supera el total de créditos (
-                            {totalValido || '?'}). Ajustá el total o los mínimos.
-                        </div>
-                    )}
-                    {habilitado && cumplimientoOk && totalValido > 0 && (
-                        <div className="rounded-md border border-status-success/40 bg-status-success/10 px-3 py-2 text-sm text-status-success mb-4">
-                            Suma de mínimos ({sumaMinimos}) ≤ total ({totalValido}) ✓
-                        </div>
-                    )}
-
-                    <p className="text-xs text-text-muted">
+                    <p className="text-xs text-text-muted border-t border-hairline mt-6 pt-4">
                         Las categorías y actividades se comparten entre todas las carreras. La configuración de
                         esta carrera (mínimos y actividades incluidas) es propia.
                     </p>
@@ -292,11 +341,11 @@ export function CreditosEditor({ carreraId }: Props) {
                 </div>
 
                 {!habilitado ? (
-                    <div className="px-6 pb-6 text-sm text-text-muted">
+                    <div className="px-6 py-8 text-sm text-text-muted text-center">
                         Activá el sistema de créditos para configurar categorías y actividades.
                     </div>
                 ) : sistema.categorias.length === 0 ? (
-                    <div className="px-6 pb-6 text-sm text-text-muted">
+                    <div className="px-6 py-8 text-sm text-text-muted text-center">
                         No hay categorías configuradas todavía.
                     </div>
                 ) : (
@@ -331,7 +380,7 @@ export function CreditosEditor({ carreraId }: Props) {
                                         onClick={() => onGuardarMinimo(c.carreraCategoriaCreditoId)}
                                         loading={actualizarCategoria.isPending}
                                     >
-                                        Mínimo
+                                        Actualizar
                                     </Button>
                                     <button
                                         title="Quitar categoría"
@@ -369,18 +418,18 @@ export function CreditosEditor({ carreraId }: Props) {
                 </div>
 
                 {!habilitado ? (
-                    <div className="px-6 pb-6 text-sm text-text-muted">
+                    <div className="px-6 py-8 text-sm text-text-muted text-center">
                         Activá el sistema de créditos para configurar categorías y actividades.
                     </div>
                 ) : sistema.actividades.length === 0 ? (
-                    <div className="px-6 pb-6 text-sm text-text-muted">
+                    <div className="px-6 py-8 text-sm text-text-muted text-center">
                         No hay actividades incluidas en el sistema de esta carrera.
                     </div>
                 ) : (
                     <div className="px-6 pb-6 space-y-5">
                         {[...actividadesPorCategoria.entries()].map(([categoriaNombre, lista]) => (
                             <div key={categoriaNombre}>
-                                <p className="label mb-2 text-accent-cyan">{categoriaNombre}</p>
+                                <p className="label mb-2 text-accent-cyan normal-case">{categoriaNombre}</p>
                                 <div className="space-y-2">
                                     {lista.map((a) => (
                                         <div
@@ -390,7 +439,7 @@ export function CreditosEditor({ carreraId }: Props) {
                                             <div className="min-w-0">
                                                 <span className="text-sm text-text-default">{a.nombre}</span>
                                                 <Badge variant="info" size="sm" className="ml-2">
-                                                    +{a.creditos} cr
+                                                    +{a.creditos} creditos
                                                 </Badge>
                                                 {a.materiasRequeridas.length > 0 && (
                                                     <span className="flex flex-wrap items-center gap-1 mt-1.5">
@@ -403,18 +452,28 @@ export function CreditosEditor({ carreraId }: Props) {
                                                     </span>
                                                 )}
                                             </div>
-                                            <button
-                                                title="Quitar actividad"
-                                                onClick={() =>
-                                                    setQuitarActConfirm({
-                                                        id: a.carreraActividadCreditoId,
-                                                        nombre: a.nombre,
-                                                    })
-                                                }
-                                                className="text-text-muted hover:text-status-danger transition-colors shrink-0"
-                                            >
-                                                <Icon name="delete" className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => abrirEditarRequisitos(a)}
+                                                    title="Editar materias requisito de esta actividad (por carrera)"
+                                                >
+                                                    Editar requisitos
+                                                </Button>
+                                                <button
+                                                    title="Quitar actividad"
+                                                    onClick={() =>
+                                                        setQuitarActConfirm({
+                                                            id: a.carreraActividadCreditoId,
+                                                            nombre: a.nombre,
+                                                        })
+                                                    }
+                                                    className="text-text-muted hover:text-status-danger transition-colors"
+                                                >
+                                                    <Icon name="delete" className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -429,18 +488,6 @@ export function CreditosEditor({ carreraId }: Props) {
                     <div className="flex gap-2">
                         <button
                             type="button"
-                            onClick={() => setCatModo('existente')}
-                            className={cn(
-                                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                                catModo === 'existente'
-                                    ? 'bg-accent-primary text-accent-foreground'
-                                    : 'bg-transparent border border-hairline text-text-muted hover:text-text-default',
-                            )}
-                        >
-                            Usar categoría existente
-                        </button>
-                        <button
-                            type="button"
                             onClick={() => setCatModo('nueva')}
                             className={cn(
                                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
@@ -451,12 +498,24 @@ export function CreditosEditor({ carreraId }: Props) {
                         >
                             Crear nueva
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setCatModo('existente')}
+                            className={cn(
+                                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                catModo === 'existente'
+                                    ? 'bg-accent-primary text-accent-foreground'
+                                    : 'bg-transparent border border-hairline text-text-muted hover:text-text-default',
+                            )}
+                        >
+                            Usar categoría existente
+                        </button>
                     </div>
 
                     {catModo === 'existente' ? (
                         categoriasDisponibles.length === 0 ? (
-                            <p className="text-sm text-text-muted">
-                                No hay categorías disponibles (todas las existentes ya están en el sistema).
+                            <p className="text-sm text-text-muted text-center py-4">
+                                No hay categorías disponibles.
                             </p>
                         ) : (
                             <Select
@@ -535,18 +594,6 @@ export function CreditosEditor({ carreraId }: Props) {
                     <div className="flex gap-2">
                         <button
                             type="button"
-                            onClick={() => setActModo('existente')}
-                            className={cn(
-                                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                                actModo === 'existente'
-                                    ? 'bg-accent-primary text-accent-foreground'
-                                    : 'bg-transparent border border-hairline text-text-muted hover:text-text-default',
-                            )}
-                        >
-                            Usar actividad existente
-                        </button>
-                        <button
-                            type="button"
                             onClick={() => setActModo('nueva')}
                             className={cn(
                                 'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
@@ -557,15 +604,26 @@ export function CreditosEditor({ carreraId }: Props) {
                         >
                             Crear nueva
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setActModo('existente')}
+                            className={cn(
+                                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                actModo === 'existente'
+                                    ? 'bg-accent-primary text-accent-foreground'
+                                    : 'bg-transparent border border-hairline text-text-muted hover:text-text-default',
+                            )}
+                        >
+                            Usar actividad existente
+                        </button>
                     </div>
 
                     {actModo === 'existente' ? (
                         actCategoriaId === 0 ? (
-                            <p className="text-sm text-text-muted">Seleccioná primero la categoría.</p>
+                            <p className="text-sm text-text-muted text-center py-4">Seleccioná primero la categoría.</p>
                         ) : actividadesDisponibles.length === 0 ? (
-                            <p className="text-sm text-text-muted">
-                                No hay actividades disponibles en esa categoría (todas las existentes ya están
-                                incluidas).
+                            <p className="text-sm text-text-muted text-center py-4">
+                                No hay actividades disponibles en esa categoría.
                             </p>
                         ) : (
                             <Select
@@ -576,7 +634,7 @@ export function CreditosEditor({ carreraId }: Props) {
                                 <option value={0}>Seleccioná una actividad</option>
                                 {actividadesDisponibles.map((a) => (
                                     <option key={a.actividadCreditoId} value={a.actividadCreditoId}>
-                                        {a.nombre} (+{a.creditos} cr)
+                                        {a.nombre} (+{a.creditos} creditos)
                                     </option>
                                 ))}
                             </Select>
@@ -608,7 +666,7 @@ export function CreditosEditor({ carreraId }: Props) {
 
                     {actModo === 'nueva' && (
                         <div>
-                            <p className="label mb-1">Materias requisito (opcional)</p>
+                            <p className="label mb-1">Materias requisito en esta carrera (opcional)</p>
                             <p className="text-xs text-text-muted mb-2">
                                 Para completar la actividad hay que tener aprobadas estas materias. Vacío = se
                                 completa directamente.
@@ -714,6 +772,104 @@ export function CreditosEditor({ carreraId }: Props) {
                             loading={quitarActividad.isPending}
                         >
                             Quitar actividad
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={!!requisitosEdit}
+                onClose={cerrarEditarRequisitos}
+                title={`Requisitos de "${requisitosEdit?.nombre ?? ''}"`}
+                size="lg"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <p className="label mb-1">Materias requisito en esta carrera</p>
+                        <p className="text-xs text-text-muted mb-2">
+                            Para completar la actividad hay que tener aprobadas estas materias. Vacío = se
+                            completa directamente. Los requisitos son propios de esta carrera y no afectan a
+                            otras.
+                        </p>
+                        <div className="max-h-64 overflow-y-auto space-y-1.5 border border-hairline rounded-md p-2">
+                            {materiasPlan.length === 0 ? (
+                                <p className="text-sm text-text-muted text-center py-4">
+                                    Esta carrera no tiene materias en su plan.
+                                </p>
+                            ) : (
+                                materiasPlan.map((m) => (
+                                    <label
+                                        key={m.materiaId}
+                                        className="flex items-center gap-2 text-sm text-text-default cursor-pointer hover:bg-bg-surface-secondary rounded px-1 py-0.5"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={requisitosSeleccion.includes(m.materiaId)}
+                                            onChange={(e) =>
+                                                setRequisitosSeleccion((prev) =>
+                                                    e.target.checked
+                                                        ? [...prev, m.materiaId]
+                                                        : prev.filter((id) => id !== m.materiaId),
+                                                )
+                                            }
+                                            className="accent-accent-cyan"
+                                        />
+                                        <span className="truncate">{m.nombre}</span>
+                                        <Badge variant="info" size="sm" className="ml-auto shrink-0">
+                                            {m.codigo}
+                                        </Badge>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button type="button" variant="ghost" onClick={cerrarEditarRequisitos}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={onGuardarRequisitos}
+                            loading={actualizarRequisitos.isPending}
+                        >
+                            Guardar requisitos
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={desactivarConfirmOpen}
+                onClose={() => setDesactivarConfirmOpen(false)}
+                title="Desactivar sistema de créditos"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-text-default">
+                        ¿Querés desactivar el sistema de créditos de esta carrera?
+                    </p>
+                    <div className="rounded-md border border-status-danger/40 bg-status-danger/10 px-3 py-3 text-sm text-status-danger space-y-1">
+                        <p><strong>Se eliminará la configuración de esta carrera:</strong></p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                            <li>El total de créditos requeridos.</li>
+                            <li>Todas las categorías configuradas y sus mínimos.</li>
+                            <li>Todas las actividades incluidas y sus requisitos por carrera.</li>
+                        </ul>
+                    </div>
+                    <p className="text-xs text-text-muted">
+                        El catálogo global de categorías y actividades no se borra. El progreso de los
+                        usuarios no se elimina: si más adelante volvés a activar el sistema y re-incluís las
+                        actividades, se conservará.
+                    </p>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="ghost" onClick={() => setDesactivarConfirmOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={onDesactivarConfirmado}
+                            loading={actualizarSistema.isPending}
+                        >
+                            Desactivar sistema
                         </Button>
                     </div>
                 </div>

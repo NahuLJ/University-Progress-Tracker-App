@@ -8,9 +8,9 @@ import { Repository, In } from 'typeorm';
 import { SistemaCreditos } from './entities/sistema-creditos.entity';
 import { CategoriaCredito } from './entities/categoria-credito.entity';
 import { ActividadCredito } from './entities/actividad-credito.entity';
-import { ActividadRequisitoMateria } from './entities/actividad-requisito-materia.entity';
 import { CarreraCategoriaCredito } from './entities/carrera-categoria-credito.entity';
 import { CarreraActividadCredito } from './entities/carrera-actividad-credito.entity';
+import { CarreraActividadRequisitoMateria } from './entities/carrera-actividad-requisito-materia.entity';
 import { ProgresoActividad } from './entities/progreso-actividad.entity';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { Materia } from '../materias/entities/materia.entity';
@@ -22,6 +22,7 @@ import { ActualizarSistemaCreditosDto } from './dto/actualizar-sistema-creditos.
 import { AgregarCategoriaCreditoDto } from './dto/agregar-categoria-credito.dto';
 import { ActualizarCategoriaCreditoDto } from './dto/actualizar-categoria-credito.dto';
 import { AgregarActividadCreditoDto } from './dto/agregar-actividad-credito.dto';
+import { ActualizarRequisitosActividadDto } from './dto/actualizar-requisitos-actividad.dto';
 import { CrearProgresoActividadDto } from './dto/crear-progreso-actividad.dto';
 import { CreditosProgresoResponseDto } from './dto/creditos-progreso.dto';
 
@@ -82,8 +83,8 @@ export class CreditosService {
     private readonly categoriaRepo: Repository<CategoriaCredito>,
     @InjectRepository(ActividadCredito)
     private readonly actividadRepo: Repository<ActividadCredito>,
-    @InjectRepository(ActividadRequisitoMateria)
-    private readonly actividadRequisitoRepo: Repository<ActividadRequisitoMateria>,
+    @InjectRepository(CarreraActividadRequisitoMateria)
+    private readonly actividadRequisitoRepo: Repository<CarreraActividadRequisitoMateria>,
     @InjectRepository(CarreraCategoriaCredito)
     private readonly carreraCategoriaRepo: Repository<CarreraCategoriaCredito>,
     @InjectRepository(CarreraActividadCredito)
@@ -130,8 +131,6 @@ export class CreditosService {
     const qb = this.actividadRepo
       .createQueryBuilder('a')
       .leftJoinAndSelect('a.categoria', 'categoria')
-      .leftJoinAndSelect('a.materiasRequeridas', 'requisito')
-      .leftJoinAndSelect('requisito.materia', 'materia')
       .orderBy('a.nombre', 'ASC');
 
     if (categoriaId) {
@@ -153,8 +152,6 @@ export class CreditosService {
     });
     if (!categoria) throw new NotFoundException('Categoría no encontrada');
 
-    await this.validarMateriasRequisito(dto.materiasRequeridas);
-
     const actividad = this.actividadRepo.create({
       nombre: dto.nombre,
       descripcion: dto.descripcion,
@@ -164,12 +161,6 @@ export class CreditosService {
 
     try {
       const guardada = await this.actividadRepo.save(actividad);
-      if (dto.materiasRequeridas && dto.materiasRequeridas.length > 0) {
-        await this.reemplazarRequisitos(
-          guardada.actividadCreditoId,
-          dto.materiasRequeridas,
-        );
-      }
       return await this.buscarActividadCompleta(guardada.actividadCreditoId);
     } catch (error) {
       if (esErrorDuplicado(error)) {
@@ -190,22 +181,12 @@ export class CreditosService {
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
 
-    if (dto.materiasRequeridas !== undefined) {
-      await this.validarMateriasRequisito(dto.materiasRequeridas);
-    }
-
     if (dto.nombre !== undefined) actividad.nombre = dto.nombre;
     if (dto.descripcion !== undefined) actividad.descripcion = dto.descripcion;
     if (dto.creditos !== undefined) actividad.creditos = dto.creditos;
 
     try {
       await this.actividadRepo.save(actividad);
-      if (dto.materiasRequeridas !== undefined) {
-        await this.reemplazarRequisitos(
-          actividadCreditoId,
-          dto.materiasRequeridas,
-        );
-      }
     } catch (error) {
       if (esErrorDuplicado(error)) {
         throw new BadRequestException(
@@ -236,7 +217,8 @@ export class CreditosService {
       this.carreraActividadRepo.find({
         where: { carrera: { carreraId } },
         relations: {
-          actividad: { categoria: true, materiasRequeridas: { materia: true } },
+          actividad: { categoria: true },
+          materiasRequeridas: { materia: true },
         },
       }),
     ]);
@@ -305,7 +287,7 @@ export class CreditosService {
     const actividades: ActividadConfiguracion[] = actividadesCarrera.map(
       (ca) => {
         const requisitos: MateriaRequisitoResultado[] = (
-          ca.actividad.materiasRequeridas ?? []
+          ca.materiasRequeridas ?? []
         ).map((r) => ({
           materiaId: r.materia.materiaId,
           nombre: r.materia.nombre,
@@ -516,6 +498,7 @@ export class CreditosService {
   ): Promise<void> {
     const pivote = await this.carreraCategoriaRepo.findOne({
       where: { carreraCategoriaCreditoId, carrera: { carreraId } },
+      relations: { categoria: true },
     });
     if (!pivote)
       throw new NotFoundException('Registro de categoría no encontrado');
@@ -583,12 +566,54 @@ export class CreditosService {
       );
     }
 
-    return this.carreraActividadRepo.save(
+    if (dto.materiasRequeridas && dto.materiasRequeridas.length > 0) {
+      await this.validarMateriasRequisito(dto.materiasRequeridas);
+    }
+
+    const pivote = await this.carreraActividadRepo.save(
       this.carreraActividadRepo.create({
         carrera: { carreraId },
         actividad,
       }),
     );
+
+    if (dto.materiasRequeridas && dto.materiasRequeridas.length > 0) {
+      await this.reemplazarRequisitos(
+        pivote.carreraActividadCreditoId,
+        dto.materiasRequeridas,
+      );
+    }
+
+    return pivote;
+  }
+
+  async actualizarRequisitosActividad(
+    carreraId: number,
+    carreraActividadCreditoId: number,
+    dto: ActualizarRequisitosActividadDto,
+  ): Promise<CarreraActividadCredito> {
+    const pivote = await this.carreraActividadRepo.findOne({
+      where: { carreraActividadCreditoId, carrera: { carreraId } },
+    });
+    if (!pivote)
+      throw new NotFoundException('Registro de actividad no encontrado');
+
+    await this.validarMateriasRequisito(dto.materiasRequeridas);
+    await this.reemplazarRequisitos(
+      carreraActividadCreditoId,
+      dto.materiasRequeridas,
+    );
+
+    const actualizado = await this.carreraActividadRepo.findOne({
+      where: { carreraActividadCreditoId },
+      relations: {
+        actividad: { categoria: true },
+        materiasRequeridas: { materia: true },
+      },
+    });
+    if (!actualizado)
+      throw new NotFoundException('Registro de actividad no encontrado');
+    return actualizado;
   }
 
   async quitarActividad(
@@ -628,7 +653,8 @@ export class CreditosService {
       this.carreraActividadRepo.find({
         where: { carrera: { carreraId } },
         relations: {
-          actividad: { categoria: true, materiasRequeridas: { materia: true } },
+          actividad: { categoria: true },
+          materiasRequeridas: { materia: true },
         },
       }),
     ]);
@@ -681,7 +707,7 @@ export class CreditosService {
     });
 
     const actividades = actividadesCarrera.map((ca) => {
-      const requisitos = (ca.actividad.materiasRequeridas ?? []).map((r) => ({
+      const requisitos = (ca.materiasRequeridas ?? []).map((r) => ({
         materiaId: r.materia.materiaId,
         nombre: r.materia.nombre,
         codigo: r.materia.codigo,
@@ -757,18 +783,25 @@ export class CreditosService {
   ): Promise<ProgresoActividad> {
     const inscripcion = await this.usuarioCarreraRepo.findOne({
       where: { usuarioCarreraId: dto.usuarioCarreraId },
-      relations: { usuario: true },
+      relations: { usuario: true, carrera: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
     const usuarioId = inscripcion.usuario.usuarioId;
 
     const actividad = await this.actividadRepo.findOne({
       where: { actividadCreditoId: dto.actividadCreditoId },
-      relations: { materiasRequeridas: { materia: true } },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
 
-    const materiasRequeridas = actividad.materiasRequeridas ?? [];
+    const carreraActividad = await this.carreraActividadRepo.findOne({
+      where: {
+        carrera: { carreraId: inscripcion.carrera.carreraId },
+        actividad: { actividadCreditoId: dto.actividadCreditoId },
+      },
+      relations: { materiasRequeridas: { materia: true } },
+    });
+
+    const materiasRequeridas = carreraActividad?.materiasRequeridas ?? [];
     if (materiasRequeridas.length > 0) {
       const idsRequisito = materiasRequeridas.map((r) => r.materia.materiaId);
       const aprobadas = await this.progresoMateriaRepo.find({
@@ -838,16 +871,16 @@ export class CreditosService {
   }
 
   private async reemplazarRequisitos(
-    actividadCreditoId: number,
+    carreraActividadCreditoId: number,
     materiasIds: number[],
   ): Promise<void> {
     await this.actividadRequisitoRepo.delete({
-      actividad: { actividadCreditoId },
+      carreraActividad: { carreraActividadCreditoId },
     });
     if (materiasIds.length === 0) return;
     const pivotes = materiasIds.map((materiaId) =>
       this.actividadRequisitoRepo.create({
-        actividad: { actividadCreditoId },
+        carreraActividad: { carreraActividadCreditoId },
         materia: { materiaId },
       }),
     );
@@ -859,7 +892,7 @@ export class CreditosService {
   ): Promise<ActividadCredito> {
     const actividad = await this.actividadRepo.findOne({
       where: { actividadCreditoId },
-      relations: { categoria: true, materiasRequeridas: { materia: true } },
+      relations: { categoria: true },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
     return actividad;

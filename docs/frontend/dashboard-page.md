@@ -2,7 +2,8 @@
 
 > **Estado de implementación:** ✅ Completa. `DashboardPage` cablea `StatCards`
 > (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`),
-> `Charts` (`MateriasPorEstadoChart`/`NotasDistribucionChart`/`ProgresoPorAnioChart`/`EstadisticasSkeleton`) y
+> `Charts` (`MateriasPorEstadoChart`/`NotasDistribucionChart`/`ProgresoPorAnioChart`/`EstadisticasSkeleton`),
+> `CreditosProgresoChart` (progreso del sistema de créditos por actividades) y
 > `CarrerasResumenList` con datos reales de `useEstadisticas` (wrapper de `useDashboard` + gráficos nuevos)
 > y `useCarrerasResumen` (lista "Mis carreras").
 > El selector multi-carrera (en el navbar lateral) cambia `usuarioCarreraId` y React Query refetch
@@ -17,6 +18,7 @@ pages/
 components/dashboard/
 ├── StatCards.tsx                  # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
 ├── Charts.tsx                     # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
+├── CreditosProgresoChart.tsx      # bar chart obtenidos vs mínimo por categoría del sistema de créditos
 ├── CarrerasResumenList.tsx        # lista de carreras activas con mini ProgressBar
 └── ChartTooltip.tsx               # tooltip que sigue el cursor (position: fixed, x/y opcionales)
 
@@ -32,7 +34,7 @@ components/ui/
 
 hooks/
 ├── useDashboard.ts                # carrera activa + resumen + distribución + evolución (React Query)
-├── useEstadisticas.ts             # wrapper de useDashboard + notas-distribucion + progreso-por-anio
+├── useEstadisticas.ts             # wrapper de useDashboard + notas-distribucion + progreso-por-anio + creditos-progreso
 ├── useCarreras.ts                 # carreras del usuario
 ├── useCarrerasResumen.ts          # resumen por carrera (materias completadas/totales)
 ├── useTooltipPosition.ts          # clientX/clientY del cursor (gráficos de barras)
@@ -42,12 +44,12 @@ store/
 ├── carrera.store.ts               # usuarioCarreraId activo (persistido en localStorage)
 └── sidebar.store.ts               # estado colapsado/expandido del sidebar (persistido)
 
-services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados, obtenerEvolucion, obtenerCarrerasResumen, obtenerNotasDistribucion, obtenerProgresoPorAnio
+services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados, obtenerEvolucion, obtenerCarrerasResumen, obtenerNotasDistribucion, obtenerProgresoPorAnio, obtenerCreditosProgreso
 ```
 
 > **Estado:** `DashboardPage` cablea `StatCards` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/
 > `MateriasDisponiblesCard`/`ProgresoBarCard`), `Charts` (`MateriasPorEstadoChart` pastel/
-> `NotasDistribucionChart`/`ProgresoPorAnioChart`) y `CarrerasResumenList`
+> `NotasDistribucionChart`/`ProgresoPorAnioChart`), `CreditosProgresoChart` y `CarrerasResumenList`
 > con los datos reales de `useEstadisticas` y `useCarrerasResumen`. El selector multi-carrera
 > cambia `usuarioCarreraId` y React Query refetch automáticamente. `EvolucionPromedioChart` fue
 > eliminado del dashboard y `TiempoRestanteCard` ya no existe.
@@ -67,6 +69,7 @@ MainLayout (sidebar lateral izquierdo, colapsable y responsive)
     ├── ProgresoBarCard (ancho completo, "materias restantes: N" debajo de la barra)
     ├── Fila de 2 gráficos: MateriasPorEstadoChart (pastel) · NotasDistribucionChart
     ├── ProgresoPorAnioChart (ancho completo)
+    ├── CreditosProgresoChart (progreso del sistema de créditos por actividades)
     └── CarrerasResumenList ("Mis carreras")
 ```
 

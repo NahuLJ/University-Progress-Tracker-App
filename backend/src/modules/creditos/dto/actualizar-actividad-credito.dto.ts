@@ -5,8 +5,6 @@ import {
   IsInt,
   Min,
   MaxLength,
-  IsArray,
-  ArrayUnique,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -29,17 +27,4 @@ export class ActualizarActividadCreditoDto {
   @IsInt()
   @Min(1)
   creditos?: number;
-
-  @ApiProperty({
-    required: false,
-    type: 'array',
-    items: { type: 'number' },
-    example: [1, 5],
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  materiasRequeridas?: number[];
 }

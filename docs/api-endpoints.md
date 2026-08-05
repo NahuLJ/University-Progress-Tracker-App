@@ -286,6 +286,38 @@ interface MateriaAdminRow {
 
 ---
 
+## Créditos por actividades — `/creditos` y `/carreras/:id/creditos*`
+
+> Catálogo global (categorías/actividades) + configuración por carrera + progreso del usuario. Los requisitos de materias de una actividad son **por carrera** (`PUT .../requisitos`); el catálogo global no los maneja. Sin `RolesGuard` aún (mismo criterio que el resto del módulo admin). Ver `docs/implementaciones/sistema-de-creditos.md`.
+
+### Catálogo y progreso — `/creditos`
+
+| Método | Ruta | Auth | Query / Body | Respuestas |
+|--------|------|------|--------------|------------|
+| `GET` | `/creditos/categorias` | ✅ Bearer | `?incluirInactivas` | `200`: `CategoriaCredito[]` |
+| `POST` | `/creditos/categorias` | ✅ Bearer | `{ nombre, descripcion? }` | `201`: Creada · `400`: Nombre duplicado |
+| `GET` | `/creditos/actividades` | ✅ Bearer | `?categoriaId&search` | `200`: `ActividadCredito[]` (con `categoria` anidada) |
+| `POST` | `/creditos/actividades` | ✅ Bearer | `{ nombre, descripcion?, categoriaCreditoId, creditos }` | `201`: Creada · `400`: Validación / duplicada en la categoría |
+| `PUT` | `/creditos/actividades/:actividadCreditoId` | ✅ Bearer | `{ nombre?, descripcion?, creditos?, categoriaCreditoId? }` | `200`: Actualizada · `404`: No encontrada |
+| `GET` | `/creditos/progreso` | ✅ Bearer | `?usuarioCarreraId` | `200`: `CreditosProgreso` · `404`: Inscripción no encontrada |
+| `POST` | `/creditos/progreso` | ✅ Bearer | `{ usuarioCarreraId, actividadCreditoId }` | `201`: Completada · `400`: Faltan requisitos aprobados · `404`: No encontrada |
+| `DELETE` | `/creditos/progreso/:progresoActividadId` | ✅ Bearer | — | `200`: Desmarcada · `404`: No encontrada |
+
+### Configuración de carrera — `/carreras/:id/creditos`
+
+| Método | Ruta | Auth | Query / Body | Respuestas |
+|--------|------|------|--------------|------------|
+| `GET` | `/carreras/:id/creditos` | ✅ Bearer | `?usuarioCarreraId` (opcional) | `200`: `CarreraCreditosConfig` (con progreso si hay `usuarioCarreraId`) |
+| `PUT` | `/carreras/:id/creditos` | ✅ Bearer | `{ creditosHabilitado, totalCreditos? }` | `200`: Actualizado · `400`: `sum(minimos) > total` |
+| `POST` | `/carreras/:id/creditos/categorias` | ✅ Bearer | `{ categoriaCreditoId, minimoCreditos }` | `201`: Agregada · `400`: Suma de mínimos > total / duplicada |
+| `PUT` | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | ✅ Bearer | `{ minimoCreditos }` | `200`: Actualizada · `400`: Suma de mínimos > total · `404`: No encontrada |
+| `DELETE` | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | ✅ Bearer | — | `200`: Quitada (y sus actividades) · `404`: No encontrada |
+| `POST` | `/carreras/:id/creditos/actividades` | ✅ Bearer | `{ actividadCreditoId, materiasRequeridas?: number[] }` | `201`: Agregada · `400`: Categoría no incluida en la carrera / materias inválidas · `404`: No encontrada |
+| `PUT` | `/carreras/:id/creditos/actividades/:carreraActividadCreditoId/requisitos` | ✅ Bearer | `{ materiasRequeridas: number[] }` (replace) | `200`: Requisitos actualizados · `400`: Materias inválidas · `404`: No encontrada |
+| `DELETE` | `/carreras/:id/creditos/actividades/:carreraActividadCreditoId` | ✅ Bearer | — | `200`: Quitada · `404`: No encontrada |
+
+---
+
 ## Estadísticas — `/estadisticas`
 
 | Método | Ruta | Auth | Query | Respuestas |
@@ -296,6 +328,7 @@ interface MateriaAdminRow {
 | `GET` | `/estadisticas/notas-distribucion` | ✅ Bearer | `usuarioCarreraId` | `200`: Rangos de nota y conteos (`NotasDistribucion`) · `404`: Inscripción no encontrada |
 | `GET` | `/estadisticas/progreso-por-anio` | ✅ Bearer | `usuarioCarreraId` | `200`: Materias por año (completadas, en proceso, pendientes) · `404`: Inscripción no encontrada |
 | `GET` | `/estadisticas/carreras-resumen` | ✅ Bearer | `usuarioId` | `200`: CarreraResumen[] (progreso por carrera del usuario) |
+| `GET` | `/estadisticas/creditos-progreso` | ✅ Bearer | `usuarioCarreraId` | `200`: `CreditosProgreso` · `404`: Inscripción no encontrada |
 
 ---
 
@@ -313,7 +346,8 @@ interface MateriaAdminRow {
 | `progreso/` | 4 |
 | `planificacion/` | 11 |
 | `trayectorias/` | 6 |
-| `estadisticas/` | 6 |
-| **Total únicos** | **58** |
+| `creditos/` | 16 |
+| `estadisticas/` | 7 |
+| **Total únicos** | **75** |
 
 Todas las rutas protegidas usan `Authorization: Bearer <token>`. El token se obtiene de `POST /auth/login`. Los errores siguen el formato `{ message: string, statusCode: number }`.

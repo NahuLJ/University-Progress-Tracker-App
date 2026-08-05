@@ -5,9 +5,9 @@ import { CreditosService } from './creditos.service';
 import { SistemaCreditos } from './entities/sistema-creditos.entity';
 import { CategoriaCredito } from './entities/categoria-credito.entity';
 import { ActividadCredito } from './entities/actividad-credito.entity';
-import { ActividadRequisitoMateria } from './entities/actividad-requisito-materia.entity';
 import { CarreraCategoriaCredito } from './entities/carrera-categoria-credito.entity';
 import { CarreraActividadCredito } from './entities/carrera-actividad-credito.entity';
+import { CarreraActividadRequisitoMateria } from './entities/carrera-actividad-requisito-materia.entity';
 import { ProgresoActividad } from './entities/progreso-actividad.entity';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { Materia } from '../materias/entities/materia.entity';
@@ -19,9 +19,9 @@ import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
       SistemaCreditos,
       CategoriaCredito,
       ActividadCredito,
-      ActividadRequisitoMateria,
       CarreraCategoriaCredito,
       CarreraActividadCredito,
+      CarreraActividadRequisitoMateria,
       ProgresoActividad,
       UsuarioCarrera,
       Materia,

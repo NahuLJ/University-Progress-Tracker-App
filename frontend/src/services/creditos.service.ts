@@ -27,7 +27,7 @@ export const creditosService = {
                 ...(search ? { search } : {}),
             },
         });
-        return response.data;
+        return (response.data ?? []).map(aplanarActividad);
     },
 
     async crearActividad(data: {
@@ -35,18 +35,17 @@ export const creditosService = {
         descripcion?: string;
         categoriaCreditoId: number;
         creditos: number;
-        materiasRequeridas?: number[];
     }): Promise<ActividadCredito> {
         const response = await api.post('/creditos/actividades', data);
-        return response.data;
+        return aplanarActividad(response.data);
     },
 
     async actualizarActividad(
         actividadCreditoId: number,
-        data: { nombre?: string; descripcion?: string; creditos?: number; materiasRequeridas?: number[] },
+        data: { nombre?: string; descripcion?: string; creditos?: number },
     ): Promise<ActividadCredito> {
         const response = await api.put(`/creditos/actividades/${actividadCreditoId}`, data);
-        return response.data;
+        return aplanarActividad(response.data);
     },
 
     // configuración de la carrera
@@ -86,12 +85,25 @@ export const creditosService = {
         await api.delete(`/carreras/${carreraId}/creditos/categorias/${carreraCategoriaCreditoId}`);
     },
 
-    async agregarActividad(carreraId: number, data: { actividadCreditoId: number }): Promise<void> {
+    async agregarActividad(
+        carreraId: number,
+        data: { actividadCreditoId: number; materiasRequeridas?: number[] },
+    ): Promise<void> {
         await api.post(`/carreras/${carreraId}/creditos/actividades`, data);
     },
 
     async quitarActividad(carreraId: number, carreraActividadCreditoId: number): Promise<void> {
         await api.delete(`/carreras/${carreraId}/creditos/actividades/${carreraActividadCreditoId}`);
+    },
+
+    async actualizarRequisitosActividad(
+        carreraId: number,
+        carreraActividadCreditoId: number,
+        materiasRequeridas: number[],
+    ): Promise<void> {
+        await api.put(`/carreras/${carreraId}/creditos/actividades/${carreraActividadCreditoId}/requisitos`, {
+            materiasRequeridas,
+        });
     },
 
     // progreso del usuario
@@ -110,3 +122,15 @@ export const creditosService = {
         await api.delete(`/creditos/progreso/${progresoActividadId}`);
     },
 };
+
+function aplanarActividad(raw: any): ActividadCredito {
+    return {
+        actividadCreditoId: raw.actividadCreditoId,
+        categoriaCreditoId: raw.categoria?.categoriaCreditoId ?? raw.categoriaCreditoId,
+        categoriaNombre: raw.categoria?.nombre ?? raw.categoriaNombre,
+        nombre: raw.nombre,
+        descripcion: raw.descripcion,
+        creditos: raw.creditos,
+        activo: raw.activo,
+    };
+}

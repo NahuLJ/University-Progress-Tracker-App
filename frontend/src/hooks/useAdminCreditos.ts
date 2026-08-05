@@ -106,14 +106,30 @@ export function useAdminCreditos(carreraId: number) {
     });
 
     const agregarActividad = useMutation({
-        mutationFn: (actividadCreditoId: number) =>
-            creditosService.agregarActividad(carreraId, { actividadCreditoId }),
+        mutationFn: (params: { actividadCreditoId: number; materiasRequeridas?: number[] }) =>
+            creditosService.agregarActividad(carreraId, params),
         onSuccess: () => {
             invalidarConfig();
             addNotification('Actividad agregada al sistema', 'success');
         },
         onError: () => {
             addNotification('Error al agregar la actividad', 'error');
+        },
+    });
+
+    const actualizarRequisitos = useMutation({
+        mutationFn: (params: { carreraActividadCreditoId: number; materiasRequeridas: number[] }) =>
+            creditosService.actualizarRequisitosActividad(
+                carreraId,
+                params.carreraActividadCreditoId,
+                params.materiasRequeridas,
+            ),
+        onSuccess: () => {
+            invalidarConfig();
+            addNotification('Requisitos de la actividad actualizados', 'success');
+        },
+        onError: () => {
+            addNotification('Error al actualizar los requisitos', 'error');
         },
     });
 
@@ -140,6 +156,7 @@ export function useAdminCreditos(carreraId: number) {
         quitarCategoria,
         crearActividad,
         agregarActividad,
+        actualizarRequisitos,
         quitarActividad,
     };
 }

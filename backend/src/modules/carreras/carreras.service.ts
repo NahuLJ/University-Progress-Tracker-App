@@ -23,6 +23,7 @@ import { ActualizarSistemaCreditosDto } from '../creditos/dto/actualizar-sistema
 import { AgregarCategoriaCreditoDto } from '../creditos/dto/agregar-categoria-credito.dto';
 import { ActualizarCategoriaCreditoDto } from '../creditos/dto/actualizar-categoria-credito.dto';
 import { AgregarActividadCreditoDto } from '../creditos/dto/agregar-actividad-credito.dto';
+import { ActualizarRequisitosActividadDto } from '../creditos/dto/actualizar-requisitos-actividad.dto';
 
 export interface MateriaPlanItem {
   materiaId: number;
@@ -695,6 +696,19 @@ export class CarrerasService {
     await this.creditosService.quitarActividad(
       carreraId,
       carreraActividadCreditoId,
+    );
+  }
+
+  async actualizarRequisitosActividadCreditos(
+    carreraId: number,
+    carreraActividadCreditoId: number,
+    dto: ActualizarRequisitosActividadDto,
+  ) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.actualizarRequisitosActividad(
+      carreraId,
+      carreraActividadCreditoId,
+      dto,
     );
   }
 }

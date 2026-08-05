@@ -147,6 +147,15 @@ backend/
     │   │       ├── crear-trayectoria.dto.ts
     │   │       └── actualizar-trayectoria.dto.ts
     │   │
+    │   ├── creditos/                     # Sistema de créditos por actividades (ver docs/implementaciones/sistema-de-creditos.md)
+    │   │   ├── creditos.module.ts
+    │   │   ├── creditos.controller.ts    # catálogo (categorías/actividades) + progreso
+    │   │   ├── creditos.service.ts       # config por carrera + cálculo de progreso + requisitos por carrera
+    │   │   ├── entities/                 # sistema-creditos, categoria-credito, actividad-credito,
+    │   │   │                             #   carrera-categoria-credito, carrera-actividad-credito,
+    │   │   │                             #   carrera-actividad-requisito-materia, progreso-actividad
+    │   │   └── dto/                      # crear/actualizar catálogo, agregar a carrera, actualizar-requisitos, progreso
+    │   │
     │   └── estadisticas/
     │       ├── estadisticas.module.ts
     │       ├── estadisticas.controller.ts

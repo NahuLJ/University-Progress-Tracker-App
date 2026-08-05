@@ -2,6 +2,8 @@
 
 > ✅ **Implementado en `backend/`** — 12 entidades TypeORM, migraciones sincronizadas con la base de datos.
 
+> 📌 **Sistema de créditos por actividades:** agrega 7 tablas adicionales (`sistema_creditos`, `categoria_credito`, `actividad_credito`, `carrera_categoria_credito`, `carrera_actividad_credito`, `carrera_actividad_requisito_materia`, `progreso_actividad`). Ver §13 y `docs/implementaciones/sistema-de-creditos.md`.
+
 ## Diagrama Entidad-Relación (ERD)
 
 ```mermaid
@@ -323,6 +325,22 @@ Asigna una materia a un bloque horario y día dentro de un período.
 
 ---
 
+### 13. Tablas del sistema de créditos por actividades
+
+El **sistema de créditos por actividades** (seminarios, proyectos, idiomas, etc.) agrega 7 tablas que viven en `backend/src/modules/creditos/entities/` y se documentan en detalle en `docs/implementaciones/sistema-de-creditos.md` §2:
+
+- `sistema_creditos` — config 1:1 con `carrera` (`total_creditos`, CHECK > 0).
+- `categoria_credito` — catálogo global de categorías (`nombre` UNIQUE, `activo` soft delete).
+- `actividad_credito` — catálogo global de actividades (`nombre` + `categoria_credito_id` UNIQUE compuesto, `creditos` CHECK > 0). **Sin** relación de requisitos (los requisitos son por carrera).
+- `carrera_categoria_credito` — pivote M:N carrera↔categoría con `minimo_creditos` (UNIQUE `(carrera_id, categoria_credito_id)`).
+- `carrera_actividad_credito` — pivote M:N carrera↔actividad (UNIQUE `(carrera_id, actividad_credito_id)`); es el ancla de los requisitos por carrera.
+- `carrera_actividad_requisito_materia` — pivote requisito: actividad **de una carrera** ↔ materia (UNIQUE `(carrera_actividad_credito_id, materia_id)`).
+- `progreso_actividad` — progreso por `usuario_id` + `actividad_credito_id` (compartido entre carreras, UNIQUE `(usuario_id, actividad_credito_id)`).
+
+> Se crean automáticamente con `synchronize: true` al arrancar el backend (no usan migrations).
+
+---
+
 ## Consultas para el Módulo de Estadísticas
 
 ### Promedio general de la carrera (materias completadas)
@@ -377,7 +395,7 @@ GROUP BY uc.usuario_id, uc.carrera_id;
 
 - **PK:** `INT AUTO_INCREMENT` con nombre `{tabla}_id`.
 - **FK:** `INT NOT NULL` con nombre explícito y `REFERENCES` a la PK correspondiente.
-- **M:N:** Tablas pivote (`usuario_carrera`, `carrera_materia`, `correlativa`).
+- **M:N:** Tablas pivote (`usuario_carrera`, `carrera_materia`, `correlativa`, y las de créditos `carrera_categoria_credito`, `carrera_actividad_credito`, `carrera_actividad_requisito_materia`).
 - **Catálogos:** `estado_materia` como tabla (no `ENUM`).
 - **ENUM:** Solo para valores pequeños y estables (`instancia`, `dia_semana`, `tipo_aprobacion`).
 - **Índices únicos compuestos:** Toda tabla pivote incluye un `UNIQUE` sobre sus FK.

@@ -20,7 +20,6 @@ export interface ActividadCredito {
     descripcion: string | null;
     creditos: number;
     activo: boolean;
-    materiasRequeridas: Omit<MateriaRequisito, 'aprobada'>[];
 }
 
 export interface CarreraCategoriaConfig {

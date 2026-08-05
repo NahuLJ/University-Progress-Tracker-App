@@ -31,7 +31,9 @@ components/admin/
 │                                 # modal de errores de validación
 ├── CorrelativasEditor.tsx      # gestión de correlativas: selector de materia con chip,
 │                                 # modal para asignar correlativa, modal de confirmación para eliminar
-├── CarreraEditTabs.tsx         # tabs: Datos generales | Plan de estudios | Correlativas
+├── CreditosEditor.tsx          # sistema de créditos por actividades: total, categorías con mínimo,
+│                                 # actividades y requisitos por carrera (ver §Créditos más abajo)
+├── CarreraEditTabs.tsx         # tabs: Datos generales | Plan de estudios | Correlativas | Créditos
 └── FiltrosModal.tsx            # filtros y ordenamiento (usa Select personalizado)
 
 components/ui/
@@ -40,12 +42,15 @@ components/ui/
 hooks/
 ├── useLocalStorage.ts           # hook genérico para persistir estado en localStorage
 ├── useAdminCarreras.ts          # crearCarrera + agregarMateriaAlPlan (mutations)
-└── useAdminMaterias.ts         # listar/crear materias + asignar/quitar correlativas
+├── useAdminMaterias.ts         # listar/crear materias + asignar/quitar correlativas
+└── useAdminCreditos.ts         # config del sistema de créditos de la carrera (incl. actualizarRequisitos)
 
 services/carreras.service.ts    # carrerasService.* (admin) + materiasAdminService.*
+services/creditos.service.ts    # creditosService.* (catálogo + config por carrera + progreso)
 types/
 ├── carrera.types.ts            # CrearCarreraDto, AgregarMateriaPlanDto, ActualizarMateriaPlanDto, PlanEstudios, MateriaPlanEstudios
-└── materia.types.ts            # CrearMateriaDto, AsignarCorrelativaDto, MateriaDetalle
+├── materia.types.ts            # CrearMateriaDto, AsignarCorrelativaDto, MateriaDetalle
+└── creditos.types.ts           # CategoriaCredito, ActividadCredito, CarreraCreditosConfig, CarreraActividadConfig (con materiasRequeridas), CreditosProgreso
 ```
 
 ### Árbol de Composición
@@ -67,6 +72,8 @@ MainLayout
 > (`admin-carreras-limit`). `TablaMaterias` persiste `page` (`admin-materias-page`) y
 > `limit` (`admin-materias-limit`). Al volver de una página de detalle, la última página
 > y el tamaño de página se restauran automáticamente.
+> `CarreraEditPage` persiste su tab activo en `localStorage` bajo clave `carrera-edit-tab`
+> (validado contra `TabKey`, se guarda al cambiar).
 > El debounce de búsqueda usa `search === debouncedSearch` (en lugar del patrón `isFirstRender`)
 > para evitar reseteo de página al montar el componente en `<StrictMode>`.
 
@@ -129,6 +136,36 @@ El campo descripción es un `<textarea>` auto-creciente con contador de caracter
    - `Select` de materias posibles (excluye la materia actual y las ya asignadas)
    - Botones Cancelar / Asignar correlativa
 3. Al asignar/eliminar exitosamente, se invalidan las queries relevantes.
+
+### CreditosEditor (en CarreraEditPage, tab "Créditos")
+
+Editor del **sistema de créditos por actividades** de la carrera. Usa `useAdminCreditos`
+(query `['creditos', 'carrera', carreraId]` sobre `creditosService.obtenerConfiguracionCarrera`).
+Especificación completa en `docs/implementaciones/sistema-de-creditos.md` §5.4. Resumen del comportamiento:
+
+1. **Estado del sistema:** toggle "Activar sistema de créditos" + input "Total de créditos requeridos"
+   + botón "Guardar total". Si el toggle está activado pero no hay total guardado, `Alert` warning:
+   "Ingresá el total de créditos requeridos y presioná **Guardar total** para activar el sistema".
+   Nota final separada con borde con `sum(mínimos) <= total` (error si no cumple). Sin mensajes inline
+   de error/éxito del total.
+2. **Desactivación:** si el sistema está habilitado, apagar el toggle abre un **modal de advertencia**
+   que lista el impacto (se eliminan total, categorías/mínimos y actividades/requisitos de la carrera;
+   el catálogo global no se borra; el progreso de usuarios se conserva). Confirmar llama `actualizarSistema`.
+3. **Categorías:** lista con input de mínimo editable + botón "Actualizar" + botón de quitar.
+   "Agregar categoría" abre modal con default "Crear nueva" (crea vía `POST /creditos/categorias`) o
+   seleccionar existente.
+4. **Actividades:** lista agrupada por categoría (nombre en `normal-case`, "+n creditos", requisitos,
+   botón quitar). "Agregar actividad" abre modal (elegir categoría de la carrera, crear nueva o
+   seleccionar existente, y opcionalmente materias requisito de la carrera).
+5. **Requisitos por carrera:** cada actividad con botón **"Editar requisitos"** abre un modal con
+   checkboxes de materias del plan de estudios y guarda vía `actualizarRequisitos`
+   (`PUT /carreras/:id/creditos/actividades/:carreraActividadCreditoId/requisitos`). Al agregar una
+   actividad también se pueden pasar `materiasRequeridas` opcionales.
+6. Mensajes vacíos centrados (`py-8 text-center`). Al guardar, `invalidarConfig` invalida
+   `['creditos','carrera']`, `['creditos','progreso']` y `['estadisticas']`.
+7. Endpoints: `PUT /carreras/:id/creditos`, `GET/POST/DELETE /carreras/:id/creditos/categorias*`,
+   `POST/DELETE /carreras/:id/creditos/actividades*`, `PUT .../requisitos`, `GET/POST /creditos/*`
+   (catálogo).
 
 ### Select personalizado (reemplaza `<select>` nativo)
 El componente `Select` (`components/ui/Select.tsx`) reemplaza el `<select>` nativo por un dropdown

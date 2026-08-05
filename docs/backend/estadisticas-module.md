@@ -67,6 +67,17 @@ Retorna un resumen por cada carrera (inscripción activa) del usuario para la li
 |---|---|
 | 200 | `[{ usuarioCarreraId, carrera: { carreraId, nombre }, activo, materiasCompletadas, materiasTotales, progresoPorcentaje, promedioGeneral }]` |
 
+### GET /api/estadisticas/creditos-progreso?usuarioCarreraId=:id
+
+Retorna el progreso del **sistema de créditos por actividades** de la carrera (para `CreditosProgresoChart` del dashboard). Delega en `CreditosService.obtenerProgreso` (ver `docs/implementaciones/sistema-de-creditos.md` §4.3).
+
+| Código | Descripción |
+|---|---|
+| 200 | `{ sistemaCreditos, carreraId, totalRequerido, creditosObtenidos, creditosFaltantes, completado, progresoPorcentaje, categorias: [{ categoriaCreditoId, nombre, minimo, obtenidos, cumplida }], actividades: [{ progresoActividadId, actividadCreditoId, nombre, descripcion, creditos, categoriaCreditoId, categoriaNombre, completada, requisitos, requisitosCumplidos }] }` |
+| 404 | Inscripción no encontrada |
+
+> Si la carrera no tiene sistema (`sistemaCreditos: false`), devuelve el objeto con ceros y listas vacías (el gráfico muestra su estado vacío).
+
 ---
 
 ## DTOs

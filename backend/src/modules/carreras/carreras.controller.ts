@@ -29,6 +29,8 @@ import { AgregarCategoriaCreditoDto } from '../creditos/dto/agregar-categoria-cr
 import { ActualizarCategoriaCreditoDto } from '../creditos/dto/actualizar-categoria-credito.dto';
 import { AgregarActividadCreditoDto } from '../creditos/dto/agregar-actividad-credito.dto';
 
+import { ActualizarRequisitosActividadDto } from '../creditos/dto/actualizar-requisitos-actividad.dto';
+
 @ApiTags('Carreras')
 @Controller('carreras')
 export class CarrerasController {
@@ -274,5 +276,25 @@ export class CarrerasController {
       carreraActividadCreditoId,
     );
     return { message: 'Actividad quitada del sistema de créditos' };
+  }
+
+  @Put(':id/creditos/actividades/:carreraActividadCreditoId/requisitos')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Editar las materias requisito de una actividad (por carrera)',
+  })
+  @ApiResponse({ status: 200, description: 'Requisitos actualizados' })
+  @ApiResponse({ status: 404, description: 'Registro no encontrado' })
+  async actualizarRequisitosActividadCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('carreraActividadCreditoId', ParseIntPipe)
+    carreraActividadCreditoId: number,
+    @Body() dto: ActualizarRequisitosActividadDto,
+  ) {
+    return this.carrerasService.actualizarRequisitosActividadCreditos(
+      id,
+      carreraActividadCreditoId,
+      dto,
+    );
   }
 }

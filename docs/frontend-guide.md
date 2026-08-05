@@ -80,6 +80,7 @@ frontend/
     │   ├── PlanificacionPage.tsx   # detalle de una planificación (calendario)
     │   ├── TrayectoriasPage.tsx    # lista de trayectorias
     │   ├── TrayectoriaPage.tsx     # detalle de una trayectoria (timeline + árbol)
+    │   ├── CreditosPage.tsx        # seguimiento del sistema de créditos por actividades
     │   └── AdminPage.tsx          # tabs Carreras | Materias | Plan | Correlativas (uso admin)
     │
     ├── components/
@@ -104,6 +105,7 @@ frontend/
     │   ├── dashboard/
     │   │   ├── StatCards.tsx       # StatCard genérico, MateriasAprobadasCard, PromedioCard, CreditosCard, MateriasDisponiblesCard, ProgresoBarCard
     │   │   ├── Charts.tsx          # MateriasPorEstadoChart (pastel), NotasDistribucionChart, ProgresoPorAnioChart, EstadisticasSkeleton
+    │   │   ├── CreditosProgresoChart.tsx # bar chart del sistema de créditos por actividades
     │   │   ├── ChartTooltip.tsx    # tooltip que sigue el cursor (position: fixed; barras con useTooltipPosition, pastel con usePieTooltip)
     │   │   └── CarrerasResumenList.tsx
     │   │
@@ -134,6 +136,12 @@ frontend/
     │   │   ├── PeriodoSelector.tsx      # (definido, no usado en PlanificacionPage)
     │   │   └── Extras.tsx               # LeyendaHorarios, VistaSemanalHeader, VistaHorariosHeader, MateriasDesbloqueablesList
     │   │
+    │   ├── creditos/
+    │   │   ├── CreditosResumenCard.tsx   # resumen total/faltantes + ProgresoBar
+    │   │   ├── CategoriaCreditosCard.tsx # card por categoría (mínimo/obtenidos + actividades)
+    │   │   ├── ActividadCreditoRow.tsx   # fila de actividad con toggle completar + requisitos
+    │   │   └── SistemaCreditosCard.tsx   # card compacta para el detalle de carrera
+    │   │
     │   └── common/
     │       ├── LoadingSpinner.tsx
     │       └── EmptyState.tsx
@@ -147,6 +155,8 @@ frontend/
     │   ├── useDashboard.ts       # carreras + resumen/distribucion/evolucion
     │   ├── usePlanificacion.ts   # períodos, materias del período, desbloqueables, guardar
     │   ├── useTrayectoria.ts     # trayectorias list + mutations + useArbolTrayectoria
+    │   ├── useCreditos.ts        # página /creditos: query de progreso + marcar/desmarcar
+    │   ├── useAdminCreditos.ts   # editor de carrera: config del sistema + requisitos por carrera
     │   ├── useAdminCarreras.ts   # crearCarrera + agregarMateriaAlPlan (mutations)
     │   └── useAdminMaterias.ts   # listar/crear materias, asignar/quitar correlativas
     │
@@ -159,9 +169,11 @@ frontend/
     │   │                        #   + admin: crearCarrera, agregarMateriaAlPlan, actualizarMateriaEnPlan
     │   │                        #   + materiasAdminService: listar, obtenerMateria, crear,
     │   │                        #     asignarCorrelativa, eliminarCorrelativa
+    │   ├── creditos.service.ts   # catálogo (categorías/actividades) + config por carrera
+    │   │                        #   (sistema, categorías, actividades, requisitos) + progreso
     │   ├── materias.service.ts   # (eliminado) → reemplazado por materiasAdminService en carreras.service.ts
     │   ├── progreso.service.ts   # obtener, actualizar, inicializar progreso
-    │   ├── estadisticas.service.ts # resumen, distribución, evolución, carreras-resumen
+    │   ├── estadisticas.service.ts # resumen, distribución, evolución, carreras-resumen, creditos-progreso
     │   └── planificacion.service.ts # períodos, bloques, materias, desbloqueables
     │
     ├── store/
@@ -178,6 +190,7 @@ frontend/
     │   ├── carrera.types.ts
     │   ├── materia.types.ts
     │   ├── progreso.types.ts
+    │   ├── creditos.types.ts
     │   ├── estadisticas.types.ts
     │   └── planificacion.types.ts
     │
@@ -271,6 +284,7 @@ Definidas en `routes/index.tsx` con `createBrowserRouter` (React Router 7).
 | `/planificacion/:id` | `PlanificacionPage` | Planificación cuatrimestral con calendario semanal. | Privado |
 | `/trayectorias` | `TrayectoriasPage` | Listado de trayectorias de la carrera activa. | Privado |
 | `/trayectoria/:id` | `TrayectoriaPage` | Detalle de trayectoria: timeline + árbol de bifurcaciones. | Privado |
+| `/creditos` | `CreditosPage` | Seguimiento del sistema de créditos por actividades (categorías, actividades, requisitos). | Privado |
 | `/admin` | `AdminPage` | Administración: crear carreras, materias y correlativas. | Privado |
 
 > Nota: `/admin` no aplica aún guard de rol (backend aún sin `RolesGuard`); cualquier usuario autenticado puede acceder.
