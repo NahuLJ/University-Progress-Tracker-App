@@ -7,6 +7,7 @@ import type {
     NotasDistribucion,
     ProgresoPorAnio,
 } from '../types/estadisticas.types';
+import type { CreditosProgreso } from '../types/creditos.types';
 
 export const estadisticasService = {
     async obtenerResumen(usuarioCarreraId: number): Promise<EstadisticasResumen> {
@@ -46,6 +47,13 @@ export const estadisticasService = {
 
     async obtenerProgresoPorAnio(usuarioCarreraId: number): Promise<ProgresoPorAnio[]> {
         const response = await api.get('/estadisticas/progreso-por-anio', {
+            params: { usuarioCarreraId },
+        });
+        return response.data;
+    },
+
+    async obtenerCreditosProgreso(usuarioCarreraId: number): Promise<CreditosProgreso> {
+        const response = await api.get('/estadisticas/creditos-progreso', {
             params: { usuarioCarreraId },
         });
         return response.data;

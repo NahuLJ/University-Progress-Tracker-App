@@ -13,11 +13,16 @@ import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { MateriaPlanificada } from '../planificacion/entities/materia-planificada.entity';
 import { PeriodoPlanificacion } from '../planificacion/entities/periodo-planificacion.entity';
 import { Correlativa } from '../materias/entities/correlativa.entity';
+import { CreditosService } from '../creditos/creditos.service';
 import { CrearCarreraDto } from './dto/crear-carrera.dto';
 import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
 import { ActualizarMateriaPlanDto } from './dto/actualizar-materia-plan.dto';
 import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
+import { ActualizarSistemaCreditosDto } from '../creditos/dto/actualizar-sistema-creditos.dto';
+import { AgregarCategoriaCreditoDto } from '../creditos/dto/agregar-categoria-credito.dto';
+import { ActualizarCategoriaCreditoDto } from '../creditos/dto/actualizar-categoria-credito.dto';
+import { AgregarActividadCreditoDto } from '../creditos/dto/agregar-actividad-credito.dto';
 
 export interface MateriaPlanItem {
   materiaId: number;
@@ -75,6 +80,7 @@ export class CarrerasService {
     @InjectRepository(Correlativa)
     private readonly correlativaRepo: Repository<Correlativa>,
     private readonly dataSource: DataSource,
+    private readonly creditosService: CreditosService,
   ) {}
 
   async listar(query?: FiltrarCarrerasDto): Promise<{
@@ -617,5 +623,78 @@ export class CarrerasService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  // ---------- Sistema de créditos por actividades (delega en CreditosService) ----------
+
+  private async verificarCarrera(carreraId: number): Promise<void> {
+    const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
+    if (!carrera) throw new NotFoundException('Carrera no encontrada');
+  }
+
+  async obtenerConfigCreditos(carreraId: number, usuarioCarreraId?: number) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.obtenerConfiguracionCarrera(
+      carreraId,
+      usuarioCarreraId,
+    );
+  }
+
+  async actualizarSistemaCreditos(
+    carreraId: number,
+    dto: ActualizarSistemaCreditosDto,
+  ) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.actualizarSistema(carreraId, dto);
+  }
+
+  async agregarCategoriaCreditos(
+    carreraId: number,
+    dto: AgregarCategoriaCreditoDto,
+  ) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.agregarCategoria(carreraId, dto);
+  }
+
+  async actualizarCategoriaCreditos(
+    carreraId: number,
+    carreraCategoriaCreditoId: number,
+    dto: ActualizarCategoriaCreditoDto,
+  ) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.actualizarCategoria(
+      carreraCategoriaCreditoId,
+      dto,
+    );
+  }
+
+  async quitarCategoriaCreditos(
+    carreraId: number,
+    carreraCategoriaCreditoId: number,
+  ): Promise<void> {
+    await this.verificarCarrera(carreraId);
+    await this.creditosService.quitarCategoria(
+      carreraId,
+      carreraCategoriaCreditoId,
+    );
+  }
+
+  async agregarActividadCreditos(
+    carreraId: number,
+    dto: AgregarActividadCreditoDto,
+  ) {
+    await this.verificarCarrera(carreraId);
+    return this.creditosService.agregarActividad(carreraId, dto);
+  }
+
+  async quitarActividadCreditos(
+    carreraId: number,
+    carreraActividadCreditoId: number,
+  ): Promise<void> {
+    await this.verificarCarrera(carreraId);
+    await this.creditosService.quitarActividad(
+      carreraId,
+      carreraActividadCreditoId,
+    );
   }
 }

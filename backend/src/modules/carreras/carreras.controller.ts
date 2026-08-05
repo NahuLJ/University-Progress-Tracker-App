@@ -24,6 +24,10 @@ import { ActualizarCarreraDto } from './dto/actualizar-carrera.dto';
 import { AgregarMateriaPlanDto } from './dto/agregar-materia-plan.dto';
 import { ActualizarMateriaPlanDto } from './dto/actualizar-materia-plan.dto';
 import { FiltrarCarrerasDto } from './dto/filtrar-carreras.dto';
+import { ActualizarSistemaCreditosDto } from '../creditos/dto/actualizar-sistema-creditos.dto';
+import { AgregarCategoriaCreditoDto } from '../creditos/dto/agregar-categoria-credito.dto';
+import { ActualizarCategoriaCreditoDto } from '../creditos/dto/actualizar-categoria-credito.dto';
+import { AgregarActividadCreditoDto } from '../creditos/dto/agregar-actividad-credito.dto';
 
 @ApiTags('Carreras')
 @Controller('carreras')
@@ -166,5 +170,109 @@ export class CarrerasController {
   ) {
     await this.carrerasService.quitarMateriaDelPlan(id, carreraMateriaId);
     return { message: 'Materia quitada del plan exitosamente' };
+  }
+
+  @Get(':id/creditos')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Obtener configuración del sistema de créditos de la carrera',
+  })
+  @ApiResponse({ status: 200, description: 'Config del sistema de créditos' })
+  @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
+  async obtenerConfigCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('usuarioCarreraId') usuarioCarreraId?: number,
+  ) {
+    return this.carrerasService.obtenerConfigCreditos(id, usuarioCarreraId);
+  }
+
+  @Put(':id/creditos')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Habilitar/deshabilitar sistema de créditos' })
+  @ApiResponse({ status: 200, description: 'Sistema actualizado' })
+  @ApiResponse({ status: 400, description: 'Validación fallida' })
+  async actualizarSistemaCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarSistemaCreditosDto,
+  ) {
+    return this.carrerasService.actualizarSistemaCreditos(id, dto);
+  }
+
+  @Post(':id/creditos/categorias')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Agregar categoría al sistema de créditos' })
+  @ApiResponse({ status: 201, description: 'Categoría agregada' })
+  @ApiResponse({ status: 400, description: 'Validación fallida' })
+  async agregarCategoriaCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AgregarCategoriaCreditoDto,
+  ) {
+    return this.carrerasService.agregarCategoriaCreditos(id, dto);
+  }
+
+  @Put(':id/creditos/categorias/:carreraCategoriaCreditoId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Editar el mínimo de una categoría' })
+  @ApiResponse({ status: 200, description: 'Categoría actualizada' })
+  @ApiResponse({ status: 400, description: 'Validación fallida' })
+  async actualizarCategoriaCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('carreraCategoriaCreditoId', ParseIntPipe)
+    carreraCategoriaCreditoId: number,
+    @Body() dto: ActualizarCategoriaCreditoDto,
+  ) {
+    return this.carrerasService.actualizarCategoriaCreditos(
+      id,
+      carreraCategoriaCreditoId,
+      dto,
+    );
+  }
+
+  @Delete(':id/creditos/categorias/:carreraCategoriaCreditoId')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Quitar categoría (y sus actividades) del sistema de créditos',
+  })
+  @ApiResponse({ status: 200, description: 'Categoría quitada' })
+  @ApiResponse({ status: 404, description: 'Registro no encontrado' })
+  async quitarCategoriaCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('carreraCategoriaCreditoId', ParseIntPipe)
+    carreraCategoriaCreditoId: number,
+  ) {
+    await this.carrerasService.quitarCategoriaCreditos(
+      id,
+      carreraCategoriaCreditoId,
+    );
+    return { message: 'Categoría quitada del sistema de créditos' };
+  }
+
+  @Post(':id/creditos/actividades')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Agregar actividad al sistema de créditos' })
+  @ApiResponse({ status: 201, description: 'Actividad agregada' })
+  @ApiResponse({ status: 400, description: 'Validación fallida' })
+  async agregarActividadCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AgregarActividadCreditoDto,
+  ) {
+    return this.carrerasService.agregarActividadCreditos(id, dto);
+  }
+
+  @Delete(':id/creditos/actividades/:carreraActividadCreditoId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Quitar actividad del sistema de créditos' })
+  @ApiResponse({ status: 200, description: 'Actividad quitada' })
+  @ApiResponse({ status: 404, description: 'Registro no encontrado' })
+  async quitarActividadCreditos(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('carreraActividadCreditoId', ParseIntPipe)
+    carreraActividadCreditoId: number,
+  ) {
+    await this.carrerasService.quitarActividadCreditos(
+      id,
+      carreraActividadCreditoId,
+    );
+    return { message: 'Actividad quitada del sistema de créditos' };
   }
 }

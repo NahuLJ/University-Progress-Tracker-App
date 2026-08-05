@@ -13,6 +13,7 @@ import {
     ProgresoPorAnioChart,
     EstadisticasSkeleton,
 } from '../components/dashboard/Charts';
+import { CreditosProgresoChart } from '../components/dashboard/CreditosProgresoChart';
 import { CarrerasResumenList } from '../components/dashboard/CarrerasResumenList';
 import { useEstadisticas } from '../hooks/useEstadisticas';
 import { useCarrerasResumen } from '../hooks/useCarrerasResumen';
@@ -29,6 +30,7 @@ export function DashboardPage() {
         distribucion,
         notasDistribucion,
         progresoPorAnio,
+        creditosProgreso,
         isLoading,
         error,
     } = useEstadisticas();
@@ -99,6 +101,8 @@ export function DashboardPage() {
             </div>
 
             <ProgresoPorAnioChart data={progresoPorAnio ?? []} />
+
+            <CreditosProgresoChart data={creditosProgreso} />
 
             <div>
                 <h2 className="text-sm font-semibold mb-3">Mis carreras</h2>

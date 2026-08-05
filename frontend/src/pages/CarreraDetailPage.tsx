@@ -12,10 +12,12 @@ import { usePlanEstudios } from '../hooks/usePlanEstudios';
 import { useCarreras, useDesinscribirCarrera, useReactivarCarrera, useEliminarCarreraDefinitivamente } from '../hooks/useCarreras';
 import { EmptyState } from '../components/common/EmptyState';
 import { QueryError } from '../components/common/QueryError';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Modal } from '../components/ui/Modal';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Icon } from '../components/ui/Icon';
+import { creditosService } from '../services/creditos.service';
+import { SistemaCreditosCard } from '../components/creditos/SistemaCreditosCard';
 
 export function CarreraDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -48,6 +50,17 @@ export function CarreraDetailPage() {
         error,
         refetch,
     } = usePlanEstudios(parseInt(id!), inscripcionActual?.usuarioCarreraId);
+
+    const carreraIdNum = parseInt(id!);
+    const { data: configCreditos } = useQuery({
+        queryKey: ['creditos', 'carrera', carreraIdNum, inscripcionActual?.usuarioCarreraId],
+        queryFn: () =>
+            creditosService.obtenerConfiguracionCarrera(
+                carreraIdNum,
+                inscripcionActual?.usuarioCarreraId,
+            ),
+        enabled: !!carreraIdNum,
+    });
 
     const queryClient = useQueryClient();
 
@@ -206,6 +219,10 @@ export function CarreraDetailPage() {
                     </div>
                 </div>
             </Card>
+
+            {configCreditos?.sistemaCreditos && (
+                <SistemaCreditosCard config={configCreditos} mostrarProgreso={inscripto} />
+            )}
 
             {planEstudios.anios.length > 1 && (
                 <div className="flex justify-end gap-2">

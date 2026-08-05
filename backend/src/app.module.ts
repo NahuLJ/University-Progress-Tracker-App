@@ -11,6 +11,7 @@ import { ProgresoModule } from './modules/progreso/progreso.module';
 import { PlanificacionModule } from './modules/planificacion/planificacion.module';
 import { TrayectoriaModule } from './modules/trayectoria/trayectoria.module';
 import { EstadisticasModule } from './modules/estadisticas/estadisticas.module';
+import { CreditosModule } from './modules/creditos/creditos.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/auth.guard';
 
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from './modules/auth/auth.guard';
     PlanificacionModule,
     TrayectoriaModule,
     EstadisticasModule,
+    CreditosModule,
   ],
   providers: [
     {

@@ -54,13 +54,13 @@ erDiagram
         boolean activo
     }
     carrera_categoria_credito {
-        int carrera_categoria_id PK
+        int carrera_categoria_credito_id PK
         int carrera_id FK
         int categoria_credito_id FK
         int minimo_creditos
     }
     carrera_actividad_credito {
-        int carrera_actividad_id PK
+        int carrera_actividad_credito_id PK
         int carrera_id FK
         int actividad_credito_id FK
     }
@@ -70,9 +70,10 @@ erDiagram
         int actividad_credito_id FK
         boolean completada
         date fecha_completado
+        datetime fecha_actualizacion
     }
     actividad_requisito_materia {
-        int actividad_requisito_id PK
+        int actividad_requisito_materia_id PK
         int actividad_credito_id FK
         int materia_id FK
     }
@@ -126,7 +127,7 @@ erDiagram
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `actividad_requisito_id` | INT | PK AUTO_INCREMENT | Identificador |
+| `actividad_requisito_materia_id` | INT | PK AUTO_INCREMENT | Identificador |
 | `actividad_credito_id` | INT | FK NOT NULL ON DELETE CASCADE | Actividad que **requiere** la materia |
 | `materia_id` | INT | FK NOT NULL ON DELETE CASCADE | Materia **requisito** (debe estar aprobada) |
 
@@ -138,7 +139,7 @@ erDiagram
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `carrera_categoria_id` | INT | PK AUTO_INCREMENT | Identificador |
+| `carrera_categoria_credito_id` | INT | PK AUTO_INCREMENT | Identificador |
 | `carrera_id` | INT | FK NOT NULL ON DELETE CASCADE | Carrera |
 | `categoria_credito_id` | INT | FK NOT NULL ON DELETE CASCADE | Categoría incluida |
 | `minimo_creditos` | INT | NOT NULL CHECK (>= 0) | Mínimo exigido en esa categoría |
@@ -149,7 +150,7 @@ erDiagram
 
 | Atributo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| `carrera_actividad_id` | INT | PK AUTO_INCREMENT | Identificador |
+| `carrera_actividad_credito_id` | INT | PK AUTO_INCREMENT | Identificador |
 | `carrera_id` | INT | FK NOT NULL ON DELETE CASCADE | Carrera |
 | `actividad_credito_id` | INT | FK NOT NULL ON DELETE CASCADE | Actividad incluida |
 
@@ -182,6 +183,8 @@ Dada una carrera `C` con `sistema_creditos.total_creditos = T`, categorías `(ca
 - **Actividad completable** ⟺ el usuario tiene **aprobadas** todas las materias requisito de la actividad (estado `Completada` en `progreso_materia`). Si la actividad **no tiene requisitos** (`materiasRequeridas` vacío), siempre es completable. No se puede marcar completada una actividad con requisitos sin cumplir.
 
 Ejemplo del enunciado: T=10, mínimos A=3, B=3. Con 6 en A y 4 en B → total 10 ✓, mínimos ✓ → completo. Con 10 en A y 0 en B → total ✓ pero mínimo B ✗ → no completo.
+
+> **Métricas de progreso (§4.3):** `creditosFaltantes` = `max(0, T - obtenidos, Σ_cat max(0, minimo[cat] - obtenidos[cat]))`, de modo que el bloqueante sea el total **o** un mínimo de categoría (nunca "0 faltantes" con el sistema incompleto). `progresoPorcentaje` refleja solo el total de créditos (`obtenidos/T`): puede llegar a 100% con `completado = false`; los mínimos por categoría se ven en `categorias[].cumplida`.
 
 **Validaciones del servicio:**
 
@@ -273,6 +276,7 @@ Registrar en `backend/src/app.module.ts` (imports): `CreditosModule`.
 
 ```typescript
 @Entity('sistema_creditos')
+@Check('total_creditos > 0')
 export class SistemaCreditos {
   @PrimaryGeneratedColumn()
   sistemaCreditosId: number;
@@ -317,6 +321,7 @@ export class CategoriaCredito {
 ```typescript
 @Entity('actividad_credito')
 @Unique(['nombre', 'categoria'])
+@Check('creditos > 0')
 export class ActividadCredito {
   @PrimaryGeneratedColumn()
   actividadCreditoId: number;
@@ -352,7 +357,7 @@ export class ActividadCredito {
 @Unique(['actividad', 'materia'])
 export class ActividadRequisitoMateria {
   @PrimaryGeneratedColumn()
-  actividadRequisitoId: number;
+  actividadRequisitoMateriaId: number;
 
   @ManyToOne(() => ActividadCredito, (a) => a.materiasRequeridas, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'actividad_credito_id' })
@@ -371,9 +376,10 @@ export class ActividadRequisitoMateria {
 ```typescript
 @Entity('carrera_categoria_credito')
 @Unique(['carrera', 'categoria'])
+@Check('minimo_creditos >= 0')
 export class CarreraCategoriaCredito {
   @PrimaryGeneratedColumn()
-  carreraCategoriaId: number;
+  carreraCategoriaCreditoId: number;
 
   @ManyToOne(() => Carrera, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'carrera_id' })
@@ -388,7 +394,24 @@ export class CarreraCategoriaCredito {
 }
 ```
 
-**`carrera-actividad-credito.entity.ts`** (análogo, con `carrera` y `actividad`).
+**`carrera-actividad-credito.entity.ts`**:
+
+```typescript
+@Entity('carrera_actividad_credito')
+@Unique(['carrera', 'actividad'])
+export class CarreraActividadCredito {
+  @PrimaryGeneratedColumn()
+  carreraActividadCreditoId: number;
+
+  @ManyToOne(() => Carrera, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'carrera_id' })
+  carrera: Carrera;
+
+  @ManyToOne(() => ActividadCredito, (a) => a.carreras, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'actividad_credito_id' })
+  actividad: ActividadCredito;
+}
+```
 
 **`progreso-actividad.entity.ts`** (sigue el patrón de `progreso-materia.entity.ts`):
 
@@ -425,6 +448,8 @@ export class ProgresoActividad {
 
 > Nota: la relación inversa `@OneToOne(() => SistemaCreditos, (sc) => sc.carrera)` en `carrera.entity.ts` es **opcional** (para cargar el sistema en queries existentes). No hace falta registrarla en el `forFeature` de `CarrerasModule`: la entidad `SistemaCreditos` ya queda registrada globalmente por `CreditosModule` (`autoLoadEntities: true`). Si `CarrerasService` necesita inyectar su repo, se usa el `CreditosService` ya exportado por `CreditosModule`.
 
+> Los CHECK constraints declarados en §2 (`total_creditos > 0`, `creditos > 0`, `minimo_creditos >= 0`) se implementan con `@Check(...)` (importar `Check` de `typeorm`) sobre las entidades: como el schema se genera con `synchronize: true`, de otro modo no llegarían a la BD. MariaDB (10.2+) los enforce. Igualmente se validan en los DTOs (class-validator) y en el servicio (reglas §3) por redundancia.
+
 ### 4.3 `CreditosService`
 
 **Inyecta** repos de las 7 entidades + `UsuarioCarrera` (para resolver `usuarioId` desde `usuarioCarreraId`) + `ProgresoMateria` y `Materia` (para validar/consultar requisitos de materias aprobadas).
@@ -441,12 +466,12 @@ Métodos principales:
 | `obtenerConfiguracionCarrera(carreraId, usuarioCarreraId?)` | Config del sistema de la carrera + progreso opcional |
 | `actualizarSistema(carreraId, dto)` | Habilitar/deshabilitar + `totalCreditos` (validar mínimos) |
 | `agregarCategoria(carreraId, dto)` | Añadir categoría con mínimo (validar suma <= total) |
-| `actualizarCategoria(carreraCategoriaId, dto)` | Editar mínimo |
-| `quitarCategoria(carreraId, carreraCategoriaId)` | Quitar categoría y sus actividades de la carrera |
+| `actualizarCategoria(carreraCategoriaCreditoId, dto)` | Editar mínimo |
+| `quitarCategoria(carreraId, carreraCategoriaCreditoId)` | Quitar categoría y sus actividades de la carrera |
 | `agregarActividad(carreraId, dto)` | Añadir actividad (validar categoría incluida en la carrera) |
-| `quitarActividad(carreraId, carreraActividadId)` | Quitar actividad de la carrera |
+| `quitarActividad(carreraId, carreraActividadCreditoId)` | Quitar actividad de la carrera |
 | `obtenerProgreso(usuarioCarreraId)` | Cálculo completo de progreso (§3) para página y dashboard |
-| `marcarCompletada(dto)` | Crear/activar `ProgresoActividad` (upsert idempotente) **validando materias requisito aprobadas** |
+| `marcarCompletada(dto)` | Crear/activar `ProgresoActividad` (upsert idempotente) **validando materias requisito aprobadas**; resuelve `usuarioId` desde `usuarioCarreraId` del dto |
 | `desmarcar(progresoActividadId)` | Poner `completada=false`, `fechaCompletado=null` |
 
 **Esqueleto de `obtenerProgreso(usuarioCarreraId)`:**
@@ -541,13 +566,24 @@ async obtenerProgreso(usuarioCarreraId: number): Promise<CreditosProgresoRespons
   const completo = creditosObtenidos >= sistema.totalCreditos &&
     categorias.every((c) => c.cumplida);
 
+  // Faltante real: lo que falta para el total O para los mínimos por
+  // categoría (lo que sea mayor). Evita reportar "0 faltantes" cuando el
+  // bloqueante es un mínimo de categoría.
+  const creditosFaltantes = Math.max(
+    0,
+    sistema.totalCreditos - creditosObtenidos,
+    categorias.reduce((sum, c) => sum + Math.max(0, c.minimo - c.obtenidos), 0),
+  );
+
   return {
     sistemaCreditos: true,
     carreraId,
     totalRequerido: sistema.totalCreditos,
     creditosObtenidos,
-    creditosFaltantes: Math.max(0, sistema.totalCreditos - creditosObtenidos),
+    creditosFaltantes,
     completado: completo,
+    // Progreso sobre el total de créditos; los mínimos por categoría se ven
+    // en `categorias[].cumplida`. Puede llegar a 100% sin estar completo.
     progresoPorcentaje: sistema.totalCreditos > 0
       ? Math.min(100, Math.round((creditosObtenidos / sistema.totalCreditos) * 100))
       : 0,
@@ -561,6 +597,15 @@ async obtenerProgreso(usuarioCarreraId: number): Promise<CreditosProgresoRespons
 
 ```typescript
 async marcarCompletada(dto: CrearProgresoActividadDto) {
+  // El progreso se ancla al usuario vía su inscripción (mismo criterio que
+  // obtenerProgreso); no se recibe usuarioId del cliente.
+  const inscripcion = await this.usuarioCarreraRepo.findOne({
+    where: { usuarioCarreraId: dto.usuarioCarreraId },
+    relations: { usuario: true },
+  });
+  if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+  const usuarioId = inscripcion.usuario.usuarioId;
+
   const actividad = await this.actividadRepo.findOne({
     where: { actividadCreditoId: dto.actividadCreditoId },
     relations: { materiasRequeridas: { materia: true } },
@@ -573,7 +618,7 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
     const idsRequisito = materiasRequeridas.map((r) => r.materia.materiaId);
     const aprobadas = await this.progresoMateriaRepo.find({
       where: {
-        usuario: { usuarioId: dto.usuarioId },
+        usuario: { usuarioId },
         materia: { materiaId: In(idsRequisito) },
         estado: { nombre: 'Completada' },
       },
@@ -592,13 +637,13 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 
   let progreso = await this.progresoRepo.findOne({
     where: {
-      usuario: { usuarioId: dto.usuarioId },
+      usuario: { usuarioId },
       actividad: { actividadCreditoId: dto.actividadCreditoId },
     },
   });
   if (!progreso) {
     progreso = this.progresoRepo.create({
-      usuario: { usuarioId: dto.usuarioId },
+      usuario: { usuarioId },
       actividad: { actividadCreditoId: dto.actividadCreditoId },
       completada: true,
       fechaCompletado: new Date().toISOString().slice(0, 10),
@@ -627,7 +672,7 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 | POST | `/creditos/actividades` | `{ nombre, descripcion?, categoriaCreditoId, creditos, materiasRequeridas? }` |
 | PUT | `/creditos/actividades/:actividadCreditoId` | `{ nombre?, descripcion?, creditos?, materiasRequeridas? }` (replace de requisitos) |
 | GET | `/creditos/progreso` | `?usuarioCarreraId` |
-| POST | `/creditos/progreso` | `{ usuarioId, actividadCreditoId }` |
+| POST | `/creditos/progreso` | `{ usuarioCarreraId, actividadCreditoId }` |
 | DELETE | `/creditos/progreso/:progresoActividadId` | — |
 
 **Endpoints de configuración de carrera** — se agregan a `CarrerasController` (`@Controller('carreras')`, mismo prefijo compartido sin colisiones de ruta), delegando en `CreditosService`:
@@ -637,10 +682,10 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 | GET | `/carreras/:id/creditos` | `?usuarioCarreraId` (opcional, para detalle con progreso) |
 | PUT | `/carreras/:id/creditos` | `{ creditosHabilitado, totalCreditos? }` |
 | POST | `/carreras/:id/creditos/categorias` | `{ categoriaCreditoId, minimoCreditos }` |
-| PUT | `/carreras/:id/creditos/categorias/:carreraCategoriaId` | `{ minimoCreditos }` |
-| DELETE | `/carreras/:id/creditos/categorias/:carreraCategoriaId` | — |
+| PUT | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | `{ minimoCreditos }` |
+| DELETE | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | — |
 | POST | `/carreras/:id/creditos/actividades` | `{ actividadCreditoId }` |
-| DELETE | `/carreras/:id/creditos/actividades/:carreraActividadId` | — |
+| DELETE | `/carreras/:id/creditos/actividades/:carreraActividadCreditoId` | — |
 
 Para esto, `CarrerasModule` importa `CreditosModule` (que exporta `CreditosService`) y el constructor de `CarrerasService` inyecta `CreditosService`.
 
@@ -692,27 +737,37 @@ export interface ActividadCredito {
     materiasRequeridas: Omit<MateriaRequisito, 'aprobada'>[];
 }
 export interface CarreraCategoriaConfig {
-    carreraCategoriaId: number;
+    carreraCategoriaCreditoId: number;
     categoriaCreditoId: number;
     nombre: string;
     minimoCreditos: number;
+    obtenidos: number;   // solo significativo con usuarioCarreraId
+    cumplida: boolean;   // idem
 }
 
 export interface CarreraActividadConfig {
-    carreraActividadId: number;
+    carreraActividadCreditoId: number;
     actividadCreditoId: number;
     nombre: string;
     creditos: number;
     categoriaCreditoId: number;
     categoriaNombre: string;
+    progresoActividadId: number | null; // solo con usuarioCarreraId; null sin progreso
+    completada: boolean;                // solo significativo con usuarioCarreraId
     materiasRequeridas: MateriaRequisito[];
 }
 
-// `aprobada` en `materiasRequeridas` solo es significativa cuando se consulta
-// con `usuarioCarreraId`; sin usuario, el backend la devuelve en `false`.
+// `aprobada` en `materiasRequeridas` y los campos de progreso (obtenidos,
+// cumplida, completada, progresoActividadId, creditosObtenidos, etc.) solo
+// son significativos cuando se consulta con `usuarioCarreraId`; sin usuario,
+// el backend los devuelve en `false`/`0`/`null` (ver §4.3).
 export interface CarreraCreditosConfig {
     sistemaCreditos: boolean;
     totalCreditos: number;
+    creditosObtenidos: number;
+    creditosFaltantes: number;
+    completado: boolean;
+    progresoPorcentaje: number;
     categorias: CarreraCategoriaConfig[];
     actividades: CarreraActividadConfig[];
 }
@@ -762,22 +817,22 @@ export const creditosService = {
     async obtenerConfiguracionCarrera(carreraId: number, usuarioCarreraId?: number): Promise<CarreraCreditosConfig> { ... },
     async actualizarSistema(carreraId: number, data: { creditosHabilitado: boolean; totalCreditos?: number }): Promise<void> { ... },
     async agregarCategoria(carreraId: number, data: { categoriaCreditoId: number; minimoCreditos: number }): Promise<void> { ... },
-    async actualizarCategoria(carreraId: number, carreraCategoriaId: number, data: { minimoCreditos: number }): Promise<void> { ... },
-    async quitarCategoria(carreraId: number, carreraCategoriaId: number): Promise<void> { ... },
+    async actualizarCategoria(carreraId: number, carreraCategoriaCreditoId: number, data: { minimoCreditos: number }): Promise<void> { ... },
+    async quitarCategoria(carreraId: number, carreraCategoriaCreditoId: number): Promise<void> { ... },
     async agregarActividad(carreraId: number, data: { actividadCreditoId: number }): Promise<void> { ... },
-    async quitarActividad(carreraId: number, carreraActividadId: number): Promise<void> { ... },
+    async quitarActividad(carreraId: number, carreraActividadCreditoId: number): Promise<void> { ... },
 
     // progreso del usuario
     async obtenerProgreso(usuarioCarreraId: number): Promise<CreditosProgreso> { ... },
-    async marcarCompletada(usuarioId: number, actividadCreditoId: number): Promise<void> { ... },
+    async marcarCompletada(usuarioCarreraId: number, actividadCreditoId: number): Promise<void> { ... },
     async desmarcar(progresoActividadId: number): Promise<void> { ... },
 };
 ```
 
 ### 5.3 Hooks
 
-- **`useCreditos.ts`** — página `/creditos`: `useQuery(['creditos', 'progreso', usuarioCarreraId])` + mutations `marcarCompletada`/`desmarcar`. En `onSuccess` invalidar `['creditos']` y `['estadisticas', 'creditos-progreso']`.
-- **`useAdminCreditos.ts`** — editor de carrera: carga `obtenerConfiguracionCarrera` y expone mutations para sistema, categorías y actividades; en `onSuccess` invalidar `['creditos', 'carrera', id]`, `['creditos', 'progreso']` y `['estadisticas']`.
+- **`useCreditos.ts`** — página `/creditos`: `useQuery(['creditos', 'progreso', usuarioCarreraId])` + mutations `marcarCompletada(usuarioCarreraId, actividadCreditoId)`/`desmarcar`. En `onSuccess` invalidar las claves de §6.4 (marcar/desmarcar).
+- **`useAdminCreditos.ts`** — editor de carrera: carga `obtenerConfiguracionCarrera` (query key `['creditos', 'carrera', carreraId]`) y expone mutations para sistema, categorías y actividades; en `onSuccess` invalidar las claves de §6.4 (configuración admin).
 - **`useEstadisticas.ts`** — agregar query `['estadisticas', 'creditos-progreso', usuarioCarreraId]` → `estadisticasService.obtenerCreditosProgreso`, devolver `creditosProgreso` junto al resto.
 
 ### 5.4 Pestaña en la edición de carrera — `CreditosEditor.tsx`
@@ -797,11 +852,12 @@ export const creditosService = {
 **Archivo:** `frontend/src/pages/CarreraDetailPage.tsx`
 
 - Agregar query `useQuery(['creditos', 'carrera', carreraId, usuarioCarreraId])` → `creditosService.obtenerConfiguracionCarrera(carreraId, usuarioCarreraId)`.
+- `obtenerConfiguracionCarrera` devuelve la config **y el progreso** del usuario (§4.3): los campos `obtenidos`/`cumplida` de cada categoría, `completada`/`progresoActividadId` de cada actividad y `creditosObtenidos`/`creditosFaltantes`/`completado`/`progresoPorcentaje` solo son significativos cuando se pasa `usuarioCarreraId` (usuario inscripto); sin él el backend los devuelve en `false`/`0`/`null` (ver §5.1).
 - Si `config.sistemaCreditos` es `true`, renderizar un `Card` "Sistema de créditos" debajo del header (antes del plan de estudios) con:
-  - Total requerido y total obtenido (si el usuario está inscripto).
-  - Barra de progreso.
-  - Chips por categoría con mínimo y obtenido (p. ej. "Seminarios 2/3").
-  - Lista compacta de actividades con estado completada/pendiente y, si corresponde, chips de materias requisito con estado de aprobación.
+  - Total requerido y total obtenido (`config.totalCreditos` / `config.creditosObtenidos`, esto último solo si el usuario está inscripto).
+  - Barra de progreso (`config.progresoPorcentaje`).
+  - Chips por categoría con mínimo y obtenido (`config.categorias[].obtenidos`/`minimoCreditos`, p. ej. "Seminarios 2/3").
+  - Lista compacta de actividades con estado completada/pendiente (`config.actividades[].completada`) y, si corresponde, chips de materias requisito con estado de aprobación (`materiasRequeridas[].aprobada`).
 
 ### 5.6 Página de seguimiento — `CreditosPage.tsx`
 
@@ -813,7 +869,7 @@ export const creditosService = {
   - `sistemaCreditos === false` → `EmptyState` "Esta carrera no tiene sistema de créditos".
   - Con sistema → layout:
     - **Header resumen:** total obtenidos/requeridos, faltantes, `ProgresoBarCard`-like y badge "¡Sistema de créditos completo!" cuando `completado`.
-    - **Grid de categorías:** por cada categoría un `Card` con nombre, barra `obtenidos/mínimo`, estado `cumplida`, y las actividades de esa categoría. Cada actividad con nombre, créditos que aporta, y un toggle/checkbox para marcarla completada (si no existe `progresoActividadId` → `marcarCompletada(usuarioId, actividadCreditoId)`; si existe → `desmarcar(progresoActividadId)`). El `usuarioId` se obtiene del store de autenticación (`useAuthStore`).
+    - **Grid de categorías:** por cada categoría un `Card` con nombre, barra `obtenidos/mínimo`, estado `cumplida`, y las actividades de esa categoría. Cada actividad con nombre, créditos que aporta, y un toggle/checkbox para marcarla completada (si no existe `progresoActividadId` → `marcarCompletada(usuarioCarreraId, actividadCreditoId)`; si existe → `desmarcar(progresoActividadId)`). El `usuarioId` lo resuelve el backend a partir del `usuarioCarreraId` (misma inscripción que el resto del progreso).
     - **Requisitos en la UI:** **solo si la actividad tiene requisitos** (`requisitos.length > 0`) se muestran chips por materia con estado (✓ aprobada / ✗ pendiente). Si la lista está vacía, la actividad se completa normalmente sin restricciones. Cuando hay requisitos sin cumplir, el toggle de completar se **deshabilita**, mostrando "Completá antes: Analisis I, Algebra" como tooltip/texto de ayuda. El backend también valida (400) por si se intenta por fuera.
 - Componentes internos: `CreditosResumenCard`, `CategoriaCreditosCard`, `ActividadCreditoRow` (nuevos bajo `frontend/src/components/creditos/`).
 
@@ -857,10 +913,16 @@ No hay `RolesGuard` aún (igual que el resto del módulo admin): cualquier usuar
 
 ### 6.4 Invalidation de React Query
 
-Al marcar/desmarcar una actividad, invalidar:
-- `['creditos', 'progreso', usuarioCarreraId]` (página de créditos),
-- `['estadisticas', 'creditos-progreso', usuarioCarreraId]` (dashboard),
-- `['creditos', 'carrera', carreraId, usuarioCarreraId]` (detalle de carrera).
+Claves canónicas (todas por prefijo, así invalidar la clave madre cubre sus variantes):
+
+- **Al marcar/desmarcar una actividad** (página de créditos), invalidar:
+  - `['creditos', 'progreso', usuarioCarreraId]` (página de créditos),
+  - `['estadisticas', 'creditos-progreso', usuarioCarreraId]` (dashboard),
+  - `['creditos', 'carrera', carreraId, usuarioCarreraId]` (detalle de carrera).
+- **Al editar la configuración del sistema** (editor admin), invalidar:
+  - `['creditos', 'carrera']` (config + detalle de todas las carreras),
+  - `['creditos', 'progreso']` (progreso de todas las inscripciones),
+  - `['estadisticas']` (dashboard, incluido `creditos-progreso`).
 
 ### 6.5 Documentación a actualizar
 

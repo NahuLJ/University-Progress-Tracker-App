@@ -15,6 +15,7 @@ import { QueryError } from '../components/common/QueryError';
 import { CarreraEditTabs } from '../components/admin/CarreraEditTabs';
 import { PlanEstudiosEditor } from '../components/admin/PlanEstudiosEditor';
 import { CorrelativasEditor } from '../components/admin/CorrelativasEditor';
+import { CreditosEditor } from '../components/admin/CreditosEditor';
 
 const carreraSchema = z.object({
     nombre: z.string().min(3, 'Mínimo 3 caracteres').max(200, 'Máximo 200 caracteres'),
@@ -32,7 +33,7 @@ export function CarreraEditPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const carreraId = Number(id);
-    const [tab, setTab] = useState<'datos' | 'plan' | 'correlativas'>('datos');
+    const [tab, setTab] = useState<'datos' | 'plan' | 'correlativas' | 'creditos'>('datos');
 
     const { data: carrera, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['carrera', carreraId],
@@ -140,6 +141,8 @@ export function CarreraEditPage() {
                     </div>
                 </Card>
             )}
+
+            {tab === 'creditos' && <CreditosEditor carreraId={carreraId} />}
         </div>
     );
 }

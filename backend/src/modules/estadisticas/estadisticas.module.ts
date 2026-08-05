@@ -5,10 +5,12 @@ import { EstadisticasService } from './estadisticas.service';
 import { UsuarioCarrera } from '../carreras/entities/usuario-carrera.entity';
 import { CarreraMateria } from '../carreras/entities/carrera-materia.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
+import { CreditosModule } from '../creditos/creditos.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UsuarioCarrera, CarreraMateria, ProgresoMateria]),
+    CreditosModule,
   ],
   controllers: [EstadisticasController],
   providers: [EstadisticasService],

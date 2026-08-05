@@ -1,11 +1,12 @@
 import { cn } from '../../utils/cn';
 
-type TabKey = 'datos' | 'plan' | 'correlativas';
+export type TabKey = 'datos' | 'plan' | 'correlativas' | 'creditos';
 
 const TABS: { key: TabKey; label: string }[] = [
     { key: 'datos', label: 'Datos generales' },
     { key: 'plan', label: 'Plan de estudios' },
     { key: 'correlativas', label: 'Correlativas' },
+    { key: 'creditos', label: 'Créditos' },
 ];
 
 export function CarreraEditTabs({

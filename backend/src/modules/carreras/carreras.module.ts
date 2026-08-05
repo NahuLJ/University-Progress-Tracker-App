@@ -9,9 +9,11 @@ import { UsuarioCarrera } from './entities/usuario-carrera.entity';
 import { ProgresoMateria } from '../progreso/entities/progreso-materia.entity';
 import { MateriaPlanificada } from '../planificacion/entities/materia-planificada.entity';
 import { Correlativa } from '../materias/entities/correlativa.entity';
+import { CreditosModule } from '../creditos/creditos.module';
 
 @Module({
   imports: [
+    CreditosModule,
     TypeOrmModule.forFeature([
       Carrera,
       CarreraMateria,

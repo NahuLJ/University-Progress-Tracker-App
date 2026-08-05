@@ -6,12 +6,16 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { EstadisticasService } from './estadisticas.service';
+import { CreditosService } from '../creditos/creditos.service';
 
 @ApiTags('Estadísticas')
 @ApiBearerAuth()
 @Controller('estadisticas')
 export class EstadisticasController {
-  constructor(private readonly estadisticasService: EstadisticasService) {}
+  constructor(
+    private readonly estadisticasService: EstadisticasService,
+    private readonly creditosService: CreditosService,
+  ) {}
 
   @Get('resumen')
   @ApiOperation({ summary: 'Obtener resumen de estadísticas académicas' })
@@ -70,5 +74,14 @@ export class EstadisticasController {
     @Query('usuarioId', ParseIntPipe) usuarioId: number,
   ) {
     return this.estadisticasService.obtenerCarrerasResumen(usuarioId);
+  }
+
+  @Get('creditos-progreso')
+  @ApiOperation({ summary: 'Progreso del sistema de créditos por actividades' })
+  @ApiResponse({ status: 200, description: 'Progreso del sistema de créditos' })
+  async obtenerCreditosProgreso(
+    @Query('usuarioCarreraId', ParseIntPipe) usuarioCarreraId: number,
+  ) {
+    return this.creditosService.obtenerProgreso(usuarioCarreraId);
   }
 }

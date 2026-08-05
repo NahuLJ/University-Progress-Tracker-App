@@ -18,9 +18,16 @@ export function useEstadisticas() {
         enabled: !!usuarioCarreraId,
     });
 
+    const { data: creditosProgreso } = useQuery({
+        queryKey: ['estadisticas', 'creditos-progreso', usuarioCarreraId],
+        queryFn: () => estadisticasService.obtenerCreditosProgreso(usuarioCarreraId!),
+        enabled: !!usuarioCarreraId,
+    });
+
     return {
         ...dashboard,
         notasDistribucion,
         progresoPorAnio,
+        creditosProgreso,
     };
 }
