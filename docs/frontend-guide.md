@@ -137,9 +137,9 @@ frontend/
     │   │   └── Extras.tsx               # LeyendaHorarios, VistaSemanalHeader, VistaHorariosHeader, MateriasDesbloqueablesList
     │   │
     │   ├── creditos/
-    │   │   ├── CreditosResumenCard.tsx   # resumen total/faltantes + ProgresoBar
+    │   │   ├── CreditosResumenCard.tsx   # "Créditos obtenidos" + barra a todo el ancho con % (sin faltantes)
     │   │   ├── CategoriaCreditosCard.tsx # card por categoría (mínimo/obtenidos + actividades)
-    │   │   ├── ActividadCreditoRow.tsx   # fila de actividad con toggle completar + requisitos
+    │   │   ├── ActividadCreditoRow.tsx   # fila de actividad con toggle, chip "+X créditos" y requisitos
     │   │   └── SistemaCreditosCard.tsx   # card compacta para el detalle de carrera
     │   │
     │   └── common/

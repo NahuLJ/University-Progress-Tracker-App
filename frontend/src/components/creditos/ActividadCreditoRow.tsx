@@ -39,15 +39,13 @@ export function ActividadCreditoRow({ actividad, marcarCompletada, desmarcar }: 
                     <span
                         className={cn(
                             'text-sm',
-                            actividad.completada
-                                ? 'text-status-success line-through'
-                                : 'text-text-default',
+                            actividad.completada ? 'text-status-success' : 'text-text-default',
                         )}
                     >
                         {actividad.nombre}
                     </span>
                     <Badge variant="info" size="sm">
-                        +{actividad.creditos} cr
+                        +{actividad.creditos} créditos
                     </Badge>
                 </div>
                 {conRequisitos && (

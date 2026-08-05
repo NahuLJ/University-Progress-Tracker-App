@@ -12,21 +12,10 @@ export function CreditosResumenCard({ data }: { data: CreditosProgreso }) {
                     <p className="text-2xl font-bold text-text-default font-mono leading-none mt-1">
                         {data.creditosObtenidos}/{data.totalRequerido}
                     </p>
-                    <p className="label mt-1 text-text-muted">faltan {data.creditosFaltantes}</p>
                 </div>
-                <div className="w-full max-w-sm">
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="label">Progreso total</span>
-                        <span className="label font-mono text-accent-cyan">{data.progresoPorcentaje}%</span>
-                    </div>
-                    <ProgressBar value={data.progresoPorcentaje} color="cyan" />
-                </div>
-                {data.completado ? (
-                    <Badge variant="success">¡Sistema de créditos completo!</Badge>
-                ) : (
-                    <Badge variant="default">En progreso</Badge>
-                )}
+                {data.completado && <Badge variant="success">¡Sistema de créditos completo!</Badge>}
             </div>
+            <ProgressBar value={data.progresoPorcentaje} color="cyan" className="mt-4" showLabel />
         </Card>
     );
 }

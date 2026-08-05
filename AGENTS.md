@@ -9,7 +9,7 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 - **Backend:** NestJS, TypeScript, TypeORM, MariaDB 11.5, Express, Swagger, class-validator
 - **Frontend (real):** React 19, Vite 8, Tailwind CSS 3, TypeScript 6, React Router 7, Axios, React Query 5, zustand 5, React Hook Form 7 + Zod 4, recharts 3, oxlint (no ESLint).
 - **Módulo admin implementado:** página `/admin` (tabs Carreras/Materias/Plan/Correlativas) para gestión del catálogo académico. Backend sin `RolesGuard` aún (cualquier usuario autenticado puede usarla). Ver `docs/backend/admin-carreras-materias-module.md`.
-- **Sistema de créditos por actividades (HECHO):** modelo de créditos por actividades (seminarios, proyectos, idiomas, etc.) con requisitos por carrera. Backend en `backend/src/modules/creditos/` (8 tablas: `sistema_creditos`, `categoria_credito`, `actividad_credito`, `carrera_categoria_credito`, `carrera_actividad_credito`, `carrera_actividad_requisito_materia`, `progreso_actividad`), endpoint `PUT /carreras/:id/creditos/actividades/:carreraActividadCreditoId/requisitos`, `GET /estadisticas/creditos-progreso`. Frontend: editor en pestaña Créditos de `/admin/carreras/:id` (tab persistido en localStorage), página `/creditos`, `SistemaCreditosCard` en detalle de carrera, `CreditosProgresoChart` en dashboard. Ver `docs/implementaciones/sistema-de-creditos.md`.
+- **Sistema de créditos por actividades (HECHO):** modelo de créditos por actividades (seminarios, proyectos, idiomas, etc.) con requisitos por carrera. Backend en `backend/src/modules/creditos/` (8 tablas: `sistema_creditos`, `categoria_credito`, `actividad_credito`, `carrera_categoria_credito`, `carrera_actividad_credito`, `carrera_actividad_requisito_materia`, `progreso_actividad`), endpoint `PUT /carreras/:id/creditos/actividades/:carreraActividadCreditoId/requisitos`, `GET /estadisticas/creditos-progreso`. Frontend: editor en pestaña Créditos de `/admin/carreras/:id` (tab persistido en localStorage), página `/creditos` (resumen "Créditos obtenidos" + barra full-width con %, actividades con chip `+X créditos` y nombre sin tachado al completar), `SistemaCreditosCard` en detalle de carrera, `CreditosProgresoChart` en dashboard. Ver `docs/implementaciones/sistema-de-creditos.md`.
 - **Dashboard refactorizado (HECHO):** estilo Suizo + gráficos recharts (pastel de estados, distribución de notas, progreso por año, progreso de créditos), tarjetas `StatCard` (`MateriasAprobadasCard`/`PromedioCard`/`CreditosCard`/`MateriasDisponiblesCard`/`ProgresoBarCard`), hook `useEstadisticas`, `ChartTooltip`, endpoints `notas-distribucion` y `progreso-por-anio`. Ver `docs/implementaciones/refactor-dashboard-page.md`.
 - **Package manager:** npm (ambos)
 - **Node:** 20 LTS
@@ -42,15 +42,18 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 |---|---|
 | `docs/database-design.md` | ERD Mermaid, 11 tablas, consultas SQL de estadísticas |
 | `docs/backend-guide.md` | Estructura NestJS por módulos, TypeORM relations, validation pipe, swagger setup |
+| `docs/backend-implementation-step-by-step.md` | Backend: guía de implementación paso a paso |
+| `docs/frontend-implementation-step-by-step.md` | Frontend: guía de implementación paso a paso |
+| `docs/api-endpoints.md` | Referencia de endpoints REST del backend para el frontend |
 | `docs/frontend-guide.md` | Estructura React, rutas, store, hooks, componentes, formularios |
 | `docs/backend/auth-module.md` | Endpoints, DTOs, JwtAuthGuard, JwtStrategy |
 | `docs/backend/users-module.md` | Perfil, inscripción a carreras |
 | `docs/backend/carreras-materias-module.md` | Plan de estudios, correlativas auto-referenciadas |
+| `docs/backend/admin-carreras-materias-module.md` | Módulo admin backend: carreras, materias, plan, correlativas |
 | `docs/backend/progreso-module.md` | Estados, notas, validación de correlativas |
 | `docs/backend/planificacion-horarios-module.md` | Periodos, bloques, conflictos horarios |
 | `docs/backend/estadisticas-module.md` | Promedio, cuatrimestres restantes, queries SQL |
 | `docs/backend/trayectoria-module.md` | Trayectoria entity, endpoints, fork validation, árbol de bifurcaciones |
-| `docs/backend/planificacion-horarios-module.md` | Periodos, bloques, conflictos horarios, trayectoria, IsNull, cascada |
 | `docs/frontend/login-registro-page.md` | Formularios, validación Zod, barra de fortaleza |
 | `docs/frontend/dashboard-page.md` | Tarjetas, gráficos, selector multi-carrera |
 | `docs/frontend/plan-estudios-page.md` | Árbol Año→Cuatrimestre, modal correlativas |
@@ -62,3 +65,8 @@ Backend implementado en `backend/`. Frontend implementado en `frontend/` (React 
 | `docs/implementaciones/refactor-dashboard-page.md` | Dashboard final: StatCards, gráficos recharts, useEstadisticas, ChartTooltip, fixes UX, animaciones |
 | `docs/implementaciones/refactor-css-estilo-suizo.md` | Design tokens Suizo, migración de componentes, secciones 7.10/7.11 (Charts/StatCards) |
 | `docs/implementaciones/sistema-de-creditos.md` | Créditos por actividades: 8 tablas, requisitos por carrera, CreditosEditor, página `/creditos`, CreditosProgresoChart |
+| `docs/implementaciones/refactor-admin-module.md` | Refactor módulo admin: tabs, persistencia en localStorage, chips neon-cyan |
+| `docs/implementaciones/editar-plan-estudios.md` | Edición de posición de materias en el plan de estudios |
+| `docs/implementaciones/planificacionesSucesivas.md` | Planificaciones sucesivas, fork de trayectorias |
+| `docs/implementaciones/progreso-compartido-entre-carreras.md` | Progreso compartido entre carreras |
+| `docs/implementaciones/arbol-horizontal-trayectoria.md` | Árbol de trayectoria horizontal con cards, drag-to-scroll |

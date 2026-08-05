@@ -69,7 +69,7 @@ export function SistemaCreditosCard({ config, mostrarProgreso }: Props) {
                                     />
                                     <span className="text-text-default truncate">{a.nombre}</span>
                                     <Badge variant="info" size="sm">
-                                        +{a.creditos} cr
+                                        +{a.creditos} créditos
                                     </Badge>
                                     {a.materiasRequeridas.length > 0 && (
                                         <span className="flex items-center gap-1 ml-auto shrink-0">
