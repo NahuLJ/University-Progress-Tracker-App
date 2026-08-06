@@ -296,11 +296,16 @@ interface MateriaAdminRow {
 |--------|------|------|--------------|------------|
 | `GET` | `/creditos/categorias` | ✅ Bearer | `?incluirInactivas` | `200`: `CategoriaCredito[]` |
 | `POST` | `/creditos/categorias` | ✅ Bearer | `{ nombre, descripcion? }` | `201`: Creada · `400`: Nombre duplicado |
-| `GET` | `/creditos/actividades` | ✅ Bearer | `?categoriaId&search` | `200`: `ActividadCredito[]` (con `categoria` anidada) |
-| `POST` | `/creditos/actividades` | ✅ Bearer | `{ nombre, descripcion?, categoriaCreditoId, creditos }` | `201`: Creada · `400`: Validación / duplicada en la categoría |
-| `PUT` | `/creditos/actividades/:actividadCreditoId` | ✅ Bearer | `{ nombre?, descripcion?, creditos?, categoriaCreditoId? }` | `200`: Actualizada · `404`: No encontrada |
+| `PUT` | `/creditos/categorias/:categoriaCreditoId` | ✅ Bearer | `{ nombre?, descripcion? }` | `200`: Actualizada · `400`: Nombre duplicado · `404`: No encontrada |
+| `DELETE` | `/creditos/categorias/:categoriaCreditoId` | ✅ Bearer | — | `200`: Desactivada (junto con sus actividades) · `400`: Ya inactiva · `404`: No encontrada |
+| `PATCH` | `/creditos/categorias/:categoriaCreditoId/restore` | ✅ Bearer | — | `200`: Restaurada · `400`: Ya activa · `404`: No encontrada |
+| `GET` | `/creditos/actividades` | ✅ Bearer | `?categoriaId&search&incluirInactivas` (sin `incluirInactivas` filtra `activo=true`) | `200`: `ActividadCredito[]` (con `categoria` anidada) |
+| `POST` | `/creditos/actividades` | ✅ Bearer | `{ nombre, descripcion?, categoriaCreditoId, creditos }` | `201`: Creada · `400`: Validación / duplicada en la categoría / categoría inactiva |
+| `PUT` | `/creditos/actividades/:actividadCreditoId` | ✅ Bearer | `{ nombre?, descripcion?, creditos? }` | `200`: Actualizada · `404`: No encontrada |
+| `DELETE` | `/creditos/actividades/:actividadCreditoId` | ✅ Bearer | — | `200`: Desactivada · `400`: Ya inactiva · `404`: No encontrada |
+| `PATCH` | `/creditos/actividades/:actividadCreditoId/restore` | ✅ Bearer | — | `200`: Restaurada · `400`: Ya activa · `404`: No encontrada |
 | `GET` | `/creditos/progreso` | ✅ Bearer | `?usuarioCarreraId` | `200`: `CreditosProgreso` · `404`: Inscripción no encontrada |
-| `POST` | `/creditos/progreso` | ✅ Bearer | `{ usuarioCarreraId, actividadCreditoId }` | `201`: Completada · `400`: Faltan requisitos aprobados · `404`: No encontrada |
+| `POST` | `/creditos/progreso` | ✅ Bearer | `{ usuarioCarreraId, actividadCreditoId }` | `201`: Completada · `400`: Faltan requisitos aprobados / actividad inactiva · `404`: No encontrada |
 | `DELETE` | `/creditos/progreso/:progresoActividadId` | ✅ Bearer | — | `200`: Desmarcada · `404`: No encontrada |
 
 ### Configuración de carrera — `/carreras/:id/creditos`

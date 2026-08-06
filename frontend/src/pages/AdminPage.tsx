@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { AdminTabs } from '../components/admin/AdminTabs';
+import { AdminTabs, type TabKey } from '../components/admin/AdminTabs';
 import { TablaCarreras } from '../components/admin/TablaCarreras';
 import { TablaMaterias } from '../components/admin/TablaMaterias';
+import { CreditosCatalogoTabs } from '../components/admin/CreditosCatalogoTabs';
 import { CrearCarreraModal } from '../components/admin/CrearCarreraModal';
 import { CrearMateriaModal } from '../components/admin/CrearMateriaModal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-
-type TabKey = 'carreras' | 'materias';
 
 export function AdminPage() {
     const [tab, setTab] = useLocalStorage<TabKey>('admin-tab', 'carreras');
@@ -21,7 +20,7 @@ export function AdminPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-text-default">Administración académica</h1>
                     <p className="text-sm text-text-muted">
-                        Gestioná el catálogo de carreras, materias y correlativas.
+                        Gestioná el catálogo de carreras, materias, créditos y correlativas.
                     </p>
                 </div>
             </div>
@@ -45,6 +44,12 @@ export function AdminPage() {
                         <Button onClick={() => setMateriaModalOpen(true)}>Nueva materia</Button>
                     </div>
                     <TablaMaterias />
+                </Card>
+            )}
+
+            {tab === 'creditos' && (
+                <Card className="p-6">
+                    <CreditosCatalogoTabs />
                 </Card>
             )}
 

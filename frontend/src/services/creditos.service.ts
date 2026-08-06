@@ -20,11 +20,33 @@ export const creditosService = {
         return response.data;
     },
 
-    async listarActividades(categoriaId?: number, search?: string): Promise<ActividadCredito[]> {
+    async actualizarCategoriaCatalogo(
+        categoriaCreditoId: number,
+        data: { nombre?: string; descripcion?: string },
+    ): Promise<CategoriaCredito> {
+        const response = await api.put(`/creditos/categorias/${categoriaCreditoId}`, data);
+        return response.data;
+    },
+
+    async eliminarCategoriaCatalogo(categoriaCreditoId: number): Promise<void> {
+        await api.delete(`/creditos/categorias/${categoriaCreditoId}`);
+    },
+
+    async restaurarCategoriaCatalogo(categoriaCreditoId: number): Promise<CategoriaCredito> {
+        const response = await api.patch(`/creditos/categorias/${categoriaCreditoId}/restore`);
+        return response.data;
+    },
+
+    async listarActividades(
+        categoriaId?: number,
+        search?: string,
+        incluirInactivas?: boolean,
+    ): Promise<ActividadCredito[]> {
         const response = await api.get('/creditos/actividades', {
             params: {
                 ...(categoriaId ? { categoriaId } : {}),
                 ...(search ? { search } : {}),
+                ...(incluirInactivas ? { incluirInactivas } : {}),
             },
         });
         return (response.data ?? []).map(aplanarActividad);
@@ -45,6 +67,15 @@ export const creditosService = {
         data: { nombre?: string; descripcion?: string; creditos?: number },
     ): Promise<ActividadCredito> {
         const response = await api.put(`/creditos/actividades/${actividadCreditoId}`, data);
+        return aplanarActividad(response.data);
+    },
+
+    async eliminarActividadCatalogo(actividadCreditoId: number): Promise<void> {
+        await api.delete(`/creditos/actividades/${actividadCreditoId}`);
+    },
+
+    async restaurarActividadCatalogo(actividadCreditoId: number): Promise<ActividadCredito> {
+        const response = await api.patch(`/creditos/actividades/${actividadCreditoId}/restore`);
         return aplanarActividad(response.data);
     },
 

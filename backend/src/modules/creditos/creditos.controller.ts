@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -19,6 +20,7 @@ import { CreditosService } from './creditos.service';
 import { CrearCategoriaCreditoDto } from './dto/crear-categoria-credito.dto';
 import { CrearActividadCreditoDto } from './dto/crear-actividad-credito.dto';
 import { ActualizarActividadCreditoDto } from './dto/actualizar-actividad-credito.dto';
+import { ActualizarCategoriaCatalogoCreditoDto } from './dto/actualizar-categoria-catalogo-credito.dto';
 import { CrearProgresoActividadDto } from './dto/crear-progreso-actividad.dto';
 
 @ApiTags('Créditos')
@@ -42,16 +44,57 @@ export class CreditosController {
     return this.creditosService.crearCategoria(dto);
   }
 
+  @Put('categorias/:categoriaCreditoId')
+  @ApiOperation({ summary: 'Actualizar categoría del catálogo global' })
+  @ApiResponse({ status: 200, description: 'Categoría actualizada' })
+  @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
+  @ApiResponse({ status: 400, description: 'Nombre duplicado o inválido' })
+  async actualizarCategoriaCatalogo(
+    @Param('categoriaCreditoId', ParseIntPipe) categoriaCreditoId: number,
+    @Body() dto: ActualizarCategoriaCatalogoCreditoDto,
+  ) {
+    return this.creditosService.actualizarCategoriaCatalogo(
+      categoriaCreditoId,
+      dto,
+    );
+  }
+
+  @Delete('categorias/:categoriaCreditoId')
+  @ApiOperation({
+    summary: 'Dar de baja una categoría del catálogo y sus actividades',
+  })
+  @ApiResponse({ status: 200, description: 'Categoría desactivada' })
+  @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
+  @ApiResponse({ status: 400, description: 'La categoría ya está inactiva' })
+  async eliminarCategoriaCatalogo(
+    @Param('categoriaCreditoId', ParseIntPipe) categoriaCreditoId: number,
+  ) {
+    return this.creditosService.eliminarCategoriaCatalogo(categoriaCreditoId);
+  }
+
+  @Patch('categorias/:categoriaCreditoId/restore')
+  @ApiOperation({ summary: 'Restaurar una categoría del catálogo' })
+  @ApiResponse({ status: 200, description: 'Categoría restaurada' })
+  @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
+  @ApiResponse({ status: 400, description: 'La categoría ya está activa' })
+  async restaurarCategoriaCatalogo(
+    @Param('categoriaCreditoId', ParseIntPipe) categoriaCreditoId: number,
+  ) {
+    return this.creditosService.restaurarCategoriaCatalogo(categoriaCreditoId);
+  }
+
   @Get('actividades')
   @ApiOperation({ summary: 'Listar actividades de créditos' })
   @ApiResponse({ status: 200, description: 'Lista de actividades' })
   async listarActividades(
     @Query('categoriaId') categoriaId?: string,
     @Query('search') search?: string,
+    @Query('incluirInactivas') incluirInactivas?: string,
   ) {
     return this.creditosService.listarActividades(
       categoriaId ? Number(categoriaId) : undefined,
       search,
+      incluirInactivas === 'true',
     );
   }
 
@@ -72,6 +115,28 @@ export class CreditosController {
     @Body() dto: ActualizarActividadCreditoDto,
   ) {
     return this.creditosService.actualizarActividad(actividadCreditoId, dto);
+  }
+
+  @Delete('actividades/:actividadCreditoId')
+  @ApiOperation({ summary: 'Dar de baja una actividad del catálogo' })
+  @ApiResponse({ status: 200, description: 'Actividad desactivada' })
+  @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+  @ApiResponse({ status: 400, description: 'La actividad ya está inactiva' })
+  async eliminarActividadCatalogo(
+    @Param('actividadCreditoId', ParseIntPipe) actividadCreditoId: number,
+  ) {
+    return this.creditosService.eliminarActividadCatalogo(actividadCreditoId);
+  }
+
+  @Patch('actividades/:actividadCreditoId/restore')
+  @ApiOperation({ summary: 'Restaurar una actividad del catálogo' })
+  @ApiResponse({ status: 200, description: 'Actividad restaurada' })
+  @ApiResponse({ status: 404, description: 'Actividad no encontrada' })
+  @ApiResponse({ status: 400, description: 'La actividad ya está activa' })
+  async restaurarActividadCatalogo(
+    @Param('actividadCreditoId', ParseIntPipe) actividadCreditoId: number,
+  ) {
+    return this.creditosService.restaurarActividadCatalogo(actividadCreditoId);
   }
 
   @Get('progreso')

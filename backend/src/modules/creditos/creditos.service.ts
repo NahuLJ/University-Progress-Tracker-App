@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { SistemaCreditos } from './entities/sistema-creditos.entity';
 import { CategoriaCredito } from './entities/categoria-credito.entity';
 import { ActividadCredito } from './entities/actividad-credito.entity';
@@ -21,6 +21,7 @@ import { ActualizarActividadCreditoDto } from './dto/actualizar-actividad-credit
 import { ActualizarSistemaCreditosDto } from './dto/actualizar-sistema-creditos.dto';
 import { AgregarCategoriaCreditoDto } from './dto/agregar-categoria-credito.dto';
 import { ActualizarCategoriaCreditoDto } from './dto/actualizar-categoria-credito.dto';
+import { ActualizarCategoriaCatalogoCreditoDto } from './dto/actualizar-categoria-catalogo-credito.dto';
 import { AgregarActividadCreditoDto } from './dto/agregar-actividad-credito.dto';
 import { ActualizarRequisitosActividadDto } from './dto/actualizar-requisitos-actividad.dto';
 import { CrearProgresoActividadDto } from './dto/crear-progreso-actividad.dto';
@@ -97,6 +98,7 @@ export class CreditosService {
     private readonly materiaRepo: Repository<Materia>,
     @InjectRepository(ProgresoMateria)
     private readonly progresoMateriaRepo: Repository<ProgresoMateria>,
+    private readonly dataSource: DataSource,
   ) {}
 
   // ---------- Catálogo global ----------
@@ -127,12 +129,16 @@ export class CreditosService {
   async listarActividades(
     categoriaId?: number,
     search?: string,
+    incluirInactivas?: boolean,
   ): Promise<ActividadCredito[]> {
     const qb = this.actividadRepo
       .createQueryBuilder('a')
       .leftJoinAndSelect('a.categoria', 'categoria')
       .orderBy('a.nombre', 'ASC');
 
+    if (!incluirInactivas) {
+      qb.andWhere('a.activo = :activo', { activo: true });
+    }
     if (categoriaId) {
       qb.andWhere('categoria.categoriaCreditoId = :categoriaId', {
         categoriaId,
@@ -199,6 +205,98 @@ export class CreditosService {
     return this.buscarActividadCompleta(actividadCreditoId);
   }
 
+  async actualizarCategoriaCatalogo(
+    categoriaCreditoId: number,
+    dto: ActualizarCategoriaCatalogoCreditoDto,
+  ): Promise<CategoriaCredito> {
+    const categoria = await this.categoriaRepo.findOne({
+      where: { categoriaCreditoId },
+    });
+    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+
+    if (dto.nombre !== undefined) categoria.nombre = dto.nombre;
+    if (dto.descripcion !== undefined) categoria.descripcion = dto.descripcion;
+
+    try {
+      return await this.categoriaRepo.save(categoria);
+    } catch (error) {
+      if (esErrorDuplicado(error)) {
+        throw new BadRequestException(
+          'Ya existe una categoría con ese nombre',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async eliminarCategoriaCatalogo(categoriaCreditoId: number): Promise<void> {
+    const categoria = await this.categoriaRepo.findOne({
+      where: { categoriaCreditoId },
+    });
+    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    if (!categoria.activo)
+      throw new BadRequestException('La categoría ya está inactiva');
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      categoria.activo = false;
+      await queryRunner.manager.save(categoria);
+      await queryRunner.manager
+        .getRepository(ActividadCredito)
+        .update(
+          { categoria: { categoriaCreditoId } },
+          { activo: false },
+        );
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async restaurarCategoriaCatalogo(
+    categoriaCreditoId: number,
+  ): Promise<CategoriaCredito> {
+    const categoria = await this.categoriaRepo.findOne({
+      where: { categoriaCreditoId },
+    });
+    if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    if (categoria.activo)
+      throw new BadRequestException('La categoría ya está activa');
+    categoria.activo = true;
+    return this.categoriaRepo.save(categoria);
+  }
+
+  async eliminarActividadCatalogo(actividadCreditoId: number): Promise<void> {
+    const actividad = await this.actividadRepo.findOne({
+      where: { actividadCreditoId },
+    });
+    if (!actividad) throw new NotFoundException('Actividad no encontrada');
+    if (!actividad.activo)
+      throw new BadRequestException('La actividad ya está inactiva');
+    actividad.activo = false;
+    await this.actividadRepo.save(actividad);
+  }
+
+  async restaurarActividadCatalogo(
+    actividadCreditoId: number,
+  ): Promise<ActividadCredito> {
+    const actividad = await this.actividadRepo.findOne({
+      where: { actividadCreditoId },
+    });
+    if (!actividad) throw new NotFoundException('Actividad no encontrada');
+    if (actividad.activo)
+      throw new BadRequestException('La actividad ya está activa');
+    actividad.activo = true;
+    await this.actividadRepo.save(actividad);
+    return this.buscarActividadCompleta(actividadCreditoId);
+  }
+
   // ---------- Configuración por carrera ----------
 
   async obtenerConfiguracionCarrera(
@@ -210,17 +308,27 @@ export class CreditosService {
     });
 
     const [categoriasCarrera, actividadesCarrera] = await Promise.all([
-      this.carreraCategoriaRepo.find({
-        where: { carrera: { carreraId } },
-        relations: { categoria: true },
-      }),
-      this.carreraActividadRepo.find({
-        where: { carrera: { carreraId } },
-        relations: {
-          actividad: { categoria: true },
-          materiasRequeridas: { materia: true },
-        },
-      }),
+      this.carreraCategoriaRepo
+        .find({
+          where: { carrera: { carreraId } },
+          relations: { categoria: true },
+        })
+        .then((rows) => rows.filter((cc) => cc.categoria.activo !== false)),
+      this.carreraActividadRepo
+        .find({
+          where: { carrera: { carreraId } },
+          relations: {
+            actividad: { categoria: true },
+            materiasRequeridas: { materia: true },
+          },
+        })
+        .then((rows) =>
+          rows.filter(
+            (ca) =>
+              ca.actividad.activo !== false &&
+              ca.actividad.categoria.activo !== false,
+          ),
+        ),
     ]);
     categoriasCarrera.sort((a, b) =>
       a.categoria.nombre.localeCompare(b.categoria.nombre),
@@ -414,6 +522,10 @@ export class CreditosService {
       where: { categoriaCreditoId: dto.categoriaCreditoId },
     });
     if (!categoria) throw new NotFoundException('Categoría no encontrada');
+    if (!categoria.activo)
+      throw new BadRequestException(
+        'La categoría está inactiva y no puede agregarse a una carrera',
+      );
 
     const existente = await this.carreraCategoriaRepo.findOne({
       where: {
@@ -530,6 +642,10 @@ export class CreditosService {
       relations: { categoria: true },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
+    if (actividad.activo === false || actividad.categoria.activo === false)
+      throw new BadRequestException(
+        'La actividad está inactiva y no puede agregarse a una carrera',
+      );
 
     const categoriaDeCarrera = await this.carreraCategoriaRepo.findOne({
       where: {
@@ -637,17 +753,27 @@ export class CreditosService {
     });
 
     const [categoriasCarrera, actividadesCarrera] = await Promise.all([
-      this.carreraCategoriaRepo.find({
-        where: { carrera: { carreraId } },
-        relations: { categoria: true },
-      }),
-      this.carreraActividadRepo.find({
-        where: { carrera: { carreraId } },
-        relations: {
-          actividad: { categoria: true },
-          materiasRequeridas: { materia: true },
-        },
-      }),
+      this.carreraCategoriaRepo
+        .find({
+          where: { carrera: { carreraId } },
+          relations: { categoria: true },
+        })
+        .then((rows) => rows.filter((cc) => cc.categoria.activo !== false)),
+      this.carreraActividadRepo
+        .find({
+          where: { carrera: { carreraId } },
+          relations: {
+            actividad: { categoria: true },
+            materiasRequeridas: { materia: true },
+          },
+        })
+        .then((rows) =>
+          rows.filter(
+            (ca) =>
+              ca.actividad.activo !== false &&
+              ca.actividad.categoria.activo !== false,
+          ),
+        ),
     ]);
     categoriasCarrera.sort((a, b) =>
       a.categoria.nombre.localeCompare(b.categoria.nombre),
@@ -783,6 +909,8 @@ export class CreditosService {
       where: { actividadCreditoId: dto.actividadCreditoId },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
+    if (!actividad.activo)
+      throw new BadRequestException('La actividad está inactiva');
 
     const carreraActividad = await this.carreraActividadRepo.findOne({
       where: {

@@ -461,7 +461,7 @@ Métodos principales:
 |---|---|
 | `listarCategorias(incluirInactivas?)` | Catálogo de categorías |
 | `crearCategoria(dto)` | Crear categoría (manejar `ER_DUP_ENTRY`) |
-| `listarActividades(categoriaId?, search?)` | Catálogo de actividades (con `categoria`; **sin** requisitos, que son por carrera) |
+| `listarActividades(categoriaId?, search?, incluirInactivas?)` | Catálogo de actividades (con `categoria`; **sin** requisitos, que son por carrera; por defecto filtra `activo=true`) |
 | `crearActividad(dto)` | Crear actividad del catálogo (validar categoría) |
 | `actualizarActividad(actividadCreditoId, dto)` | Editar actividad del catálogo (validar categoría) |
 | `obtenerConfiguracionCarrera(carreraId, usuarioId?)` | Config del sistema de la carrera + progreso del usuario autenticado (requisitos desde `carreraActividad.materiasRequeridas`) |
@@ -671,12 +671,24 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 |---|---|---|
 | GET | `/creditos/categorias` | `?incluirInactivas` |
 | POST | `/creditos/categorias` | `{ nombre, descripcion? }` |
-| GET | `/creditos/actividades` | `?categoriaId&search` |
+| PUT | `/creditos/categorias/:categoriaCreditoId` | `{ nombre?, descripcion? }` (catálogo, edición) |
+| DELETE | `/creditos/categorias/:categoriaCreditoId` | — (baja lógica + sus actividades) |
+| PATCH | `/creditos/categorias/:categoriaCreditoId/restore` | — (restaura categoría) |
+| GET | `/creditos/actividades` | `?categoriaId&search&incluirInactivas` |
 | POST | `/creditos/actividades` | `{ nombre, descripcion?, categoriaCreditoId, creditos }` (catálogo, sin requisitos) |
-| PUT | `/creditos/actividades/:actividadCreditoId` | `{ nombre?, descripcion?, creditos?, categoriaCreditoId? }` (catálogo, sin requisitos) |
+| PUT | `/creditos/actividades/:actividadCreditoId` | `{ nombre?, descripcion?, creditos? }` (catálogo, sin requisitos) |
+| DELETE | `/creditos/actividades/:actividadCreditoId` | — (baja lógica) |
+| PATCH | `/creditos/actividades/:actividadCreditoId/restore` | — (restaura actividad) |
 | GET | `/creditos/progreso` | `?usuarioCarreraId` |
 | POST | `/creditos/progreso` | `{ usuarioCarreraId, actividadCreditoId }` |
 | DELETE | `/creditos/progreso/:progresoActividadId` | — |
+
+> **Borrado lógico del catálogo (implementado):** categorías y actividades usan la columna
+> `activo` (`DELETE` marca `false`, `PATCH .../restore` marca `true`); dar de baja una categoría
+> desactiva también sus actividades en la misma transacción. Lo inactivo **no aparece para los
+> usuarios** (filtrado en `obtenerConfiguracionCarrera`, `obtenerProgreso` y `listarActividades`)
+> y deja de sumar créditos, pero el `progreso_actividad` no se borra. Gestión desde `/admin` →
+> tab "Créditos" (ver `docs/implementaciones/creditos-admin-tabs-borrado-logico.md`).
 
 **Endpoints de configuración de carrera** — se agregan a `CarrerasController` (`@Controller('carreras')`, mismo prefijo compartido sin colisiones de ruta), delegando en `CreditosService`:
 
@@ -814,7 +826,7 @@ export const creditosService = {
     // catálogo (aplanado con aplanarActividad: el backend devuelve `categoria` anidada)
     async listarCategorias(incluirInactivas?: boolean): Promise<CategoriaCredito[]> { ... },
     async crearCategoria(data: { nombre: string; descripcion?: string }): Promise<CategoriaCredito> { ... },
-    async listarActividades(categoriaId?: number, search?: string): Promise<ActividadCredito[]> { ... },
+    async listarActividades(categoriaId?: number, search?: string, incluirInactivas?: boolean): Promise<ActividadCredito[]> { ... },
     async crearActividad(data: { nombre: string; descripcion?: string; categoriaCreditoId: number; creditos: number }): Promise<ActividadCredito> { ... },
     async actualizarActividad(actividadCreditoId: number, data: { nombre?: string; descripcion?: string; creditos?: number }): Promise<ActividadCredito> { ... },
 

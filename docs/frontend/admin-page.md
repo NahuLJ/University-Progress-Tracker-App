@@ -1,8 +1,8 @@
 # Página Administración (Admin) — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. Módulo para gestión del catálogo académico
-> accedido vía nav `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 2 tabs (Carreras /
-> Materias) con `CrearCarreraModal`, `CrearMateriaModal`. Las tablas (`TablaCarreras`,
+> accedido vía nav `Admin` (ruta `/admin`, privada). `AdminPage` orquesta 3 tabs (Carreras /
+> Materias / Créditos) con `CrearCarreraModal`, `CrearMateriaModal`. Las tablas (`TablaCarreras`,
 > `TablaMaterias`) persisten tab activo, página y límite en `localStorage`.
 > Cada fila se renderiza como **card independiente** (no `<table>`) con `badge badge-info`
 > para códigos, `badge` para metadatos y botones de acción con `hover:bg-bg-surface-secondary`.
@@ -10,6 +10,8 @@
 > El nombre de la fila **no es clickeable**; la navegación al detalle es solo por botón "Ver".
 > Usa `useAdminCarreras`/`useAdminMaterias` (React Query) sobre los servicios
 > `carrerasService`/`materiasAdminService`. Verificado end-to-end contra el backend.
+> El tab **Créditos** gestiona el catálogo global de categorías y actividades con borrado lógico
+> (ver `docs/implementaciones/creditos-admin-tabs-borrado-logico.md`).
 > ⚠️ El backend aún no aplica `RolesGuard`: cualquier usuario autenticado puede entrar
 > (pendiente de seguridad).
 
@@ -20,11 +22,19 @@ pages/
 └── AdminPage.tsx               # orquesta tabs + modales de creación; persiste tab activo en localStorage
 
 components/admin/
-├── AdminTabs.tsx               # tabs: Carreras | Materias
+├── AdminTabs.tsx               # tabs: Carreras | Materias | Créditos (exporta TabKey)
 ├── TablaCarreras.tsx           # tabla paginada; persiste page + limit en localStorage
 ├── TablaMaterias.tsx           # tabla paginada; persiste page + limit en localStorage
 ├── CrearCarreraModal.tsx       # formulario CrearCarreraDto (RHF + Zod)
 ├── CrearMateriaModal.tsx       # formulario CrearMateriaDto (RHF + Zod)
+├── CreditosCatalogoTabs.tsx    # sub-tabs del catálogo global: Categorías | Actividades
+│                               # (tab activo en localStorage `admin-creditos-tab`)
+├── CreditosCatalogoCategoriasTab.tsx  # cards de categorías: badge Activa/Inactiva, conteo de
+│                               # actividades, editar + baja/restauración con modal de confirmación
+├── CreditosCatalogoActividadesTab.tsx # lista agrupada por categoría (inactivas al final),
+│                               # filtro por categoría, editar + baja/restauración
+├── CreditoCategoriaModal.tsx   # crear/editar categoría del catálogo (useState local)
+├── CreditoActividadModal.tsx   # crear/editar actividad del catálogo (categoría fija al editar)
 ├── PlanEstudiosEditor.tsx      # gestión de plan de estudios: lista con chip de código,
 │                                 # modal para agregar materia, modal de edición de posición
 │                                 # (año/cuatrimestre/nro), modal de confirmación para quitar,
@@ -43,7 +53,9 @@ hooks/
 ├── useLocalStorage.ts           # hook genérico para persistir estado en localStorage
 ├── useAdminCarreras.ts          # crearCarrera + agregarMateriaAlPlan (mutations)
 ├── useAdminMaterias.ts         # listar/crear materias + asignar/quitar correlativas
-└── useAdminCreditos.ts         # config del sistema de créditos de la carrera (incl. actualizarRequisitos)
+├── useAdminCreditos.ts         # config del sistema de créditos de la carrera (incl. actualizarRequisitos)
+└── useAdminCreditosCatalogo.ts # catálogo global con inactivas: queries + 8 mutations
+                                # (claves propias ['creditos','catalogo',...] para no chocar con useAdminCreditos)
 
 services/carreras.service.ts    # carrerasService.* (admin) + materiasAdminService.*
 services/creditos.service.ts    # creditosService.* (catálogo + config por carrera + progreso)
@@ -59,11 +71,18 @@ types/
 MainLayout
 └── AdminPage
     ├── Header "Administración académica" + descripción
-    ├── AdminTabs (Carreras | Materias) — tab activo persistido en localStorage
+    ├── AdminTabs (Carreras | Materias | Créditos) — tab activo persistido en localStorage
     ├── [Tab Carreras]      Card + botón "Nueva carrera" → CrearCarreraModal
     │                        └── TablaCarreras (page + limit persistidos en localStorage)
     ├── [Tab Materias]      Card + botón "Nueva materia" → CrearMateriaModal
     │                        └── TablaMaterias (page + limit persistidos en localStorage)
+    ├── [Tab Créditos]      Card → CreditosCatalogoTabs (sub-tab en localStorage `admin-creditos-tab`)
+    │                        ├── [Categorías] CreditosCatalogoCategoriasTab
+    │                        │                  ├── CreditoCategoriaModal (crear/editar)
+    │                        │                  └── Modal de confirmación de baja (Alert warning)
+    │                        └── [Actividades] CreditosCatalogoActividadesTab
+    │                                           ├── CreditoActividadModal (crear/editar)
+    │                                           └── Modal de confirmación de baja (Alert warning)
     ├── CrearCarreraModal · CrearMateriaModal
 ```
 
