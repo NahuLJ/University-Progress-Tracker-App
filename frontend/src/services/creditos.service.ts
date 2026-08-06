@@ -32,8 +32,13 @@ export const creditosService = {
         await api.delete(`/creditos/categorias/${categoriaCreditoId}`);
     },
 
-    async restaurarCategoriaCatalogo(categoriaCreditoId: number): Promise<CategoriaCredito> {
-        const response = await api.patch(`/creditos/categorias/${categoriaCreditoId}/restore`);
+    async restaurarCategoriaCatalogo(
+        categoriaCreditoId: number,
+        restaurarActividades?: boolean,
+    ): Promise<CategoriaCredito> {
+        const response = await api.patch(`/creditos/categorias/${categoriaCreditoId}/restore`, {
+            restaurarActividades,
+        });
         return response.data;
     },
 

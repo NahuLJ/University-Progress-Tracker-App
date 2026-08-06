@@ -65,11 +65,19 @@ export function useAdminCreditosCatalogo() {
     });
 
     const restaurarCategoria = useMutation({
-        mutationFn: (categoriaCreditoId: number) =>
-            creditosService.restaurarCategoriaCatalogo(categoriaCreditoId),
-        onSuccess: () => {
+        mutationFn: (params: { categoriaCreditoId: number; restaurarActividades?: boolean }) =>
+            creditosService.restaurarCategoriaCatalogo(
+                params.categoriaCreditoId,
+                params.restaurarActividades,
+            ),
+        onSuccess: (_data, variables) => {
             invalidarCatalogoYConfigs();
-            addNotification('Categoría restaurada', 'success');
+            addNotification(
+                variables.restaurarActividades
+                    ? 'Categoría y sus actividades restauradas'
+                    : 'Categoría restaurada',
+                'success',
+            );
         },
         onError: () => {
             addNotification('Error al restaurar la categoría', 'error');

@@ -221,9 +221,7 @@ export class CreditosService {
       return await this.categoriaRepo.save(categoria);
     } catch (error) {
       if (esErrorDuplicado(error)) {
-        throw new BadRequestException(
-          'Ya existe una categoría con ese nombre',
-        );
+        throw new BadRequestException('Ya existe una categoría con ese nombre');
       }
       throw error;
     }
@@ -246,10 +244,7 @@ export class CreditosService {
       await queryRunner.manager.save(categoria);
       await queryRunner.manager
         .getRepository(ActividadCredito)
-        .update(
-          { categoria: { categoriaCreditoId } },
-          { activo: false },
-        );
+        .update({ categoria: { categoriaCreditoId } }, { activo: false });
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -261,6 +256,7 @@ export class CreditosService {
 
   async restaurarCategoriaCatalogo(
     categoriaCreditoId: number,
+    restaurarActividades?: boolean,
   ): Promise<CategoriaCredito> {
     const categoria = await this.categoriaRepo.findOne({
       where: { categoriaCreditoId },
@@ -269,7 +265,28 @@ export class CreditosService {
     if (categoria.activo)
       throw new BadRequestException('La categoría ya está activa');
     categoria.activo = true;
-    return this.categoriaRepo.save(categoria);
+
+    if (!restaurarActividades) {
+      return this.categoriaRepo.save(categoria);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.save(categoria);
+      await queryRunner.manager
+        .getRepository(ActividadCredito)
+        .update({ categoria: { categoriaCreditoId } }, { activo: true });
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+    return categoria;
   }
 
   async eliminarActividadCatalogo(actividadCreditoId: number): Promise<void> {

@@ -21,6 +21,7 @@ import { CrearCategoriaCreditoDto } from './dto/crear-categoria-credito.dto';
 import { CrearActividadCreditoDto } from './dto/crear-actividad-credito.dto';
 import { ActualizarActividadCreditoDto } from './dto/actualizar-actividad-credito.dto';
 import { ActualizarCategoriaCatalogoCreditoDto } from './dto/actualizar-categoria-catalogo-credito.dto';
+import { RestaurarCategoriaCatalogoCreditoDto } from './dto/restaurar-categoria-catalogo-credito.dto';
 import { CrearProgresoActividadDto } from './dto/crear-progreso-actividad.dto';
 
 @ApiTags('Créditos')
@@ -73,14 +74,21 @@ export class CreditosController {
   }
 
   @Patch('categorias/:categoriaCreditoId/restore')
-  @ApiOperation({ summary: 'Restaurar una categoría del catálogo' })
+  @ApiOperation({
+    summary:
+      'Restaurar una categoría del catálogo (opcionalmente con sus actividades)',
+  })
   @ApiResponse({ status: 200, description: 'Categoría restaurada' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
   @ApiResponse({ status: 400, description: 'La categoría ya está activa' })
   async restaurarCategoriaCatalogo(
     @Param('categoriaCreditoId', ParseIntPipe) categoriaCreditoId: number,
+    @Body() dto: RestaurarCategoriaCatalogoCreditoDto,
   ) {
-    return this.creditosService.restaurarCategoriaCatalogo(categoriaCreditoId);
+    return this.creditosService.restaurarCategoriaCatalogo(
+      categoriaCreditoId,
+      dto.restaurarActividades,
+    );
   }
 
   @Get('actividades')

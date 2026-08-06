@@ -673,7 +673,7 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 | POST | `/creditos/categorias` | `{ nombre, descripcion? }` |
 | PUT | `/creditos/categorias/:categoriaCreditoId` | `{ nombre?, descripcion? }` (catálogo, edición) |
 | DELETE | `/creditos/categorias/:categoriaCreditoId` | — (baja lógica + sus actividades) |
-| PATCH | `/creditos/categorias/:categoriaCreditoId/restore` | — (restaura categoría) |
+| PATCH | `/creditos/categorias/:categoriaCreditoId/restore` | `{ restaurarActividades?: boolean }` (opcional: reactiva también sus actividades) |
 | GET | `/creditos/actividades` | `?categoriaId&search&incluirInactivas` |
 | POST | `/creditos/actividades` | `{ nombre, descripcion?, categoriaCreditoId, creditos }` (catálogo, sin requisitos) |
 | PUT | `/creditos/actividades/:actividadCreditoId` | `{ nombre?, descripcion?, creditos? }` (catálogo, sin requisitos) |
@@ -685,10 +685,11 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 
 > **Borrado lógico del catálogo (implementado):** categorías y actividades usan la columna
 > `activo` (`DELETE` marca `false`, `PATCH .../restore` marca `true`); dar de baja una categoría
-> desactiva también sus actividades en la misma transacción. Lo inactivo **no aparece para los
-> usuarios** (filtrado en `obtenerConfiguracionCarrera`, `obtenerProgreso` y `listarActividades`)
-> y deja de sumar créditos, pero el `progreso_actividad` no se borra. Gestión desde `/admin` →
-> tab "Créditos" (ver `docs/implementaciones/creditos-admin-tabs-borrado-logico.md`).
+> desactiva también sus actividades en la misma transacción. Restaurar una categoría solo la
+> reactiva a ella salvo que se pase `{ restaurarActividades: true }`, que reactiva también sus
+> actividades. Lo inactivo **no aparece para los usuarios** (filtrado en `obtenerConfiguracionCarrera`,
+> `obtenerProgreso` y `listarActividades`) y deja de sumar créditos, pero el `progreso_actividad` no
+> se borra. Gestión desde `/admin` → tab "Créditos" (ver `docs/implementaciones/creditos-admin-tabs-borrado-logico.md`).
 
 **Endpoints de configuración de carrera** — se agregan a `CarrerasController` (`@Controller('carreras')`, mismo prefijo compartido sin colisiones de ruta), delegando en `CreditosService`:
 

@@ -25,6 +25,8 @@ export function CreditosCatalogoCategoriasTab() {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [modal, setModal] = useState<CategoriaModalState>(null);
     const [eliminarConfirm, setEliminarConfirm] = useState<CategoriaCredito | null>(null);
+    const [restaurarConfirm, setRestaurarConfirm] = useState<CategoriaCredito | null>(null);
+    const [restaurarActividades, setRestaurarActividades] = useState(false);
 
     useEffect(() => {
         if (search === debouncedSearch) return;
@@ -61,6 +63,25 @@ export function CreditosCatalogoCategoriasTab() {
             onSuccess: () => setEliminarConfirm(null),
         });
     };
+
+    const abrirRestaurar = (categoria: CategoriaCredito) => {
+        setRestaurarActividades(false);
+        setRestaurarConfirm(categoria);
+    };
+
+    const handleRestaurar = () => {
+        if (!restaurarConfirm) return;
+        restaurarCategoria.mutate(
+            {
+                categoriaCreditoId: restaurarConfirm.categoriaCreditoId,
+                restaurarActividades,
+            },
+            { onSuccess: () => setRestaurarConfirm(null) },
+        );
+    };
+
+    const inactivasDeCategoria = (categoriaCreditoId: number) =>
+        actividades.filter((a) => a.categoriaCreditoId === categoriaCreditoId && !a.activo).length;
 
     return (
         <div className="space-y-4">
@@ -146,7 +167,7 @@ export function CreditosCatalogoCategoriasTab() {
                                 ) : (
                                     <button
                                         title="Restaurar"
-                                        onClick={() => restaurarCategoria.mutate(categoria.categoriaCreditoId)}
+                                        onClick={() => abrirRestaurar(categoria)}
                                         className="p-2 text-text-muted hover:text-accent-primary hover:bg-bg-surface-secondary rounded-md transition-colors"
                                     >
                                         <Icon name="restore" className="w-4 h-4" />
@@ -204,6 +225,55 @@ export function CreditosCatalogoCategoriasTab() {
                         </Button>
                         <Button variant="danger" onClick={handleEliminar} loading={eliminarCategoria.isPending}>
                             Desactivar categoría
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={!!restaurarConfirm}
+                onClose={() => setRestaurarConfirm(null)}
+                title="Restaurar categoría"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-text-subtle">
+                        Estás por reactivar la categoría{' '}
+                        <strong className="text-text-default">{restaurarConfirm?.nombre}</strong> del catálogo.
+                    </p>
+                    <div className="rounded-md border border-status-warning/40 bg-status-warning/10 px-3 py-3 text-sm text-status-warning space-y-1">
+                        <p className="font-medium">Importante</p>
+                        <p>
+                            La restauración de la categoría <strong>no reactiva sus actividades</strong>{' '}
+                            automáticamente: sin marcar la opción de abajo, cada actividad inactiva se restaura
+                            por separado desde la pestaña Actividades.
+                        </p>
+                    </div>
+                    {restaurarConfirm && inactivasDeCategoria(restaurarConfirm.categoriaCreditoId) > 0 ? (
+                        <label className="flex items-start gap-2 text-sm text-text-default cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={restaurarActividades}
+                                onChange={(e) => setRestaurarActividades(e.target.checked)}
+                                className="accent-accent-cyan mt-0.5"
+                            />
+                            <span>
+                                Restaurar también las{' '}
+                                <strong>{inactivasDeCategoria(restaurarConfirm.categoriaCreditoId)}</strong>{' '}
+                                actividades inactivas de esta categoría
+                            </span>
+                        </label>
+                    ) : (
+                        <p className="text-xs text-text-muted">
+                            Esta categoría no tiene actividades inactivas que restaurar.
+                        </p>
+                    )}
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="ghost" onClick={() => setRestaurarConfirm(null)}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleRestaurar} loading={restaurarCategoria.isPending}>
+                            Restaurar categoría
                         </Button>
                     </div>
                 </div>

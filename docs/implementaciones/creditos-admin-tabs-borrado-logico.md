@@ -53,8 +53,10 @@ Al dar de baja una categoría se marcan también `activo = false` **todas sus ac
 transacción). Motivo: mantener coherente el catálogo (no pueden quedar actividades activas bajo una
 categoría inactiva; la pestaña de actividades se agrupa por categoría).
 
-- La **restauración de la categoría solo restaura la categoría**; cada actividad conserva su propio
-  estado `activo` y se restaura individualmente (botón por fila).
+- La **restauración de la categoría solo restaura la categoría** por defecto; cada actividad conserva
+  su propio estado `activo` y se restaura individualmente (botón por fila). Al restaurar desde
+  `/admin` un **modal permite elegir** si además se reactivan todas sus actividades inactivas
+  (`PATCH /creditos/categorias/:id/restore` con body `{ restaurarActividades: true }`, transacción).
 - Una actividad solo **cuenta / es visible para los usuarios cuando tanto ella como su categoría están
   activas** (el filtro de §4.3 exige ambos). Restaurar una actividad cuya categoría sigue inactiva la
   deja oculta hasta que se restaure también la categoría.
@@ -119,6 +121,20 @@ export class ActualizarCategoriaCatalogoCreditoDto {
 }
 ```
 
+**`backend/src/modules/creditos/dto/restaurar-categoria-catalogo-credito.dto.ts`**
+
+Body opcional del restore de categoría: permite reactivar también sus actividades.
+
+```typescript
+import { IsBoolean, IsOptional } from 'class-validator';
+
+export class RestaurarCategoriaCatalogoCreditoDto {
+  @IsOptional()
+  @IsBoolean()
+  restaurarActividades?: boolean;
+}
+```
+
 ### 4.3 `CreditosService` — métodos nuevos
 
 Agregar a `backend/src/modules/creditos/creditos.service.ts` (inyecta `categoriaRepo`,
@@ -176,7 +192,10 @@ async eliminarCategoriaCatalogo(categoriaCreditoId: number): Promise<void> {
   }
 }
 
-async restaurarCategoriaCatalogo(categoriaCreditoId: number): Promise<CategoriaCredito> {
+async restaurarCategoriaCatalogo(
+  categoriaCreditoId: number,
+  restaurarActividades?: boolean,
+): Promise<CategoriaCredito> {
   const categoria = await this.categoriaRepo.findOne({
     where: { categoriaCreditoId },
   });
@@ -184,7 +203,28 @@ async restaurarCategoriaCatalogo(categoriaCreditoId: number): Promise<CategoriaC
   if (categoria.activo)
     throw new BadRequestException('La categoría ya está activa');
   categoria.activo = true;
-  return this.categoriaRepo.save(categoria);
+
+  if (!restaurarActividades) {
+    return this.categoriaRepo.save(categoria);
+  }
+
+  // si se pide, reactivar también sus actividades (misma transacción)
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+  try {
+    await queryRunner.manager.save(categoria);
+    await queryRunner.manager
+      .getRepository(ActividadCredito)
+      .update({ categoria: { categoriaCreditoId } }, { activo: true });
+    await queryRunner.commitTransaction();
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+  }
+  return categoria;
 }
 
 async eliminarActividadCatalogo(actividadCreditoId: number): Promise<void> {
@@ -306,7 +346,7 @@ Agregar a `backend/src/modules/creditos/creditos.controller.ts` (mismo estilo de
 |---|---|---|---|
 | PUT | `/creditos/categorias/:categoriaCreditoId` | `ActualizarCategoriaCatalogoCreditoDto` | `actualizarCategoriaCatalogo` |
 | DELETE | `/creditos/categorias/:categoriaCreditoId` | — | `eliminarCategoriaCatalogo` |
-| PATCH | `/creditos/categorias/:categoriaCreditoId/restore` | — | `restaurarCategoriaCatalogo` |
+| PATCH | `/creditos/categorias/:categoriaCreditoId/restore` | `RestaurarCategoriaCatalogoCreditoDto` | `restaurarCategoriaCatalogo` |
 | DELETE | `/creditos/actividades/:actividadCreditoId` | — | `eliminarActividadCatalogo` |
 | PATCH | `/creditos/actividades/:actividadCreditoId/restore` | — | `restaurarActividadCatalogo` |
 
@@ -353,7 +393,7 @@ Catálogo global (`CreditosController`):
 | POST | `/creditos/categorias` | Crear categoría |
 | PUT | `/creditos/categorias/:id` | Editar categoría (nombre/descripción) — **nuevo** |
 | DELETE | `/creditos/categorias/:id` | Baja lógica categoría + sus actividades — **nuevo** |
-| PATCH | `/creditos/categorias/:id/restore` | Restaurar categoría — **nuevo** |
+| PATCH | `/creditos/categorias/:id/restore` | Restaurar categoría (opcionalmente con sus actividades, `{ restaurarActividades }`) — **nuevo** |
 | GET | `/creditos/actividades?categoriaId=&search=&incluirInactivas=` | Listar actividades (agrega `incluirInactivas`) |
 | POST | `/creditos/actividades` | Crear actividad |
 | PUT | `/creditos/actividades/:id` | Editar actividad (nombre/descripción/creditos) — existente |
@@ -380,8 +420,13 @@ async eliminarCategoriaCatalogo(categoriaCreditoId: number): Promise<void> {
     await api.delete(`/creditos/categorias/${categoriaCreditoId}`);
 },
 
-async restaurarCategoriaCatalogo(categoriaCreditoId: number): Promise<CategoriaCredito> {
-    const response = await api.patch(`/creditos/categorias/${categoriaCreditoId}/restore`);
+async restaurarCategoriaCatalogo(
+    categoriaCreditoId: number,
+    restaurarActividades?: boolean,
+): Promise<CategoriaCredito> {
+    const response = await api.patch(`/creditos/categorias/${categoriaCreditoId}/restore`, {
+        restaurarActividades,
+    });
     return response.data;
 },
 
@@ -439,7 +484,7 @@ Mutations (todas notifican success/error):
 | `crearCategoria` | `crearCategoria(data)` | `['creditos','categorias']` |
 | `actualizarCategoria` | `actualizarCategoriaCatalogo(id, data)` | `['creditos','categorias']`, `['creditos','carrera']`, `['creditos','progreso']`, `['estadisticas']` |
 | `eliminarCategoria` | `eliminarCategoriaCatalogo(id)` | ídem anterior |
-| `restaurarCategoria` | `restaurarCategoriaCatalogo(id)` | ídem anterior |
+| `restaurarCategoria` | `restaurarCategoriaCatalogo(id, restaurarActividades)` | ídem anterior |
 | `crearActividad` | `crearActividad(data)` | `['creditos','actividades']` |
 | `actualizarActividad` | `actualizarActividad(id, data)` | `['creditos','actividades']`, `['creditos','carrera']`, `['creditos','progreso']`, `['estadisticas']` |
 | `eliminarActividad` | `eliminarActividadCatalogo(id)` | ídem anterior |
@@ -463,7 +508,9 @@ Sub-tabs **Categorías | Actividades** (patrón de `AdminTabs`), persistidos en
   - Nombre + `<Badge variant={activo ? 'success' : 'danger'}>{activo ? 'Activa' : 'Inactiva'}</Badge>` (badge siempre, no solo con filtro).
   - Descripción (si existe, `text-text-muted`).
   - Cantidad de actividades activas/inactivas (contar de `['creditos','actividades']`).
-  - Acciones: icono `edit` (abre modal edición), y toggle `delete`/`restore` (igual que `TablaMaterias`).
+  - Acciones: icono `edit` (abre modal edición), y toggle `delete`/`restore` (igual que `TablaMaterias`,
+  pero el `restore` abre un **modal de confirmación** con checkbox "Restaurar también las N actividades
+  inactivas"; solo la categoría se restaura si no se marca).
 - Modal de confirmación de baja (`Alert` tipo warning):
 
 > "Se marcará la categoría **{nombre}** como inactiva junto con todas sus actividades. El catálogo
@@ -535,7 +582,7 @@ El subtítulo de la página puede ampliarse: "Gestioná el catálogo de carreras
 | Escenario | Comportamiento |
 |---|---|
 | Baja de categoría | `activo=false` en la categoría y en **todas sus actividades** (transacción). Progreso intacto. |
-| Restaurar categoría | `activo=true` solo en la categoría; sus actividades se restauran individualmente. |
+| Restaurar categoría | `activo=true` solo en la categoría (por defecto); si el modal marca `restaurarActividades`, se reactivan también todas sus actividades (transacción). |
 | Restaurar actividad cuya categoría sigue inactiva | Queda oculta y no cuenta para el usuario hasta que se restaure también su categoría. |
 | Categoría inactiva en "Agregar categoría" de una carrera | No aparece (el frontend ya filtra `.activo`; backend puede reforzar con 400). |
 | Actividad inactiva en "Agregar actividad" de una carrera | No aparece. |
@@ -551,7 +598,8 @@ El subtítulo de la página puede ampliarse: "Gestioná el catálogo de carreras
 | Archivo | Cambio |
 |---|---|
 | `backend/src/modules/creditos/dto/actualizar-categoria-catalogo-credito.dto.ts` | **nuevo** — DTO `{ nombre?, descripcion? }` |
-| `backend/src/modules/creditos/creditos.service.ts` | 5 métodos nuevos + `listarActividades(incluirInactivas?)` + filtro `activo` en `obtenerConfiguracionCarrera`/`obtenerProgreso` + validaciones en `agregarCategoria`/`agregarActividad`/`marcarCompletada` + `@InjectDataSource()` |
+| `backend/src/modules/creditos/dto/restaurar-categoria-catalogo-credito.dto.ts` | **nuevo** — DTO `{ restaurarActividades? }` |
+| `backend/src/modules/creditos/creditos.service.ts` | 5 métodos nuevos (`restaurarCategoriaCatalogo` acepta `restaurarActividades` con transacción) + `listarActividades(incluirInactivas?)` + filtro `activo` en `obtenerConfiguracionCarrera`/`obtenerProgreso` + validaciones en `agregarCategoria`/`agregarActividad`/`marcarCompletada` + `@InjectDataSource()` |
 | `backend/src/modules/creditos/creditos.controller.ts` | 5 rutas nuevas + query `incluirInactivas` en GET actividades |
 
 ### Frontend
@@ -585,7 +633,7 @@ El subtítulo de la página puede ampliarse: "Gestioná el catálogo de carreras
    - Dar de baja una actividad con progreso → **desaparece para todos** (`/creditos`, dashboard,
      detalle de carrera y `CreditosEditor`) y deja de sumar créditos, pero `progreso_actividad` no se
      borra; los pivotes de la carrera quedan en la base.
-   - Dar de baja una categoría → sus actividades quedan inactivas; restaurar categoría no restaura
-     actividades; restaurar actividad individual sí (vuelve a contar para el usuario siempre que su
-     categoría también esté activa).
+   - Dar de baja una categoría → sus actividades quedan inactivas; restaurar la categoría sin marcar la
+     opción no restaura actividades; restaurar con `restaurarActividades` las reactiva todas; restaurar
+     actividad individual sí (vuelve a contar para el usuario siempre que su categoría también esté activa).
    - Verificar que una carrera que no tenía configurada la categoría/actividad ya no la ofrece al agregar.

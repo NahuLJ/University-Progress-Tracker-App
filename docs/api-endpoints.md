@@ -298,7 +298,7 @@ interface MateriaAdminRow {
 | `POST` | `/creditos/categorias` | ✅ Bearer | `{ nombre, descripcion? }` | `201`: Creada · `400`: Nombre duplicado |
 | `PUT` | `/creditos/categorias/:categoriaCreditoId` | ✅ Bearer | `{ nombre?, descripcion? }` | `200`: Actualizada · `400`: Nombre duplicado · `404`: No encontrada |
 | `DELETE` | `/creditos/categorias/:categoriaCreditoId` | ✅ Bearer | — | `200`: Desactivada (junto con sus actividades) · `400`: Ya inactiva · `404`: No encontrada |
-| `PATCH` | `/creditos/categorias/:categoriaCreditoId/restore` | ✅ Bearer | — | `200`: Restaurada · `400`: Ya activa · `404`: No encontrada |
+| `PATCH` | `/creditos/categorias/:categoriaCreditoId/restore` | ✅ Bearer | `{ restaurarActividades?: boolean }` | `200`: Restaurada · `400`: Ya activa · `404`: No encontrada |
 | `GET` | `/creditos/actividades` | ✅ Bearer | `?categoriaId&search&incluirInactivas` (sin `incluirInactivas` filtra `activo=true`) | `200`: `ActividadCredito[]` (con `categoria` anidada) |
 | `POST` | `/creditos/actividades` | ✅ Bearer | `{ nombre, descripcion?, categoriaCreditoId, creditos }` | `201`: Creada · `400`: Validación / duplicada en la categoría / categoría inactiva |
 | `PUT` | `/creditos/actividades/:actividadCreditoId` | ✅ Bearer | `{ nombre?, descripcion?, creditos? }` | `200`: Actualizada · `404`: No encontrada |
