@@ -312,7 +312,7 @@ las especificaciones originales pero **no existen** en `src/`:
   `http://localhost:3000/api`). No hay datos mockeados en el frontend.
 - **Carrera activa:** `ProgresoPage`, `PlanificacionPage` y `DashboardPage` resuelven la carrera activa
   con `useCarreraActiva()` (del `auth.store`/inscripciones), no un id fijo. `ProgresoPage` además permite
-  cambiar de carrera con `CarrerasResumenList` cuando hay más de una.
+  cambiar de carrera con `CarrerasResumenList` (visible aunque haya una sola).
 - **Dashboard** cablea `StatCards`/`Charts`/`CarrerasResumenList` con `useEstadisticas` (wrapper de `useDashboard`
   que agrega `notas-distribucion` y `progreso-por-anio`). Gráficos con `recharts@^3.10.1` y `ChartTooltip`.
   Los tooltips siguen el cursor: en barras con `useTooltipPosition` (`position: fixed` en `clientX/clientY`);

@@ -25,7 +25,7 @@ Obtiene los detalles de una carrera específica.
 ### GET /api/carreras/:id/plan-estudios
 
 Retorna el plan de estudios completo de la carrera. Las materias vienen ordenadas por año y cuatrimestre, cada una con sus correlativas.
-Acepta query param opcional `usuarioCarreraId` para mergear el progreso del usuario en cada materia **y en cada correlativa**. El progreso es compartido entre carreras: se consulta por `usuario`, no por inscripción.
+Mergea el progreso del **usuario autenticado** (del token JWT) en cada materia **y en cada correlativa**. El progreso es compartido entre carreras: se consulta por `usuario`, no por inscripción. Se muestra aunque el usuario no esté inscripto en la carrera visualizada (p. ej. por materias compartidas con otras carreras).
 
 | Código | Descripción |
 |---|---|
@@ -348,7 +348,7 @@ export class CarrerasService {
         return carrera;
     }
 
-    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<...> {
+    async obtenerPlanEstudios(carreraId: number, usuarioId?: number): Promise<...> {
         const carrera = await this.carreraRepo.findOne({ where: { carreraId } });
         if (!carrera) throw new NotFoundException('Carrera no encontrada');
 
@@ -361,14 +361,6 @@ export class CarrerasService {
         });
 
         const progresoMap = new Map<number, { estado: string; nota: number | null; tipoAprobacion: string | null }>();
-        let usuarioId: number | undefined;
-        if (usuarioCarreraId) {
-            const inscripcion = await this.usuarioCarreraRepo.findOne({
-                where: { usuarioCarreraId },
-                relations: { usuario: true },
-            });
-            usuarioId = inscripcion?.usuario?.usuarioId;
-        }
 
         if (usuarioId) {
             // Progreso compartido del usuario (independiente de la carrera)

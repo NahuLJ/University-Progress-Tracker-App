@@ -1,7 +1,7 @@
 # Página Progreso Académico — Especificación Técnica (implementada)
 
 > **Estado de implementación:** ✅ Completa. `ProgresoPage` resuelve la carrera activa con
-> `useCarreraActiva()`, muestra `CarrerasResumenList` (selector si hay >1), filtros con debounce,
+> `useCarreraActiva()`, muestra `CarrerasResumenList` (selector con 1+ carrera), filtros con debounce,
 > y vista árbol (`ProgresoTree`) agrupada por año → cuatrimestre. Cada fila usa pencil para abrir
 > `EditarProgresoModal` (con validación 4/7 según tipo). **Si la carrera seleccionada está inactiva,
 > se muestra un aviso y se ocultan los controles de edición**. Sin datos mockeados.
@@ -17,7 +17,7 @@ components/progreso/
 ├── MateriaProgresoRow.tsx      # fila con chip de estado + pencil (editar modal) + trash (reset)
 ├── EditarProgresoModal.tsx     # modal para cambiar estado/nota/tipo con validación
 ├── Filtros.tsx                 # FiltroEstado + FiltroBusqueda (debounce 300ms)
-├── CarrerasResumenList.tsx     # tarjetas por carrera; selector de carrera activa (si >1)
+├── CarrerasResumenList.tsx     # tarjetas por carrera; selector de carrera activa (1+ carrera)
 └── index.tsx                   # barrel export
 
 components/ui/
@@ -34,8 +34,8 @@ services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarrera
 
 > **Estado:** `ProgresoPage` resuelve la carrera activa con `useCarreraActiva()` (empty state si no hay
 > carreras). Usa `Filtros` (`FiltroEstado`/`FiltroBusqueda` con debounce), `ProgresoTree` como única
-> vista (árbol Año → Cuatrimestre) y `CarrerasResumenList` (selector de carrera activa cuando hay más
-> de una). `ProgresoTree` tiene botones **Expandir todo / Contraer todo** alineados a la derecha.
+> vista (árbol Año → Cuatrimestre) y `CarrerasResumenList` (selector de carrera activa con 1+ carrera;
+> se muestra aunque haya una sola). `ProgresoTree` tiene botones **Expandir todo / Contraer todo** alineados a la derecha.
 > Maneja error de la query con `QueryError` + botón reintentar.
 > `ProgresoPage` se exporta como `export default` (para el lazy import en `routes/lazy-pages.tsx`).
 > La inicialización de registros de progreso es automática al entrar sin datos previos.
@@ -46,7 +46,7 @@ services/progreso.service.ts     # obtenerProgreso (GET /progreso?usuarioCarrera
 MainLayout
 └── ProgresoPage
     ├── Header "Progreso Académico"
-    ├── CarrerasResumenList (si hay >1 carrera: tarjetas + selector de activa)
+    ├── CarrerasResumenList (con 1+ carrera: tarjetas + selector de activa)
     ├── Card: Badges de totales (completadas / en proceso / pendientes)
     ├── Barra de filtros: FiltroEstado (pills) + FiltroBusqueda (input debounce)
     └── {carreraInactiva ? (

@@ -240,36 +240,28 @@ private async validarCorrelativas(
 
 **Archivo:** `backend/src/modules/carreras/carreras.service.ts`
 
-### 6.1 `obtenerPlanEstudios(carreraId, usuarioCarreraId?)`
+### 6.1 `obtenerPlanEstudios(carreraId, usuarioId?)`
 
-Devuelve el plan con `estadoUsuario`, `nota` y `tipoAprobacion` de cada materia y sus correlativas. Cambiar la búsqueda de progreso para usar el `usuarioId` de la inscripción:
+Devuelve el plan con `estadoUsuario`, `nota` y `tipoAprobacion` de cada materia y sus correlativas. La búsqueda de progreso usa el `usuarioId` del **usuario autenticado** (del token JWT), que llega directo por el controller — ya no se deriva de `usuarioCarreraId`. Por eso el progreso se muestra también cuando el usuario **no está inscripto** en la carrera visualizada (p. ej. por materias compartidas entre carreras).
 
 ```typescript
-// Antes:
-if (usuarioCarreraId) {
-  const progresos = await this.progresoRepo.find({
-    where: { usuarioCarrera: { usuarioCarreraId } },
-    relations: { materia: true, estado: true },
-  });
-  // ...
-}
-
-// Después:
-let usuarioId: number | undefined;
-if (usuarioCarreraId) {
-  const inscripcion = await this.usuarioCarreraRepo.findOne({
-    where: { usuarioCarreraId },
-    relations: { usuario: true },
-  });
-  usuarioId = inscripcion?.usuario?.usuarioId;
-}
-
 if (usuarioId) {
   const progresos = await this.progresoRepo.find({
     where: { usuario: { usuarioId } },
     relations: { materia: true, estado: true },
   });
   // ...
+}
+```
+
+Controller (`CarrerasController.obtenerPlanEstudios`):
+
+```typescript
+async obtenerPlanEstudios(
+  @Param('id') id: number,
+  @Request() req: { user: { usuarioId: number } },
+) {
+  return this.carrerasService.obtenerPlanEstudios(id, req.user.usuarioId);
 }
 ```
 

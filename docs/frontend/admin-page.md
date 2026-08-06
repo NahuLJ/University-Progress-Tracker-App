@@ -148,14 +148,18 @@ Especificación completa en `docs/implementaciones/sistema-de-creditos.md` §5.4
    "Ingresá el total de créditos requeridos y presioná **Guardar total** para activar el sistema".
    Nota final separada con borde con `sum(mínimos) <= total` (error si no cumple). Sin mensajes inline
    de error/éxito del total.
-2. **Desactivación:** si el sistema está habilitado, apagar el toggle abre un **modal de advertencia**
-   que lista el impacto (se eliminan total, categorías/mínimos y actividades/requisitos de la carrera;
-   el catálogo global no se borra; el progreso de usuarios se conserva). Confirmar llama `actualizarSistema`.
+2. **Desactivación:** el **modal de advertencia** al apagar el toggle solo aparece cuando el sistema ya
+   existe en el backend. Si se está creando por primera vez (toggle activado, sistema aún no guardado),
+   apagar el toggle vuelve al estado desactivado sin modal. El modal lista el impacto (se eliminan total,
+   categorías/mínimos y actividades/requisitos de la carrera; el catálogo global no se borra; el progreso
+   de usuarios se conserva). Confirmar llama `actualizarSistema`.
 3. **Categorías:** lista con input de mínimo editable + botón "Actualizar" + botón de quitar.
-   "Agregar categoría" abre modal con default "Crear nueva" (crea vía `POST /creditos/categorias`) o
+   "Agregar categoría" (habilitado solo cuando el sistema ya existe guardado, no solo con el toggle
+   activado) abre modal con default "Crear nueva" (crea vía `POST /creditos/categorias`) o
    seleccionar existente.
 4. **Actividades:** lista agrupada por categoría (nombre en `normal-case`, "+n creditos", requisitos,
-   botón quitar). "Agregar actividad" abre modal (elegir categoría de la carrera, crear nueva o
+   botón quitar). "Agregar actividad" (habilitado solo cuando el sistema ya existe guardado y hay
+   categorías) abre modal (elegir categoría de la carrera, crear nueva o
    seleccionar existente, y opcionalmente materias requisito de la carrera).
 5. **Requisitos por carrera:** cada actividad con botón **"Editar requisitos"** abre un modal con
    checkboxes de materias del plan de estudios y guarda vía `actualizarRequisitos`

@@ -453,7 +453,7 @@ export class ProgresoActividad {
 
 ### 4.3 `CreditosService`
 
-**Inyecta** repos de las 8 entidades + `UsuarioCarrera` (para resolver `usuarioId` desde `usuarioCarreraId`) + `ProgresoMateria` y `Materia` (para validar/consultar requisitos de materias aprobadas).
+**Inyecta** repos de las 8 entidades + `UsuarioCarrera` (para resolver `usuarioId` desde `usuarioCarreraId` en `obtenerProgreso`/`marcarCompletada`; `obtenerConfiguracionCarrera` recibe el `usuarioId` del usuario autenticado directo) + `ProgresoMateria` y `Materia` (para validar/consultar requisitos de materias aprobadas).
 
 Métodos principales:
 
@@ -464,7 +464,7 @@ Métodos principales:
 | `listarActividades(categoriaId?, search?)` | Catálogo de actividades (con `categoria`; **sin** requisitos, que son por carrera) |
 | `crearActividad(dto)` | Crear actividad del catálogo (validar categoría) |
 | `actualizarActividad(actividadCreditoId, dto)` | Editar actividad del catálogo (validar categoría) |
-| `obtenerConfiguracionCarrera(carreraId, usuarioCarreraId?)` | Config del sistema de la carrera + progreso opcional (requisitos desde `carreraActividad.materiasRequeridas`) |
+| `obtenerConfiguracionCarrera(carreraId, usuarioId?)` | Config del sistema de la carrera + progreso del usuario autenticado (requisitos desde `carreraActividad.materiasRequeridas`) |
 | `actualizarSistema(carreraId, dto)` | Habilitar/deshabilitar + `totalCreditos` (validar mínimos) |
 | `agregarCategoria(carreraId, dto)` | Añadir categoría con mínimo (validar suma <= total) |
 | `actualizarCategoria(carreraCategoriaCreditoId, dto)` | Editar mínimo |
@@ -682,7 +682,7 @@ async marcarCompletada(dto: CrearProgresoActividadDto) {
 
 | Método | Ruta | Body |
 |---|---|---|
-| GET | `/carreras/:id/creditos` | `?usuarioCarreraId` (opcional, para detalle con progreso) |
+| GET | `/carreras/:id/creditos` | — (progreso del usuario autenticado; se muestra aunque no esté inscripto) |
 | PUT | `/carreras/:id/creditos` | `{ creditosHabilitado, totalCreditos? }` |
 | POST | `/carreras/:id/creditos/categorias` | `{ categoriaCreditoId, minimoCreditos }` |
 | PUT | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | `{ minimoCreditos }` |
@@ -745,7 +745,7 @@ export interface CarreraCategoriaConfig {
     categoriaCreditoId: number;
     nombre: string;
     minimoCreditos: number;
-    obtenidos: number;   // solo significativo con usuarioCarreraId
+    obtenidos: number;   // progreso del usuario autenticado
     cumplida: boolean;   // idem
 }
 
@@ -756,14 +756,15 @@ export interface CarreraActividadConfig {
     creditos: number;
     categoriaCreditoId: number;
     categoriaNombre: string;
-    progresoActividadId: number | null; // solo con usuarioCarreraId; null sin progreso
-    completada: boolean;                // solo significativo con usuarioCarreraId
+    progresoActividadId: number | null; // null sin progreso
+    completada: boolean;                // progreso del usuario autenticado
     materiasRequeridas: MateriaRequisito[]; // requisitos POR CARRERA (pivote)
 }
 
 // `aprobada` en `materiasRequeridas` y los campos de progreso (obtenidos,
-// cumplida, completada, progresoActividadId, creditosObtenidos, etc.) solo
-// son significativos cuando se consulta con `usuarioCarreraId`; sin usuario,
+// cumplida, completada, progresoActividadId, creditosObtenidos, etc.) se
+// calculan con el `usuarioId` del usuario autenticado (token JWT), aunque no
+// esté inscripto en la carrera (progreso compartido). Sin consulta de usuario,
 // el backend los devuelve en `false`/`0`/`null` (ver §4.3).
 export interface CarreraCreditosConfig {
     sistemaCreditos: boolean;
@@ -818,7 +819,7 @@ export const creditosService = {
     async actualizarActividad(actividadCreditoId: number, data: { nombre?: string; descripcion?: string; creditos?: number }): Promise<ActividadCredito> { ... },
 
     // configuración de la carrera (los requisitos son POR CARRERA)
-    async obtenerConfiguracionCarrera(carreraId: number, usuarioCarreraId?: number): Promise<CarreraCreditosConfig> { ... },
+    async obtenerConfiguracionCarrera(carreraId: number, usuarioId?: number): Promise<CarreraCreditosConfig> { ... },
     async actualizarSistema(carreraId: number, data: { creditosHabilitado: boolean; totalCreditos?: number }): Promise<void> { ... },
     async agregarCategoria(carreraId: number, data: { categoriaCreditoId: number; minimoCreditos: number }): Promise<void> { ... },
     async actualizarCategoria(carreraId: number, carreraCategoriaCreditoId: number, data: { minimoCreditos: number }): Promise<void> { ... },
@@ -848,9 +849,9 @@ export const creditosService = {
 - **Tab persistido:** `CarreraEditPage` guarda el tab activo en `localStorage` bajo la key `carrera-edit-tab` (inicializa validando contra `TabKey`; al cambiar, `guardarTab` lo persiste).
 - Contenido:
   1. **Estado del sistema:** toggle "Activar sistema de créditos" (switch) + input numérico "Total de créditos requeridos" (visible cuando está activado) + botón "Guardar total". Si el sistema **no** está habilitado pero el toggle sí, un `Alert variant="warning"` avisa: "Ingresá el total de créditos requeridos y presioná **Guardar total** para activar el sistema". Debajo, nota separada con borde con el indicador de cumplimiento: `sum(mínimos) <= total` (si no, mensaje de error). Sin mensajes inline de error/éxito del total.
-  2. **Desactivación con confirmación:** si el sistema está habilitado, el toggle abre un **modal de advertencia** (`desactivarConfirmOpen`) que lista el impacto: se eliminan total, categorías/mínimos y actividades/requisitos de la carrera; el catálogo global no se borra y el progreso de usuarios se conserva. Confirmar llama `onDesactivarConfirmado` → `actualizarSistema`.
-  3. **Categorías:** lista de categorías agregadas con input de mínimo editable + botón "Actualizar" + botón de quitar. Botón "Agregar categoría" abre modal con dos modos (default y primera opción "Crear nueva"): crear categoría nueva (`POST /creditos/categorias`) o seleccionar existente (`GET /creditos/categorias`, excluyendo las ya agregadas).
-  4. **Actividades:** lista agrupada por categoría (nombre + "+n creditos" + requisitos + botón quitar), con **nombres en `normal-case`** (la clase `.label` fuerza uppercase). Botón "Agregar actividad" abre modal: elegir categoría (de las de la carrera), seleccionar actividad existente (`GET /creditos/actividades?categoriaId=`) o crear nueva (`POST /creditos/actividades`), con resets al elegir "Crear nueva".
+  2. **Desactivación con confirmación:** el modal de advertencia (`desactivarConfirmOpen`) solo aparece cuando el sistema **ya existe** en el backend (`sistema.sistemaCreditos === true`). Si se está creando por primera vez (toggle activado pero sistema aún no guardado), apagar el toggle vuelve al estado desactivado sin confirmación. El modal lista el impacto: se eliminan total, categorías/mínimos y actividades/requisitos de la carrera; el catálogo global no se borra y el progreso de usuarios se conserva. Confirmar llama `onDesactivarConfirmado` → `actualizarSistema`.
+  3. **Categorías:** lista de categorías agregadas con input de mínimo editable + botón "Actualizar" + botón de quitar. Botón "Agregar categoría" (habilitado solo cuando el sistema ya existe guardado en el backend, no solo con el toggle activado) abre modal con dos modos (default y primera opción "Crear nueva"): crear categoría nueva (`POST /creditos/categorias`) o seleccionar existente (`GET /creditos/categorias`, excluyendo las ya agregadas).
+  4. **Actividades:** lista agrupada por categoría (nombre + "+n creditos" + requisitos + botón quitar), con **nombres en `normal-case`** (la clase `.label` fuerza uppercase). Botón "Agregar actividad" (habilitado solo cuando el sistema ya existe guardado y hay categorías) abre modal: elegir categoría (de las de la carrera), seleccionar actividad existente (`GET /creditos/actividades?categoriaId=`) o crear nueva (`POST /creditos/actividades`), con resets al elegir "Crear nueva".
   5. **Requisitos (materias correlativas) por carrera:** **opcional y vacío por defecto**. Al agregar una actividad se pueden elegir las materias de las que depende en esa carrera (selector de materias del plan de estudios, "Materias requisito en esta carrera (opcional)"), enviadas como `materiasRequeridas: number[]` en `agregarActividad`. Además, cada actividad tiene un botón **"Editar requisitos"** que abre un modal con checkboxes de materias y guarda vía `actualizarRequisitos` (`PUT .../requisitos`). Las actividades con requisitos muestran un chip por materia; las que no los tienen no muestran nada.
 - Mensajes vacíos (sin categorías/actividades) centrados con `py-8 text-center`. Los modales ofrecen "Crear nueva" como default y primera opción (sin textos tipo "(todas las existentes ya están en el sistema)").
 - Estética siguiendo la convención del módulo admin (`docs/frontend/admin-page.md`): filas/cards independientes con `<Badge variant="info">` (badge-info) para códigos y nombres, `<Badge variant="success"|"danger">` para estado activo/inactivo, botones de acción con `hover:bg-bg-surface-secondary`. Los acentos cyan (`bg-accent-cyan/15 text-accent-cyan`) quedan reservados para tarjetas/gráficos de métricas tipo dashboard, no para el editor admin.
@@ -859,13 +860,12 @@ export const creditosService = {
 
 **Archivo:** `frontend/src/pages/CarreraDetailPage.tsx`
 
-- Agregar query `useQuery(['creditos', 'carrera', carreraIdNum, inscripcionActual?.usuarioCarreraId])` → `creditosService.obtenerConfiguracionCarrera(carreraIdNum, inscripcionActual?.usuarioCarreraId)`.
-- `obtenerConfiguracionCarrera` devuelve la config **y el progreso** del usuario (§4.3): los campos `obtenidos`/`cumplida` de cada categoría, `completada`/`progresoActividadId` de cada actividad y `creditosObtenidos`/`creditosFaltantes`/`completado`/`progresoPorcentaje` solo son significativos cuando se pasa `usuarioCarreraId` (usuario inscripto); sin él el backend los devuelve en `false`/`0`/`null` (ver §5.1).
-- Si `config.sistemaCreditos` es `true`, renderizar `<SistemaCreditosCard config={configCreditos} mostrarProgreso={inscripto} />` tras la Card principal (antes del plan de estudios), con:
-  - Total requerido y total obtenido (`config.totalCreditos` / `config.creditosObtenidos`, esto último solo si el usuario está inscripto).
+- Agregar query `useQuery(['creditos', 'carrera', carreraIdNum, usuarioId])` → `creditosService.obtenerConfiguracionCarrera(carreraIdNum, usuarioId)` donde `usuarioId` es el del **usuario autenticado** (`useAuthStore`). El progreso se muestra aunque el usuario no esté inscripto en la carrera (progreso compartido por materias).
+- `obtenerConfiguracionCarrera` devuelve la config **y el progreso** del usuario autenticado (§4.3): los campos `obtenidos`/`cumplida` de cada categoría, `completada`/`progresoActividadId` de cada actividad y `creditosObtenidos`/`creditosFaltantes`/`completado`/`progresoPorcentaje`.
+- Si `config.sistemaCreditos` es `true`, renderizar `<SistemaCreditosCard config={configCreditos} />` tras la Card principal (antes del plan de estudios), con:
+  - Total requerido y total obtenido (`config.totalCreditos` / `config.creditosObtenidos`).
   - Barra de progreso (`config.progresoPorcentaje`).
-  - Chips por categoría con mínimo y obtenido (`config.categorias[].obtenidos`/`minimoCreditos`, p. ej. "Seminarios 2/3").
-  - Lista compacta de actividades con estado completada/pendiente (`config.actividades[].completada`) y, si corresponde, chips de materias requisito con estado de aprobación (`materiasRequeridas[].aprobada`).
+  - **Progreso por categoría:** subtítulo "Progreso por categoría" y, por cada categoría, una fila con nombre, barra de progreso `obtenidos/mínimo créditos` y badge "Cumplida" cuando corresponde (`config.categorias[].obtenidos`/`minimoCreditos`). **No** se lista las actividades del usuario.
 
 ### 5.6 Página de seguimiento — `CreditosPage.tsx`
 
@@ -926,7 +926,7 @@ Claves canónicas (todas por prefijo, así invalidar la clave madre cubre sus va
 - **Al marcar/desmarcar una actividad** (página de créditos), invalidar:
   - `['creditos', 'progreso', usuarioCarreraId]` (página de créditos),
   - `['estadisticas', 'creditos-progreso', usuarioCarreraId]` (dashboard),
-  - `['creditos', 'carrera', carreraId, usuarioCarreraId]` (detalle de carrera).
+  - `['creditos', 'carrera', carreraId, usuarioId]` (detalle de carrera, `usuarioId` del usuario autenticado).
 - **Al editar la configuración del sistema** (editor admin), invalidar:
   - `['creditos', 'carrera']` (config + detalle de todas las carreras),
   - `['creditos', 'progreso']` (progreso de todas las inscripciones),

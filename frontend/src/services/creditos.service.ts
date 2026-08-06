@@ -51,10 +51,10 @@ export const creditosService = {
     // configuración de la carrera
     async obtenerConfiguracionCarrera(
         carreraId: number,
-        usuarioCarreraId?: number,
+        usuarioId?: number,
     ): Promise<CarreraCreditosConfig> {
         const response = await api.get(`/carreras/${carreraId}/creditos`, {
-            params: usuarioCarreraId ? { usuarioCarreraId } : undefined,
+            params: usuarioId ? { usuarioId } : undefined,
         });
         return response.data;
     },

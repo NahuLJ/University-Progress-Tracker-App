@@ -10,6 +10,7 @@ import {
   Body,
   ParseIntPipe,
   DefaultValuePipe,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -79,9 +80,9 @@ export class CarrerasController {
   @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
   async obtenerPlanEstudios(
     @Param('id') id: number,
-    @Query('usuarioCarreraId') usuarioCarreraId?: number,
+    @Request() req: { user: { usuarioId: number } },
   ) {
-    return this.carrerasService.obtenerPlanEstudios(id, usuarioCarreraId);
+    return this.carrerasService.obtenerPlanEstudios(id, req.user.usuarioId);
   }
 
   @Post()
@@ -183,9 +184,9 @@ export class CarrerasController {
   @ApiResponse({ status: 404, description: 'Carrera no encontrada' })
   async obtenerConfigCreditos(
     @Param('id', ParseIntPipe) id: number,
-    @Query('usuarioCarreraId') usuarioCarreraId?: number,
+    @Request() req: { user: { usuarioId: number } },
   ) {
-    return this.carrerasService.obtenerConfigCreditos(id, usuarioCarreraId);
+    return this.carrerasService.obtenerConfigCreditos(id, req.user.usuarioId);
   }
 
   @Put(':id/creditos')

@@ -18,6 +18,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Icon } from '../components/ui/Icon';
 import { creditosService } from '../services/creditos.service';
 import { SistemaCreditosCard } from '../components/creditos/SistemaCreditosCard';
+import { useAuthStore } from '../store/auth.store';
 
 export function CarreraDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -44,20 +45,23 @@ export function CarreraDetailPage() {
     const inscripto = inscripcionActual?.activo === true;
     const desinscripto = inscripcionActual?.activo === false;
 
+    const authUsuario = useAuthStore((s) => s.usuario);
+    const usuarioId = authUsuario?.id ?? authUsuario?.usuarioId;
+
     const {
         data: planEstudios,
         isLoading,
         error,
         refetch,
-    } = usePlanEstudios(parseInt(id!), inscripcionActual?.usuarioCarreraId);
+    } = usePlanEstudios(parseInt(id!), usuarioId);
 
     const carreraIdNum = parseInt(id!);
     const { data: configCreditos } = useQuery({
-        queryKey: ['creditos', 'carrera', carreraIdNum, inscripcionActual?.usuarioCarreraId],
+        queryKey: ['creditos', 'carrera', carreraIdNum, usuarioId],
         queryFn: () =>
             creditosService.obtenerConfiguracionCarrera(
                 carreraIdNum,
-                inscripcionActual?.usuarioCarreraId,
+                usuarioId,
             ),
         enabled: !!carreraIdNum,
     });
@@ -221,7 +225,7 @@ export function CarreraDetailPage() {
             </Card>
 
             {configCreditos?.sistemaCreditos && (
-                <SistemaCreditosCard config={configCreditos} mostrarProgreso={inscripto} />
+                <SistemaCreditosCard config={configCreditos} />
             )}
 
             {planEstudios.anios.length > 1 && (

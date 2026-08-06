@@ -203,7 +203,7 @@ export class CreditosService {
 
   async obtenerConfiguracionCarrera(
     carreraId: number,
-    usuarioCarreraId?: number,
+    usuarioId?: number,
   ): Promise<ConfiguracionCreditosCarrera> {
     const sistema = await this.sistemaRepo.findOne({
       where: { carrera: { carreraId } },
@@ -225,15 +225,6 @@ export class CreditosService {
     categoriasCarrera.sort((a, b) =>
       a.categoria.nombre.localeCompare(b.categoria.nombre),
     );
-
-    let usuarioId: number | undefined;
-    if (usuarioCarreraId) {
-      const inscripcion = await this.usuarioCarreraRepo.findOne({
-        where: { usuarioCarreraId },
-        relations: { usuario: true },
-      });
-      usuarioId = inscripcion?.usuario?.usuarioId;
-    }
 
     let progresos: ProgresoActividad[] = [];
     let progresosMateria: ProgresoMateria[] = [];

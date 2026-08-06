@@ -72,7 +72,7 @@ interface InscribirCarreraDto {
 | `GET` | `/carreras` | ❌ Público (sin params) / ✅ Bearer (con params) | `?search=&sortBy=&sortOrder=&incluirInactivos=&page=&limit=` | Sin params: `200`: `Carrera[]` (solo activas). Con params: `200`: `{ data: CarreraAdminRow[], total, page, limit, totalPages }` donde cada item incluye `totalMaterias: number` |
 | `GET` | `/carreras/disponibles/:usuarioId` | ❌ Público | `?page=N&limit=N` | `200`: `{ data: Carreras[], total, page, limit, totalPages }` |
 | `GET` | `/carreras/:id` | ❌ Público | — | `200`: Carrera · `404`: No encontrada / inactiva |
-| `GET` | `/carreras/:id/plan-estudios` | ❌ Público | `?usuarioCarreraId=N` (opcional) | `200`: Plan con materias + correlativas + `estadoUsuario`/`nota`/`tipoAprobacion` si se provee `usuarioCarreraId` · `404`: No encontrada |
+| `GET` | `/carreras/:id/plan-estudios` | ✅ Bearer | — | `200`: Plan con materias + correlativas + `estadoUsuario`/`nota`/`tipoAprobacion` del usuario autenticado (progreso compartido, se muestra aunque no esté inscripto) · `404`: No encontrada |
 | `POST` | `/carreras` | ✅ Bearer | `CrearCarreraDto` | `201`: Creada · `400`: Validación / nombre duplicado |
 | `PUT` | `/carreras/:id` | ✅ Bearer | `ActualizarCarreraDto` | `200`: Actualizada · `400`: Validación · `404`: No encontrada |
 | `DELETE` | `/carreras/:id` | ✅ Bearer | — | `200`: Desactivada (baja lógica, `activo = false`) · `404`: No encontrada |
@@ -307,7 +307,7 @@ interface MateriaAdminRow {
 
 | Método | Ruta | Auth | Query / Body | Respuestas |
 |--------|------|------|--------------|------------|
-| `GET` | `/carreras/:id/creditos` | ✅ Bearer | `?usuarioCarreraId` (opcional) | `200`: `CarreraCreditosConfig` (con progreso si hay `usuarioCarreraId`) |
+| `GET` | `/carreras/:id/creditos` | ✅ Bearer | — | `200`: `CarreraCreditosConfig` (con progreso del usuario autenticado, se muestra aunque no esté inscripto) |
 | `PUT` | `/carreras/:id/creditos` | ✅ Bearer | `{ creditosHabilitado, totalCreditos? }` | `200`: Actualizado · `400`: `sum(minimos) > total` |
 | `POST` | `/carreras/:id/creditos/categorias` | ✅ Bearer | `{ categoriaCreditoId, minimoCreditos }` | `201`: Agregada · `400`: Suma de mínimos > total / duplicada |
 | `PUT` | `/carreras/:id/creditos/categorias/:carreraCategoriaCreditoId` | ✅ Bearer | `{ minimoCreditos }` | `200`: Actualizada · `400`: Suma de mínimos > total · `404`: No encontrada |

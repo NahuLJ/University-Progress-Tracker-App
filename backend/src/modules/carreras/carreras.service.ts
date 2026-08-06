@@ -191,7 +191,7 @@ export class CarrerasService {
 
   async obtenerPlanEstudios(
     carreraId: number,
-    usuarioCarreraId?: number,
+    usuarioId?: number,
   ): Promise<{
     carrera: Carrera;
     materias: MateriaPlanItem[];
@@ -223,14 +223,6 @@ export class CarrerasService {
       number,
       { estado: string; nota: number | null; tipoAprobacion: string | null }
     >();
-    let usuarioId: number | undefined;
-    if (usuarioCarreraId) {
-      const inscripcion = await this.usuarioCarreraRepo.findOne({
-        where: { usuarioCarreraId },
-        relations: { usuario: true },
-      });
-      usuarioId = inscripcion?.usuario?.usuarioId;
-    }
 
     if (usuarioId) {
       const progresos = await this.progresoRepo.find({
@@ -633,11 +625,11 @@ export class CarrerasService {
     if (!carrera) throw new NotFoundException('Carrera no encontrada');
   }
 
-  async obtenerConfigCreditos(carreraId: number, usuarioCarreraId?: number) {
+  async obtenerConfigCreditos(carreraId: number, usuarioId?: number) {
     await this.verificarCarrera(carreraId);
     return this.creditosService.obtenerConfiguracionCarrera(
       carreraId,
-      usuarioCarreraId,
+      usuarioId,
     );
   }
 

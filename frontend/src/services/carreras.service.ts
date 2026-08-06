@@ -58,9 +58,9 @@ export const carrerasService = {
         return response.data;
     },
 
-    async obtenerPlanEstudios(carreraId: number, usuarioCarreraId?: number): Promise<PlanEstudios> {
+    async obtenerPlanEstudios(carreraId: number, usuarioId?: number): Promise<PlanEstudios> {
         const response = await api.get(`/carreras/${carreraId}/plan-estudios`, {
-            params: usuarioCarreraId ? { usuarioCarreraId } : undefined,
+            params: usuarioId ? { usuarioId } : undefined,
         });
         return response.data;
     },

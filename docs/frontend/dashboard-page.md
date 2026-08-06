@@ -59,7 +59,7 @@ services/estadisticas.service.ts   # obtenerResumen, obtenerDistribucionEstados,
 ```
 MainLayout (sidebar lateral izquierdo, colapsable y responsive)
 ├── Header del sidebar: logo + botón contraer/desplegar
-├── CarreraSelector (dropdown global; visible si el usuario tiene >1 carrera)
+├── CarreraSelector (dropdown global; visible con 1+ carrera, se oculta solo sin carreras)
 ├── Nav vertical: Dashboard · Carreras · Progreso · Planificación · Admin
 ├── Datos del usuario (avatar iniciales + nombre + email)
 └── Botón Cerrar sesión
@@ -211,7 +211,8 @@ a `true` con `animationBegin={0}` (pastel 1200ms, barras 900ms `ease-out`). Card
 
 El `CarreraSelector` vive en el sidebar del `MainLayout` (no en el dashboard). Es un botón que despliega
 un menú hacia abajo con la lista de carreras; al elegir una se cambia la carrera actual globalmente
-(`useCarreraStore`), afectando dashboard, progreso y planificación. Está estilizado con el tema Suizo
+(`useCarreraStore`), afectando dashboard, progreso y planificación. Se muestra aunque el usuario tenga una
+sola carrera (solo se oculta cuando no tiene ninguna). Está estilizado con el tema Suizo
 (opción activa: `bg-accent-primary/15 text-accent-primary`). Ver `components/layout/CarreraSelector.tsx`.
 
 ### Sidebar responsive

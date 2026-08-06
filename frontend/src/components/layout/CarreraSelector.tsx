@@ -34,7 +34,7 @@ export function CarreraSelector({ collapsed = false }: CarreraSelectorProps) {
         };
     }, [abierto]);
 
-    if (!carreras || carreras.length <= 1) return null;
+    if (!carreras || carreras.length === 0) return null;
 
     const carreraActiva = carreras.find((c) => c.usuarioCarreraId === usuarioCarreraId);
 

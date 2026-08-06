@@ -70,9 +70,9 @@ store/
 > (con modal de confirmación) y "Eliminar definitivamente". Toda acción muestra notificación
 > snackbar con resultado. Al desinscribir/eliminar, la carrera activa del store se resetea
 > a la primera disponible o null.
-> El progreso mostrado en el plan de estudios corresponde a la **inscripción de la carrera que está en
-> la URL** (`inscripcionActual.usuarioCarreraId`), no a la carrera activa seleccionada en el navbar,
-> de modo que el detalle de cada carrera muestra siempre su propio progreso.
+> El progreso mostrado en el plan de estudios es el del **usuario autenticado** (progreso compartido
+> por `usuario`, independiente de la inscripción). Se muestra siempre, incluso si el usuario no está
+> inscripto en la carrera que se visualiza (p. ej. por materias compartidas entre carreras).
 
 ### Árbol de Composición
 
@@ -148,10 +148,10 @@ const activas = useInfiniteQuery({
 ### `usePlanEstudios` (`hooks/usePlanEstudios.ts`)
 
 ```typescript
-export function usePlanEstudios(carreraId: number | undefined, usuarioCarreraId?: number | null) {
+export function usePlanEstudios(carreraId: number | undefined, usuarioId?: number | null) {
     return useQuery({
-        queryKey: ['plan-estudios', carreraId, usuarioCarreraId],
-        queryFn: () => carrerasService.obtenerPlanEstudios(carreraId!, usuarioCarreraId),
+        queryKey: ['plan-estudios', carreraId, usuarioId],
+        queryFn: () => carrerasService.obtenerPlanEstudios(carreraId!, usuarioId),
         enabled: !!carreraId,
     });
 }

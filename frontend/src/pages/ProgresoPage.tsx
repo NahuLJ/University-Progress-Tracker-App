@@ -66,7 +66,7 @@ export function ProgresoPage() {
                 </p>
             </div>
 
-            {resumenCarreras && resumenCarreras.length > 1 && (
+            {resumenCarreras && resumenCarreras.length > 0 && (
                 <CarrerasResumenList
                     carreras={resumenCarreras}
                     usuarioCarreraIdActivo={usuarioCarreraId}

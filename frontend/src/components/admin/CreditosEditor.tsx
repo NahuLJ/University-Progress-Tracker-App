@@ -95,7 +95,11 @@ export function CreditosEditor({ carreraId }: Props) {
 
     const onToggleSistema = () => {
         if (habilitado) {
-            setDesactivarConfirmOpen(true);
+            if (sistema.sistemaCreditos) {
+                setDesactivarConfirmOpen(true);
+            } else {
+                setHabilitado(false);
+            }
         } else {
             setHabilitado(true);
         }
@@ -334,7 +338,7 @@ export function CreditosEditor({ carreraId }: Props) {
                     <Button
                         size="sm"
                         onClick={() => setAgregarCatOpen(true)}
-                        disabled={!habilitado}
+                        disabled={!habilitado || !sistema.sistemaCreditos}
                     >
                         Agregar categoría
                     </Button>
@@ -411,7 +415,7 @@ export function CreditosEditor({ carreraId }: Props) {
                     <Button
                         size="sm"
                         onClick={() => setAgregarActOpen(true)}
-                        disabled={!habilitado || sistema.categorias.length === 0}
+                        disabled={!habilitado || !sistema.sistemaCreditos || sistema.categorias.length === 0}
                     >
                         Agregar actividad
                     </Button>
